@@ -5,21 +5,25 @@ A codex-orchestrated workflow to turn **each USAspending API endpoint** into a s
 ## Concept (high-level)
 
 ```
-Sources                    Agentic loop                     Artifacts
-------------------------   -------------------------------   ---------------------------------------
-Docs (usaspending-api) --> [Codex agent reads + probes] --> contracts/<endpoint>.json
-Live API (api.usaspending.gov) |                            (inputs • outputs • examples)
-                               v
-                         [Per-endpoint JSON contract]
-                               |
-                               v
-                        contracts/ folder
-                               |
-                               v
-                     MCP tool generator (later stage)
-                               |
-                               v
-                    MCP server / tools (not built yet)
+Sources                          Agentic loop                      Artifacts
+-------------------------------   --------------------------------  ----------------------------------------------
+Docs (usaspending-api submodule) --->+                                 
+                                      |                                
+Live API (api.usaspending.gov)  ------>+--> [Codex agent: read + probe] -- produces --> contracts/<endpoint>.json
+                                                                          (inputs • outputs • examples)
+
+                                           contracts/<endpoint>.json
+                                                       |
+                                                       v
+                                                contracts/ folder
+                                                       |
+                                                       v
+                                           MCP tool generator (later)
+                                                       |
+                                                       v
+                                         MCP server / tools (future build)
+
+Note: Additional edits/QA can modify contracts in-place before the MCP generation step.
 ```
 
 - One contract per endpoint: `name`, `description`, `endpoint {method, host, path}`, `inputSchema`, `outputSchema`, `examples`.
