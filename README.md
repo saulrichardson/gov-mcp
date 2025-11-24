@@ -4,39 +4,31 @@ A lightweight workflow to turn **each USAspending API endpoint** into a self-con
 
 ## Concept (high-level)
 
-```
-[Docs + Live Endpoint] -> [Agent reads + probes] -> [Per-endpoint JSON contract]
-                                     \-> (examples capture real requests/responses)
-Later: contracts -> MCP tool stubs -> full MCP server
+```mermaid
+flowchart LR
+    Docs[Docs & Contracts
+    (usaspending-api repo)] --> Agent
+    LiveAPI[Live API
+    https://api.usaspending.gov] --> Agent
+    Agent[Codex Agent
+    reads + probes] --> Contract[Per-endpoint JSON contract
+    (inputs, outputs, examples)]
+    Contract --> Store[contracts/ folder]
+    Store --> MCP[MCP tool generator
+    (future step)]
 ```
 
 - One contract per endpoint: `name`, `description`, `endpoint {method, host, path}`, `inputSchema`, `outputSchema`, `examples`.
-- Input/Output schemas are plain JSON Schema that match reality (docs + probes). No shared envelope imposed.
-- Probing is required: when docs and reality differ, reality wins (document the discrepancy in descriptions if needed).
+- Input/Output schemas are plain JSON Schema that mirror reality (docs + probes). **No shared envelope.**
+- Probing is required: when docs and reality differ, reality wins; describe quirks in field descriptions.
 
 ## How the pieces fit
 
-1) **Stage a task**: identify an endpoint (path/method) and point an agent at its docs.
+1) **Stage a task**: pick an endpoint (method + path) and point an agent at its docs.
 2) **Agent work**: read docs, design probes, send live requests, capture successful requests/responses, reconcile with docs.
-3) **Emit contract**: fill `inputSchema` and `outputSchema` so that all successful requests/ responses validate; add concrete examples.
-4) **Store contracts**: save JSON under `contracts/`.
+3) **Emit contract**: fill `inputSchema` and `outputSchema` so that all successful requests/responses validate; add concrete examples.
+4) **Store contracts** under `contracts/`.
 5) **(Later)** generate MCP tools from these contracts.
-
-### Figraph-style flow
-
-- Nodes:
-  - `Docs` (markdown contracts in `usaspending-api/...`)
-  - `Live API` (`https://api.usaspending.gov`)
-  - `Agent` (Codex-driven)
-  - `JSON Contract` (per endpoint)
-  - `Contracts/` store
-  - `MCP Generator` (later)
-- Edges:
-  - Docs -> Agent (read)
-  - Live API -> Agent (probe)
-  - Agent -> JSON Contract (author)
-  - JSON Contract -> Contracts/ (save)
-  - Contracts/ -> MCP Generator (future step)
 
 ## Agent instructions (per endpoint)
 
@@ -65,18 +57,19 @@ If docs and probes disagree, favor observed behavior; describe quirks in field d
 ├─ README.md                # This file
 ├─ pyproject.toml           # Poetry config
 ├─ .gitignore
+├─ .gitmodules              # tracks submodule
+├─ usaspending-api/         # submodule with official contracts/docs
 ├─ contracts/               # Saved per-endpoint JSON contracts
 │  └─ .gitkeep
 ├─ src/
-│  └─ gov_gpt/
+│  ├─ __init__.py
+│  ├─ contracts/            # helpers for contract IO (stub)
+│  │  └─ __init__.py
+│  └─ pipelines/            # orchestration stubs
 │     ├─ __init__.py
-│     ├─ contracts/        # helpers for contract IO (stub)
-│     │  └─ __init__.py
-│     └─ pipelines/        # orchestration stubs
-│        ├─ __init__.py
-│        └─ contract_builder.py
+│     └─ contract_builder.py
 └─ scripts/
-   └─ README.md            # placeholder for agent-invocation scripts
+   └─ README.md             # placeholder for agent-invocation scripts
 ```
 
 ## Getting started (local)
