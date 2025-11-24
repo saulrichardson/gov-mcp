@@ -4,30 +4,19 @@ A codex-orchestrated workflow to turn **each USAspending API endpoint** into a s
 
 ## Concept (high-level)
 
-```mermaid
-flowchart LR
-    subgraph Sources
-      Docs[Docs & contracts<br/>(usaspending-api submodule)]
-      Live[Live API<br/>api.usaspending.gov]
-    end
-
-    subgraph Agentic Loop
-      Agent[Codex agent<br/>reads + probes]
-      Contract[Per-endpoint JSON contract<br/>(inputs • outputs • examples)]
-    end
-
-    Docs --> Agent
-    Live --> Agent
-    Agent --> Contract
-    Contract --> Store[contracts/ folder]
-    Store --> MCP[MCP tool generator<br/>(later)]
-
-    classDef box fill:#0b3d91,stroke:#0b3d91,color:#fff,font-weight:bold;
-    classDef pale fill:#e8efff,stroke:#0b3d91,color:#0b3d91;
-    class Docs,Live box;
-    class Agent,Contract pale;
-    class Store pale;
-    class MCP box;
+```
+Sources                  Agentic loop                    Outputs
+---------                -------------                   --------
+Docs (usaspending-api)   [Codex agent reads + probes]    contracts/<endpoint>.json
+Live API (api.usaspending.gov)  |                         (inputs • outputs • examples)
+                                v
+                      [Per-endpoint JSON contract]
+                                |
+                                v
+                         contracts/ folder
+                                |
+                                v
+                       (future) MCP tool generator
 ```
 
 - One contract per endpoint: `name`, `description`, `endpoint {method, host, path}`, `inputSchema`, `outputSchema`, `examples`.
