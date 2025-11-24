@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
+.env
+.venv
+venv/
+.env.*
+
+# Poetry
+poetry.lock
+
+# VSCode / editors
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
