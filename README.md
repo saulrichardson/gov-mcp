@@ -5,18 +5,21 @@ A codex-orchestrated workflow to turn **each USAspending API endpoint** into a s
 ## Concept (high-level)
 
 ```
-Sources                  Agentic loop                    Outputs
----------                -------------                   --------
-Docs (usaspending-api)   [Codex agent reads + probes]    contracts/<endpoint>.json
-Live API (api.usaspending.gov)  |                         (inputs • outputs • examples)
-                                v
-                      [Per-endpoint JSON contract]
-                                |
-                                v
-                         contracts/ folder
-                                |
-                                v
-                       (future) MCP tool generator
+Sources                    Agentic loop                     Artifacts
+------------------------   -------------------------------   ---------------------------------------
+Docs (usaspending-api) --> [Codex agent reads + probes] --> contracts/<endpoint>.json
+Live API (api.usaspending.gov) |                            (inputs • outputs • examples)
+                               v
+                         [Per-endpoint JSON contract]
+                               |
+                               v
+                        contracts/ folder
+                               |
+                               v
+                     MCP tool generator (later stage)
+                               |
+                               v
+                    MCP server / tools (not built yet)
 ```
 
 - One contract per endpoint: `name`, `description`, `endpoint {method, host, path}`, `inputSchema`, `outputSchema`, `examples`.
