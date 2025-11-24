@@ -6,16 +6,11 @@ A lightweight workflow to turn **each USAspending API endpoint** into a self-con
 
 ```mermaid
 flowchart LR
-    Docs[Docs & Contracts
-    (usaspending-api repo)] --> Agent
-    LiveAPI[Live API
-    https://api.usaspending.gov] --> Agent
-    Agent[Codex Agent
-    reads + probes] --> Contract[Per-endpoint JSON contract
-    (inputs, outputs, examples)]
+    Docs[Docs & Contracts<br/>(usaspending-api submodule)] --> Agent
+    LiveAPI[Live API<br/>https://api.usaspending.gov] --> Agent
+    Agent[Codex agent<br/>reads docs + probes] --> Contract[Per-endpoint JSON contract<br/>(inputs · outputs · examples)]
     Contract --> Store[contracts/ folder]
-    Store --> MCP[MCP tool generator
-    (future step)]
+    Store --> MCP[MCP tool generator<br/>(future)]
 ```
 
 - One contract per endpoint: `name`, `description`, `endpoint {method, host, path}`, `inputSchema`, `outputSchema`, `examples`.
