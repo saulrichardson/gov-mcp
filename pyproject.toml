@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Pipeline for generating per-endpoint JSON contracts (docs+probes) to feed MCP tool generation"
 authors = ["Saul <you@example.com>"]
 readme = "README.md"
-packages = [{ include = "gov_gpt", from = "src" }]
+packages = [{ include = "*", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
