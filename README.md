@@ -5,25 +5,26 @@ A codex-orchestrated workflow to turn **each USAspending API endpoint** into a s
 ## Concept (high-level)
 
 ```
-Sources                          Agentic loop                      Artifacts
--------------------------------   --------------------------------  ----------------------------------------------
-Docs (usaspending-api submodule) --->+                                 
-                                      |                                
-Live API (api.usaspending.gov)  ------>+--> [Codex agent: read + probe] -- produces --> contracts/<endpoint>.json
-                                                                          (inputs • outputs • examples)
+Step 0  Inputs
+  • Docs: usaspending-api submodule
+  • Live API: https://api.usaspending.gov
 
-                                           contracts/<endpoint>.json
-                                                       |
-                                                       v
-                                                contracts/ folder
-                                                       |
-                                                       v
-                                           MCP tool generator (later)
-                                                       |
-                                                       v
-                                         MCP server / tools (future build)
+Step 1  Agentic work
+  Docs + Live API -> Codex agent (reads + probes)
 
-Note: Additional edits/QA can modify contracts in-place before the MCP generation step.
+Step 2  Contract artifact (per endpoint)
+  outputs: contracts/<endpoint>.json
+  contents: inputs • outputs • examples
+
+Step 3  Store & QA
+  contracts/<endpoint>.json -> contracts/ folder (can be edited/QA'd)
+
+Step 4  Generation (later)
+  contracts/ -> MCP tool generator
+
+Step 5  Deployment (later)
+  MCP tool generator -> MCP server/tools
+
 ```
 
 - One contract per endpoint: `name`, `description`, `endpoint {method, host, path}`, `inputSchema`, `outputSchema`, `examples`.
