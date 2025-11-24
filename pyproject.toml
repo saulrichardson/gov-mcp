@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "gov-gpt"
+version = "0.1.0"
+description = "Pipeline for generating per-endpoint JSON contracts (docs+probes) to feed MCP tool generation"
+authors = ["Saul <you@example.com>"]
+readme = "README.md"
+packages = [{ include = "gov_gpt", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+httpx = "^0.27.0"
+pydantic = "^2.9.0"
+rich = "^13.7.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+ruff = "^0.5.0"
+
+[build-system]
+requires = ["poetry-core>=1.8.0"]
+build-backend = "poetry.core.masonry.api"
