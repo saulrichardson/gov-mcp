@@ -38,3 +38,4 @@ node_modules/
 scripts/codex/node_modules/
 runs/
 npm-debug.log*
+codex.config.json

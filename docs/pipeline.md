@@ -17,11 +17,18 @@ Workflow (SDK only)
 2) Configure env (`.env` from `.env.example`):
    - `CODEX_API_KEY` (required)
    - `CODEX_MODEL` (optional)
-   - `CODEX_SANDBOX_MODE` (e.g., `danger-full-access` or `workspace-write`)
-   - `CODEX_NETWORK_ACCESS=true` (to allow HTTP probes)
-   - `CODEX_WEB_SEARCH=true|false` (tool toggle)
+   - `CODEX_BASE_URL` (optional)
+   - `CODEX_CONFIG_PATH` (optional; defaults to `codex.config.json`)
    - `USASPENDING_BASE_URL` (default https://api.usaspending.gov)
-3) Run a job:
+
+3) Codex runtime config (sandbox/tools):
+   - Copy `codex.config.example.json` → `codex.config.json` and adjust:
+     - `sandbox_mode`: `danger-full-access` | `workspace-write` | `read-only`
+     - `sandbox_workspace_write.network_access`: true to allow outbound HTTP
+     - `features.web_search_request`: true/false
+     - `approval_policy`: e.g., `never`, `on-failure`, `on-request`, `untrusted`
+   - The runner loads `codex.config.json` (or the path in `CODEX_CONFIG_PATH`) and passes it into the SDK.
+4) Run a job:
    ```bash
    cd scripts/codex
    npm install   # first time, uses package-lock

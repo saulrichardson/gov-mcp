@@ -17,16 +17,7 @@ const envSchema = z.object({
   CODEX_MODEL: z.string().optional(),
   CODEX_BASE_URL: z.string().optional(),
   USASPENDING_BASE_URL: z.string().default("https://api.usaspending.gov"),
-  CODEX_SANDBOX_MODE: z.string().optional(),
-  CODEX_APPROVAL_POLICY: z.string().optional(),
-  CODEX_NETWORK_ACCESS: z
-    .enum(["true", "false"])
-    .optional()
-    .transform((v) => (v ? v === "true" : undefined)),
-  CODEX_WEB_SEARCH: z
-    .enum(["true", "false"])
-    .optional()
-    .transform((v) => (v ? v === "true" : undefined)),
+  CODEX_CONFIG_PATH: z.string().optional(),
 });
 
 const env = (() => {
@@ -37,6 +28,39 @@ const env = (() => {
   }
   return parsed.data;
 })();
+
+const codexConfigSchema = z.object({
+  sandbox_mode: z.string().optional(),
+  approval_policy: z.string().optional(),
+  sandbox_workspace_write: z
+    .object({
+      network_access: z.boolean().optional(),
+    })
+    .optional(),
+  features: z
+    .object({
+      web_search_request: z.boolean().optional(),
+    })
+    .optional(),
+});
+
+function loadCodexConfig(): Record<string, any> | undefined {
+  const configPath =
+    env.CODEX_CONFIG_PATH !== undefined
+      ? env.CODEX_CONFIG_PATH
+      : join(repoRoot, "codex.config.json");
+
+  if (!existsSync(configPath)) return undefined;
+  try {
+    const parsed = codexConfigSchema.parse(JSON.parse(readFileSync(configPath, "utf-8")));
+    return parsed;
+  } catch (err) {
+    console.error("[codex-probe] failed to parse codex config:", err);
+    process.exit(1);
+  }
+}
+
+const codexConfig = loadCodexConfig();
 
 const args = process.argv.slice(2);
 const argContractIdx = args.findIndex((a) => a === "--contract");
@@ -142,24 +166,9 @@ async function runJob(record: IndexRecord) {
   const codex = new Codex({
     apiKey: env.CODEX_API_KEY,
     baseURL: env.CODEX_BASE_URL,
-    // Pass through sandbox/tool config if provided; relies on Codex SDK support for these keys.
-    ...(env.CODEX_SANDBOX_MODE ||
-    env.CODEX_APPROVAL_POLICY ||
-    env.CODEX_NETWORK_ACCESS !== undefined ||
-    env.CODEX_WEB_SEARCH !== undefined
+    ...(codexConfig
       ? ({
-          config: {
-            sandbox_mode: env.CODEX_SANDBOX_MODE,
-            approval_policy: env.CODEX_APPROVAL_POLICY,
-            sandbox_workspace_write:
-              env.CODEX_NETWORK_ACCESS !== undefined
-                ? { network_access: env.CODEX_NETWORK_ACCESS }
-                : undefined,
-            features:
-              env.CODEX_WEB_SEARCH !== undefined
-                ? { web_search_request: env.CODEX_WEB_SEARCH }
-                : undefined,
-          },
+          config: codexConfig,
         } as any)
       : undefined),
   });
