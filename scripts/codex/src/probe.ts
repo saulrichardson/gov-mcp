@@ -153,6 +153,8 @@ async function runJob(record: IndexRecord) {
     SHARED_FILTERS: sharedFilters,
   });
 
+  const modelToUse = codexModel;
+
   const codex = new Codex({
     apiKey: env.CODEX_API_KEY,
     baseURL: env.CODEX_BASE_URL,
@@ -165,8 +167,13 @@ async function runJob(record: IndexRecord) {
 
   const thread = codex.startThread();
   const events: any[] = [];
+  console.log(
+    `[codex-probe] model=${modelToUse ?? "default"} config_path=${
+      env.CODEX_CONFIG_PATH ?? join(repoRoot, "codex.config.toml")
+    }`
+  );
   const result = await thread.run(prompt, {
-    model: codexModel,
+    model: modelToUse,
     onEvent: (evt) => {
       events.push(evt);
     },
