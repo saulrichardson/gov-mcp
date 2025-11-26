@@ -47,10 +47,21 @@ function loadCodexConfig(): Record<string, any> | undefined {
 }
 
 const codexConfig = loadCodexConfig();
-const codexModel =
-  env.CODEX_MODEL !== undefined
-    ? env.CODEX_MODEL
-    : (codexConfig?.model as string | undefined);
+
+function buildThreadOptionsFromConfig() {
+  if (!codexConfig) return {};
+  return {
+    model:
+      env.CODEX_MODEL !== undefined
+        ? env.CODEX_MODEL
+        : (codexConfig.model as string | undefined),
+    sandboxMode: codexConfig.sandbox_mode,
+    modelReasoningEffort: codexConfig.model_reasoning_effort,
+    approvalPolicy: codexConfig.approval_policy,
+    networkAccessEnabled: codexConfig.sandbox_workspace_write?.network_access,
+    webSearchEnabled: codexConfig.features?.web_search_request,
+  };
+}
 
 const args = process.argv.slice(2);
 const argContractIdx = args.findIndex((a) => a === "--contract");
@@ -153,8 +164,6 @@ async function runJob(record: IndexRecord) {
     SHARED_FILTERS: sharedFilters,
   });
 
-  const modelToUse = codexModel;
-
   const codex = new Codex({
     apiKey: env.CODEX_API_KEY,
     baseURL: env.CODEX_BASE_URL,
@@ -165,15 +174,26 @@ async function runJob(record: IndexRecord) {
       : undefined),
   });
 
-  const thread = codex.startThread();
+  const threadOptions = buildThreadOptionsFromConfig();
+  const codexModel = threadOptions.model;
+  const codex = new Codex({
+    apiKey: env.CODEX_API_KEY,
+    baseURL: env.CODEX_BASE_URL,
+    ...(codexConfig
+      ? ({
+          config: codexConfig,
+        } as any)
+      : undefined),
+  });
+
+  const thread = codex.startThread(threadOptions);
   const events: any[] = [];
   console.log(
-    `[codex-probe] model=${modelToUse ?? "default"} config_path=${
+    `[codex-probe] model=${codexModel ?? "default"} config_path=${
       env.CODEX_CONFIG_PATH ?? join(repoRoot, "codex.config.toml")
     }`
   );
   const result = await thread.run(prompt, {
-    model: modelToUse,
     onEvent: (evt) => {
       events.push(evt);
     },
