@@ -11,7 +11,6 @@ venv/
 .env.*
 
 # Poetry
-poetry.lock
 
 # VSCode / editors
 .vscode/
@@ -24,3 +23,13 @@ poetry.lock
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Project staging/docs artifacts
+docs/
+staging/
+
+# Node artifacts
+node_modules/
+scripts/codex/node_modules/
+runs/
+npm-debug.log*
