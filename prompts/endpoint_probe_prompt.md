@@ -1,13 +1,17 @@
 Ingest the provided USAspending endpoint contract plus the shared filter spec. Then fully learn the endpoint by *running live probes* against the API and reconciling docs vs reality. Return one **JSON-only** report with your findings, contract, and probe evidence.
 
 Context (all doc content is inlined; do NOT read from disk or fetch anything except calling the live API host):
-- Endpoint name (label only): {{ENDPOINT_RELATIVE_PATH}}
-- Base URL (for live calls): {{BASE_URL}}
-- Endpoint contract (Markdown, full text provided):
+
+Endpoint name (label only): {{ENDPOINT_RELATIVE_PATH}}
+
+Base URL (for live calls): {{BASE_URL}}
+
+Endpoint contract (Markdown, full text provided):
 <<<ENDPOINT_DOC>>>
 {{ENDPOINT_DOC}}
 <<<ENDPOINT_DOC_END>>>
-- Shared filters (Markdown; may be referenced by the contract):
+
+Shared filters (Markdown; may be referenced by the contract):
 <<<SHARED_FILTERS>>>
 {{SHARED_FILTERS}}
 <<<SHARED_FILTERS_END>>>
