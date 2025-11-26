@@ -5,10 +5,44 @@ model_verbosity = "high"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 
+[features]
+web_search_request = true
+apply_patch_freeform = true
+rmcp_client = true
 
 [shell_environment_policy]
 inherit = "all"
 ignore_default_excludes = true
+
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_MCP_PAT"
+startup_timeout_sec = 120
+
+[mcp_servers.playwright]
+command = "npx"
+args = [
+  "@playwright/mcp@latest",
+  "--isolated",
+  "--timeout-action=15000",
+  "--caps=pdf",
+]
+startup_timeout_sec = 120
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = [
+  "-y",
+  "chrome-devtools-mcp@latest",
+  "--headless",
+  "--isolated"
+]
+startup_timeout_sec = 120
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+env_http_headers = { "CONTEXT7_API_KEY" = "CONTEXT7_API_KEY" }
+startup_timeout_sec = 120
 
 [notice]
 hide_gpt5_1_migration_prompt = true
