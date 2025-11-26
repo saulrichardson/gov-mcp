@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { z } from "zod";
 import { Codex } from "@openai/codex-sdk";
+import toml from "@iarna/toml";
 
 // Resolve repo root (two levels up from this file: scripts/codex/src)
 const __filename = fileURLToPath(import.meta.url);
@@ -29,31 +30,16 @@ const env = (() => {
   return parsed.data;
 })();
 
-const codexConfigSchema = z.object({
-  sandbox_mode: z.string().optional(),
-  approval_policy: z.string().optional(),
-  sandbox_workspace_write: z
-    .object({
-      network_access: z.boolean().optional(),
-    })
-    .optional(),
-  features: z
-    .object({
-      web_search_request: z.boolean().optional(),
-    })
-    .optional(),
-});
-
 function loadCodexConfig(): Record<string, any> | undefined {
   const configPath =
     env.CODEX_CONFIG_PATH !== undefined
       ? env.CODEX_CONFIG_PATH
-      : join(repoRoot, "codex.config.json");
+      : join(repoRoot, "codex.config.toml");
 
   if (!existsSync(configPath)) return undefined;
   try {
-    const parsed = codexConfigSchema.parse(JSON.parse(readFileSync(configPath, "utf-8")));
-    return parsed;
+    const parsed = toml.parse(readFileSync(configPath, "utf-8"));
+    return parsed as Record<string, any>;
   } catch (err) {
     console.error("[codex-probe] failed to parse codex config:", err);
     process.exit(1);
