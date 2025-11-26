@@ -160,7 +160,16 @@ async function runJob(record: IndexRecord) {
   });
 
   const thread = codex.startThread();
-  const result = await thread.run(prompt, env.CODEX_MODEL ? { model: env.CODEX_MODEL } : undefined);
+  const events: any[] = [];
+  const result = await thread.run(
+    prompt,
+    {
+      model: env.CODEX_MODEL,
+      onEvent: (evt) => {
+        events.push(evt);
+      },
+    }
+  );
 
   const runDir = join(
     repoRoot,
@@ -172,6 +181,14 @@ async function runJob(record: IndexRecord) {
 
   writeFileSync(join(runDir, "prompt.txt"), prompt, "utf-8");
   writeFileSync(join(runDir, "response.txt"), String(result), "utf-8");
+  if (events.length > 0) {
+    const eventsPath = join(runDir, "events.jsonl");
+    writeFileSync(
+      eventsPath,
+      events.map((e) => JSON.stringify(e)).join("\n"),
+      "utf-8"
+    );
+  }
 
   try {
     const parsed = JSON.parse(String(result));
