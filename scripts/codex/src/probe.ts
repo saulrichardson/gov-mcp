@@ -198,7 +198,22 @@ async function runJob(record: IndexRecord) {
   mkdirSync(runDir, { recursive: true });
 
   writeFileSync(join(runDir, "prompt.txt"), prompt, "utf-8");
-  writeFileSync(join(runDir, "response.txt"), String(result), "utf-8");
+
+  // Persist raw turn result
+  const finalText = (result as any)?.finalResponse ?? String(result);
+  writeFileSync(join(runDir, "response.txt"), finalText, "utf-8");
+
+  // Persist items and usage for inspection
+  if ((result as any)?.items) {
+    writeFileSync(
+      join(runDir, "items.jsonl"),
+      (result as any).items.map((it: any) => JSON.stringify(it)).join("\n"),
+      "utf-8"
+    );
+  }
+  if ((result as any)?.usage) {
+    writeFileSync(join(runDir, "usage.json"), JSON.stringify((result as any).usage, null, 2), "utf-8");
+  }
   if (events.length > 0) {
     const eventsPath = join(runDir, "events.jsonl");
     writeFileSync(
@@ -209,7 +224,7 @@ async function runJob(record: IndexRecord) {
   }
 
   try {
-    const parsed = JSON.parse(String(result));
+    const parsed = JSON.parse(finalText);
     writeFileSync(join(runDir, "summary.json"), JSON.stringify(parsed, null, 2), "utf-8");
     console.log(`[codex-probe] ✅ ${record.relative_path} -> ${relative(repoRoot, runDir)}/summary.json`);
   } catch {
