@@ -1,4 +1,4 @@
-You are Codex. Ingest the provided USAspending endpoint contract plus the shared filter spec. Produce a **JSON-only report** that (a) explains the endpoint comprehensively and (b) lays out a complete probe plan to validate it. Do **not** execute HTTP calls; design them with expected assertions.
+You are Codex. Ingest the provided USAspending endpoint contract plus the shared filter spec. Produce a **JSON-only report** that explains the endpoint comprehensively and designs the exact calls we should run to fully test it. Do **not** execute HTTP calls; design them with expected assertions.
 
 Context:
 - Endpoint relative path: {{ENDPOINT_RELATIVE_PATH}}
@@ -36,7 +36,7 @@ Output: A single JSON object with this exact shape (no extra keys, no prose, no 
     "paginationFields": ["next","previous","page","hasNext"],
     "errorShapes": { "4xx": "structure if documented", "5xx": "structure if documented" }
   },
-  "probePlan": [
+  "callDesigns": [
     {
       "name": "happy-path minimal",
       "purpose": "verify required-only works",
