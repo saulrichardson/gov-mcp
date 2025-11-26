@@ -47,6 +47,10 @@ function loadCodexConfig(): Record<string, any> | undefined {
 }
 
 const codexConfig = loadCodexConfig();
+const codexModel =
+  env.CODEX_MODEL !== undefined
+    ? env.CODEX_MODEL
+    : (codexConfig?.model as string | undefined);
 
 const args = process.argv.slice(2);
 const argContractIdx = args.findIndex((a) => a === "--contract");
@@ -161,15 +165,12 @@ async function runJob(record: IndexRecord) {
 
   const thread = codex.startThread();
   const events: any[] = [];
-  const result = await thread.run(
-    prompt,
-    {
-      model: env.CODEX_MODEL,
-      onEvent: (evt) => {
-        events.push(evt);
-      },
-    }
-  );
+  const result = await thread.run(prompt, {
+    model: codexModel,
+    onEvent: (evt) => {
+      events.push(evt);
+    },
+  });
 
   const runDir = join(
     repoRoot,
