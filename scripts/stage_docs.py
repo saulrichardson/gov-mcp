@@ -32,6 +32,7 @@ def stage(version: str, *, copy_files: bool) -> None:
     staging_root = repo_root / "staging" / "docs" / version
     index_path = repo_root / "staging" / "docs" / "index.jsonl"
     supporting_manifest = repo_root / "staging" / "docs" / "supporting_manifest.json"
+    support_index_path = repo_root / "staging" / "docs" / "supporting_index.jsonl"
 
     if not source_root.exists():
         sys.exit(f"[stage-docs] missing source contracts at {source_root}")
@@ -74,6 +75,7 @@ def stage(version: str, *, copy_files: bool) -> None:
             index_file.write("\n")
 
         supporting_paths = []
+        support_index_entries = []
 
         # Supporting doc(s) (fail if any are missing)
         for rel_path in EXTRA_FILES:
@@ -105,6 +107,7 @@ def stage(version: str, *, copy_files: bool) -> None:
             }
             index_file.write(json.dumps(record))
             index_file.write("\n")
+            support_index_entries.append(record)
 
     # record the “always include” supporting docs in a single manifest
     supporting_manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -118,6 +121,13 @@ def stage(version: str, *, copy_files: bool) -> None:
         ),
         encoding="utf-8",
     )
+
+    # Write a separate supporting index for symmetry
+    support_index_path.parent.mkdir(parents=True, exist_ok=True)
+    with support_index_path.open("w", encoding="utf-8") as fp:
+        for rec in support_index_entries:
+            fp.write(json.dumps(rec))
+            fp.write("\n")
 
     if copy_files:
         print(f"[stage-docs] staged {len(md_files)} contract docs to {staging_root}")
