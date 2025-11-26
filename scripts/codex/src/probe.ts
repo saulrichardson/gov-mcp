@@ -189,12 +189,9 @@ async function runJob(record: IndexRecord) {
     },
   });
 
-  const runDir = join(
-    repoRoot,
-    "runs",
-    record.version,
-    record.relative_path.replace(/\//g, "__").replace(/\.md$/, "")
-  );
+  const slug = record.relative_path.replace(/\//g, "__").replace(/\.md$/, "");
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  const runDir = join(repoRoot, "runs", record.version, slug, ts);
   mkdirSync(runDir, { recursive: true });
 
   writeFileSync(join(runDir, "prompt.txt"), prompt, "utf-8");
