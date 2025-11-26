@@ -37,6 +37,13 @@ Workflow (SDK only)
    ```
    Runner loads the prompt, injects docs + filters, starts a Codex thread with sandbox/tool config from env, and expects Codex to execute probes and return JSON.
 
+Worktrees per agent run (optional but recommended)
+```bash
+python scripts/worktree.py --endpoint awards/last_updated.md
+# creates branch agent/awards-last_updated and worktree ../gov-gpt__agent__awards-last_updated
+```
+Do your run inside that worktree to keep artifacts/commits isolated.
+
 Key instructions to Codex (prompt)
 - May call live API at `BASE_URL`; capture every request/response.
 - Must return JSON report with: `contract` (inputs/outputs/examples/quirks), `probes` (req/resp/notes), `mismatches`, `gaps`, `risks`.
