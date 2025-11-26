@@ -1,0 +1,75 @@
+{
+  "endpoint": {
+    "name": "awards/last_updated.md",
+    "method": "GET",
+    "host": "https://api.usaspending.gov",
+    "path": "/api/v2/awards/last_updated/"
+  },
+  "purpose": "Return the most recent refresh date of the awards dataset as a simple string (MM/DD/YYYY) or an empty string if no data exists.",
+  "inputs": {
+    "required": [],
+    "optional": [],
+    "notes": "No documented inputs; unknown query params are ignored except certain reserved values (e.g., format=xml) that can error."
+  },
+  "outputs": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "last_updated": {
+          "type": "string",
+          "description": "Last refresh date, format MM/DD/YYYY; docs say it may be an empty string when no award data exists."
+        }
+      },
+      "required": ["last_updated"]
+    },
+    "sample": {
+      "status": 200,
+      "body": {
+        "last_updated": "11/25/2025"
+      }
+    }
+  },
+  "probes": [
+    {
+      "request": { "method": "GET", "path": "/api/v2/awards/last_updated/", "query": {} },
+      "response": { "status": 200, "bodyExcerpt": "{\"last_updated\":\"11/25/2025\"}" },
+      "notes": "Baseline success."
+    },
+    {
+      "request": { "method": "GET", "path": "/api/v2/awards/last_updated/", "query": { "foo": "bar" } },
+      "response": { "status": 200, "bodyExcerpt": "{\"last_updated\":\"11/25/2025\"}" },
+      "notes": "Unknown params ignored."
+    },
+    {
+      "request": { "method": "GET", "path": "/api/v2/awards/last_updated/", "query": { "format": "xml" } },
+      "response": { "status": 404, "bodyExcerpt": "{\"detail\":\"Not found.\"}" },
+      "notes": "Reserved format=xml causes 404; not in docs."
+    },
+    {
+      "request": { "method": "GET", "path": "/api/v2/awards/last_updated/", "query": { "format": "json" } },
+      "response": { "status": 200, "bodyExcerpt": "{\"last_updated\":\"11/25/2025\"}" },
+      "notes": "format=json behaves like default."
+    }
+  ],
+  "quirks": [
+    "Single-field JSON with no pagination or metadata.",
+    "Non-ISO date string without timezone; treat as naive MM/DD/YYYY.",
+    "Reserved query params (e.g., format=xml) can change routing and yield 404."
+  ],
+  "gaps": [
+    "Could not reproduce empty-string case; behavior when dataset empty unverified."
+  ],
+  "risks": [
+    "Parsing naive date strings; avoid lexical comparisons.",
+    "Avoid sending undocumented format parameters."
+  ],
+  "evidence": {
+    "run_dir": "runs/v2/awards__last_updated",
+    "summary": "runs/v2/awards__last_updated/summary.json",
+    "events": "runs/v2/awards__last_updated/events.jsonl",
+    "items": "runs/v2/awards__last_updated/items.jsonl",
+    "usage": "runs/v2/awards__last_updated/usage.json",
+    "prompt": "runs/v2/awards__last_updated/prompt.txt",
+    "response": "runs/v2/awards__last_updated/response.txt"
+  }
+}
