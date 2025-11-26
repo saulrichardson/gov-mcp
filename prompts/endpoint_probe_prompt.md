@@ -1,9 +1,9 @@
 You are Codex. Ingest the provided USAspending endpoint contract plus the shared filter spec. Then fully learn the endpoint by *running live probes* against the API and reconciling docs vs reality. Return one **JSON-only** report with your findings, contract, and probe evidence.
 
-Context:
-- Endpoint relative path: {{ENDPOINT_RELATIVE_PATH}}
+Context (all doc content is inlined below; do NOT read from disk or fetch anything except calling the live API host):
+- Endpoint name (for labeling only): {{ENDPOINT_RELATIVE_PATH}}
 - Base URL (for live calls): {{BASE_URL}}
-- Endpoint contract (Markdown):
+- Endpoint contract (Markdown, full text provided):
 <<<ENDPOINT_DOC>>>
 {{ENDPOINT_DOC}}
 <<<ENDPOINT_DOC_END>>>
@@ -12,7 +12,7 @@ Context:
 {{SHARED_FILTERS}}
 <<<SHARED_FILTERS_END>>>
 
-You MAY call the live API at {{BASE_URL}} using the methods/paths in the contract. Capture every request and response you send/receive.
+You MAY call the live API at {{BASE_URL}} using the methods/paths in the contract. Capture every request and response you send/receive. Do not attempt to read any files; rely only on the inlined docs above and live responses.
 
 Output: A single JSON object with this exact shape (no extra keys, no prose, no code fences):
 {
