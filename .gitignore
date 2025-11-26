@@ -27,6 +27,10 @@ htmlcov/
 
 # Project staging/docs artifacts
 docs/
+!docs/pipeline.md
+!docs/codex-sdk.md
+!docs/codex-sdk.html
+.DS_Store
 staging/
 
 # Node artifacts
