@@ -17,6 +17,16 @@ const envSchema = z.object({
   CODEX_MODEL: z.string().optional(),
   CODEX_BASE_URL: z.string().optional(),
   USASPENDING_BASE_URL: z.string().default("https://api.usaspending.gov"),
+  CODEX_SANDBOX_MODE: z.string().optional(),
+  CODEX_APPROVAL_POLICY: z.string().optional(),
+  CODEX_NETWORK_ACCESS: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((v) => (v ? v === "true" : undefined)),
+  CODEX_WEB_SEARCH: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((v) => (v ? v === "true" : undefined)),
 });
 
 const env = (() => {
@@ -132,6 +142,26 @@ async function runJob(record: IndexRecord) {
   const codex = new Codex({
     apiKey: env.CODEX_API_KEY,
     baseURL: env.CODEX_BASE_URL,
+    // Pass through sandbox/tool config if provided; relies on Codex SDK support for these keys.
+    ...(env.CODEX_SANDBOX_MODE ||
+    env.CODEX_APPROVAL_POLICY ||
+    env.CODEX_NETWORK_ACCESS !== undefined ||
+    env.CODEX_WEB_SEARCH !== undefined
+      ? ({
+          config: {
+            sandbox_mode: env.CODEX_SANDBOX_MODE,
+            approval_policy: env.CODEX_APPROVAL_POLICY,
+            sandbox_workspace_write:
+              env.CODEX_NETWORK_ACCESS !== undefined
+                ? { network_access: env.CODEX_NETWORK_ACCESS }
+                : undefined,
+            features:
+              env.CODEX_WEB_SEARCH !== undefined
+                ? { web_search_request: env.CODEX_WEB_SEARCH }
+                : undefined,
+          },
+        } as any)
+      : undefined),
   });
 
   const thread = codex.startThread();
