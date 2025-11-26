@@ -1,4 +1,4 @@
-You are Codex. Ingest the provided USAspending endpoint contract plus the shared filter spec. Then fully learn the endpoint by *running live probes* against the API and reconciling docs vs reality. Return one **JSON-only** report with your findings, contract, and probe evidence.
+Ingest the provided USAspending endpoint contract plus the shared filter spec. Then fully learn the endpoint by *running live probes* against the API and reconciling docs vs reality. Return one **JSON-only** report with your findings, contract, and probe evidence.
 
 Context (all doc content is inlined below; do NOT read from disk or fetch anything except calling the live API host):
 - Endpoint name (for labeling only): {{ENDPOINT_RELATIVE_PATH}}
