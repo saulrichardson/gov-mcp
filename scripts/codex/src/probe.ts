@@ -164,16 +164,6 @@ async function runJob(record: IndexRecord) {
     SHARED_FILTERS: sharedFilters,
   });
 
-  const codex = new Codex({
-    apiKey: env.CODEX_API_KEY,
-    baseURL: env.CODEX_BASE_URL,
-    ...(codexConfig
-      ? ({
-          config: codexConfig,
-        } as any)
-      : undefined),
-  });
-
   const threadOptions = buildThreadOptionsFromConfig();
   const codexModel = threadOptions.model;
   const codex = new Codex({
