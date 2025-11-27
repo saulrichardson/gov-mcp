@@ -66,9 +66,14 @@ function buildThreadOptionsFromConfig() {
 const args = process.argv.slice(2);
 const argContractIdx = args.findIndex((a) => a === "--contract");
 const argAll = args.includes("--all");
+const argConcurrencyIdx = args.findIndex((a) => a === "--concurrency");
+const concurrency =
+  argConcurrencyIdx !== -1 && args[argConcurrencyIdx + 1]
+    ? Math.max(1, parseInt(args[argConcurrencyIdx + 1], 10))
+    : 1;
 
 if (!argAll && argContractIdx === -1) {
-  console.error("Usage: pnpm probe -- --contract staging/docs/v2/...md | --all");
+  console.error("Usage: pnpm probe -- --contract staging/docs/v2/...md | --all [--concurrency N]");
   process.exit(1);
 }
 
@@ -230,14 +235,23 @@ async function runJob(record: IndexRecord) {
 
 async function main() {
   const jobs = getJobs();
-  for (const job of jobs) {
-    console.log(`[codex-probe] running ${job.relative_path}`);
-    try {
-      await runJob(job);
-    } catch (err) {
-      console.error(`[codex-probe] failed ${job.relative_path}:`, err);
+  const queue = [...jobs];
+  const workers = Math.min(concurrency, queue.length);
+
+  async function worker(id: number) {
+    while (queue.length) {
+      const job = queue.shift();
+      if (!job) break;
+      console.log(`[codex-probe][w${id}] running ${job.relative_path}`);
+      try {
+        await runJob(job);
+      } catch (err) {
+        console.error(`[codex-probe][w${id}] failed ${job.relative_path}:`, err);
+      }
     }
   }
+
+  await Promise.all(Array.from({ length: workers }, (_, i) => worker(i + 1)));
 }
 
 main().catch((err) => {
