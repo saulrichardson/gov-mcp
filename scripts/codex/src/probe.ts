@@ -158,6 +158,42 @@ function readContent(relPath: string): string {
   return readFileSync(full, "utf-8");
 }
 
+async function runWithRetries(
+  thread: ReturnType<Codex["startThread"]>,
+  prompt: string,
+  events: any[],
+  maxAttempts = 3
+) {
+  let attempt = 0;
+  while (true) {
+    attempt += 1;
+    try {
+      const result = await thread.run(prompt, {
+        onEvent: (evt) => {
+          events.push(evt);
+        },
+      });
+      return result;
+    } catch (err: any) {
+      const msg = String(err?.message ?? err);
+      const transient =
+        msg.includes("stream disconnected") ||
+        msg.includes("ECONNRESET") ||
+        msg.includes("ENETDOWN") ||
+        msg.includes("ETIMEDOUT");
+      if (!transient || attempt >= maxAttempts) {
+        throw err;
+      }
+      const backoffMs = 500 * attempt;
+      console.warn(
+        `[codex-probe] transient error (${msg}); retry ${attempt}/${maxAttempts} after ${backoffMs}ms`
+      );
+      await new Promise((r) => setTimeout(r, backoffMs));
+      events.length = 0; // reset event buffer for clean retry
+    }
+  }
+}
+
 async function runJob(record: IndexRecord) {
   const endpointDoc = readContent(record.content_path);
   const sharedFilters = supportingManifest.always.map(readContent).join("\n\n");
@@ -188,37 +224,7 @@ async function runJob(record: IndexRecord) {
       env.CODEX_CONFIG_PATH ?? join(repoRoot, "codex.config.toml")
     }`
   );
-  const maxAttempts = 3;
-  let attempt = 0;
-  let result: any;
-  while (true) {
-    attempt += 1;
-    try {
-      result = await thread.run(prompt, {
-        onEvent: (evt) => {
-          events.push(evt);
-        },
-      });
-      break;
-    } catch (err: any) {
-      const msg = String(err?.message ?? err);
-      const transient =
-        msg.includes("stream disconnected") ||
-        msg.includes("ECONNRESET") ||
-        msg.includes("ENETDOWN") ||
-        msg.includes("ETIMEDOUT");
-      if (!transient || attempt >= maxAttempts) {
-        throw err;
-      }
-      const backoffMs = 500 * attempt;
-      console.warn(
-        `[codex-probe] transient error (${msg}); retry ${attempt}/${maxAttempts} after ${backoffMs}ms`
-      );
-      await new Promise((r) => setTimeout(r, backoffMs));
-      // Clear events for a clean retry
-      events.length = 0;
-    }
-  }
+  const result = await runWithRetries(thread, prompt, events);
 
   const slug = record.relative_path.replace(/\//g, "__").replace(/\.md$/, "");
   const runDir = join(repoRoot, "runs", record.version, slug);
