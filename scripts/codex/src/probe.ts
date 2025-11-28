@@ -67,13 +67,16 @@ const args = process.argv.slice(2);
 const argContractIdx = args.findIndex((a) => a === "--contract");
 const argAll = args.includes("--all");
 const argConcurrencyIdx = args.findIndex((a) => a === "--concurrency");
+const argPass2 = args.includes("--pass2");
 const concurrency =
   argConcurrencyIdx !== -1 && args[argConcurrencyIdx + 1]
     ? Math.max(1, parseInt(args[argConcurrencyIdx + 1], 10))
     : 1;
 
 if (!argAll && argContractIdx === -1) {
-  console.error("Usage: pnpm probe -- --contract staging/docs/v2/...md | --all [--concurrency N]");
+  console.error(
+    "Usage: pnpm probe -- --contract staging/docs/v2/...md | --all [--concurrency N] [--pass2]"
+  );
   process.exit(1);
 }
 
@@ -90,7 +93,9 @@ type IndexRecord = {
 
 const indexPath = join(repoRoot, "staging", "docs", "index.jsonl");
 const supportingManifestPath = join(repoRoot, "staging", "docs", "supporting_manifest.json");
-const promptTemplatePath = join(repoRoot, "prompts", "endpoint_probe_prompt.md");
+const promptTemplatePath = argPass2
+  ? join(repoRoot, "prompts", "endpoint_probe_pass2.md")
+  : join(repoRoot, "prompts", "endpoint_probe_prompt.md");
 
 if (!existsSync(indexPath) || !existsSync(supportingManifestPath)) {
   console.error("[codex-probe] staging artifacts missing; run scripts/stage_docs.py first.");
@@ -108,6 +113,28 @@ function loadIndex(): IndexRecord[] {
     .split("\n")
     .filter(Boolean);
   return lines.map((line) => JSON.parse(line));
+}
+
+function loadPriorNotes(version: string, slug: string): string {
+  const baseDir = join(repoRoot, "runs", version, slug);
+  const summaryPath = join(baseDir, "summary.json");
+  const responsePath = join(baseDir, "response.txt");
+  const promptPath = join(baseDir, "prompt.txt");
+
+  const parts: string[] = [];
+  if (existsSync(promptPath)) {
+    parts.push("PRIOR_PROMPT:\n" + readFileSync(promptPath, "utf-8"));
+  }
+  if (existsSync(summaryPath)) {
+    parts.push("PRIOR_SUMMARY_JSON:\n" + readFileSync(summaryPath, "utf-8"));
+  } else if (existsSync(responsePath)) {
+    parts.push("PRIOR_RESPONSE_TXT:\n" + readFileSync(responsePath, "utf-8"));
+  }
+
+  if (parts.length === 0) {
+    return "NO_PRIOR_NOTES_AVAILABLE";
+  }
+  return parts.join("\n\n");
 }
 
 function getJobs(): IndexRecord[] {
@@ -195,14 +222,17 @@ async function runWithRetries(
 }
 
 async function runJob(record: IndexRecord) {
+  const slug = record.relative_path.replace(/\//g, "__").replace(/\.md$/, "");
   const endpointDoc = readContent(record.content_path);
   const sharedFilters = supportingManifest.always.map(readContent).join("\n\n");
+  const priorNotes = argPass2 ? loadPriorNotes(record.version, slug) : "";
 
   const prompt = fillTemplate({
     ENDPOINT_RELATIVE_PATH: record.relative_path,
     BASE_URL: env.USASPENDING_BASE_URL,
     ENDPOINT_DOC: endpointDoc,
     SHARED_FILTERS: sharedFilters,
+    PRIOR_NOTES: priorNotes,
   });
 
   const threadOptions = buildThreadOptionsFromConfig();
@@ -226,8 +256,9 @@ async function runJob(record: IndexRecord) {
   );
   const result = await runWithRetries(thread, prompt, events);
 
-  const slug = record.relative_path.replace(/\//g, "__").replace(/\.md$/, "");
-  const runDir = join(repoRoot, "runs", record.version, slug);
+  const runDir = argPass2
+    ? join(repoRoot, "runs", record.version, slug, "pass2")
+    : join(repoRoot, "runs", record.version, slug);
   mkdirSync(runDir, { recursive: true });
 
   writeFileSync(join(runDir, "prompt.txt"), prompt, "utf-8");
