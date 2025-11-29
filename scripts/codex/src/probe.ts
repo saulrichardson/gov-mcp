@@ -225,14 +225,11 @@ async function runJob(record: IndexRecord) {
   const slug = record.relative_path.replace(/\//g, "__").replace(/\.md$/, "");
   const endpointDoc = readContent(record.content_path);
   const sharedFilters = supportingManifest.always.map(readContent).join("\n\n");
-  const priorNotes = argPass2 ? loadPriorNotes(record.version, slug) : "";
-
   const prompt = fillTemplate({
     ENDPOINT_RELATIVE_PATH: record.relative_path,
     BASE_URL: env.USASPENDING_BASE_URL,
     ENDPOINT_DOC: endpointDoc,
     SHARED_FILTERS: sharedFilters,
-    PRIOR_NOTES: priorNotes,
   });
 
   const threadOptions = buildThreadOptionsFromConfig();
