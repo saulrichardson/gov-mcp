@@ -8,7 +8,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "probe": "tsx src/probe.ts"
+    "probe": "tsx src/probe.ts",
+    "reconcile": "tsx src/reconcile.ts"
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",
