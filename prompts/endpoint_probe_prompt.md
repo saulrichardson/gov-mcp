@@ -44,7 +44,7 @@ Ingest the provided USAspending endpoint contract plus the shared filter spec. T
   * Reusable filter definitions and field structures.
   * Treat these as part of the contract whenever referenced.
 
-You MAY call the live API at `{{BASE_URL}}` using the methods/paths in the contract. Capture every request and response you send/receive. Do not attempt to read any files; rely only on the inlined docs above and live responses.
+You MAY call the live API at `{{BASE_URL}}` using the methods/paths in the contract. For every probe you run, record the request/response (status + trimmed body) in the `probes` array of your JSON report. Do not attempt to read any files; rely only on the inlined docs above and live responses.
 
 ---
 
