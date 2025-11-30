@@ -108,6 +108,32 @@ const supportingManifest = JSON.parse(readFileSync(supportingManifestPath, "utf-
   always: string[];
 };
 
+function loadPass1Artifacts(version: string, slug: string) {
+  const baseDir = join(repoRoot, "runs", version, slug);
+  const summaryPath = join(baseDir, "summary.json");
+  const responsePath = join(baseDir, "response.txt");
+
+  let summaryText = "NO_PASS1_SUMMARY_AVAILABLE";
+  let probesText = "[]";
+
+  if (existsSync(summaryPath)) {
+    const raw = readFileSync(summaryPath, "utf-8");
+    summaryText = raw;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed?.probes) {
+        probesText = JSON.stringify(parsed.probes, null, 2);
+      }
+    } catch {
+      // fall through, keep defaults
+    }
+  } else if (existsSync(responsePath)) {
+    summaryText = "NO_PASS1_SUMMARY_JSON; RAW_RESPONSE_FOLLOWS\n" + readFileSync(responsePath, "utf-8");
+  }
+
+  return { summaryText, probesText };
+}
+
 function loadIndex(): IndexRecord[] {
   const lines = readFileSync(indexPath, "utf-8")
     .split("\n")
@@ -225,11 +251,14 @@ async function runJob(record: IndexRecord) {
   const slug = record.relative_path.replace(/\//g, "__").replace(/\.md$/, "");
   const endpointDoc = readContent(record.content_path);
   const sharedFilters = supportingManifest.always.map(readContent).join("\n\n");
+  const pass1 = loadPass1Artifacts(record.version, slug);
   const prompt = fillTemplate({
     ENDPOINT_RELATIVE_PATH: record.relative_path,
     BASE_URL: env.USASPENDING_BASE_URL,
     ENDPOINT_DOC: endpointDoc,
     SHARED_FILTERS: sharedFilters,
+    PASS1_SUMMARY_JSON: pass1.summaryText,
+    PASS1_PROBES: pass1.probesText,
   });
 
   const threadOptions = buildThreadOptionsFromConfig();
