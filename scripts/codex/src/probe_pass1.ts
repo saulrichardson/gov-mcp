@@ -3,8 +3,8 @@ import { dirname, join, relative } from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { z } from "zod";
-import toml from "@iarna/toml";
 import { Codex } from "@openai/codex-sdk";
+import toml from "@iarna/toml";
 
 // Resolve repo root
 const __filename = fileURLToPath(import.meta.url);
@@ -24,7 +24,7 @@ const envSchema = z.object({
 const env = (() => {
   const parsed = envSchema.safeParse(process.env);
   if (!parsed.success) {
-    console.error("[codex-reconcile] missing env:", parsed.error.flatten().fieldErrors);
+    console.error("[codex-probe1] missing env:", parsed.error.flatten().fieldErrors);
     process.exit(1);
   }
   return parsed.data;
@@ -41,7 +41,7 @@ function loadCodexConfig(): Record<string, any> | undefined {
     const parsed = toml.parse(readFileSync(configPath, "utf-8"));
     return parsed as Record<string, any>;
   } catch (err) {
-    console.error("[codex-reconcile] failed to parse codex config:", err);
+    console.error("[codex-probe1] failed to parse codex config:", err);
     process.exit(1);
   }
 }
@@ -74,7 +74,7 @@ const concurrency =
 
 if (!argAll && argContractIdx === -1) {
   console.error(
-    "Usage: pnpm reconcile -- --contract staging/docs/v2/...md | --all [--concurrency N]"
+    "Usage: pnpm probe1 -- --contract staging/docs/v2/...md | --all [--concurrency N]"
   );
   process.exit(1);
 }
@@ -92,14 +92,10 @@ type IndexRecord = {
 
 const indexPath = join(repoRoot, "staging", "docs", "index.jsonl");
 const supportingManifestPath = join(repoRoot, "staging", "docs", "supporting_manifest.json");
-const promptTemplatePath = join(repoRoot, "prompts", "final_pass.md");
+const promptTemplatePath = join(repoRoot, "prompts", "endpoint_probe_prompt.md");
 
 if (!existsSync(indexPath) || !existsSync(supportingManifestPath)) {
-  console.error("[codex-reconcile] staging artifacts missing; run scripts/stage_docs.py first.");
-  process.exit(1);
-}
-if (!existsSync(promptTemplatePath)) {
-  console.error("[codex-reconcile] prompt template missing:", promptTemplatePath);
+  console.error("[codex-probe1] staging artifacts missing; run scripts/stage_docs.py first.");
   process.exit(1);
 }
 
@@ -114,37 +110,6 @@ function loadIndex(): IndexRecord[] {
     .split("\n")
     .filter(Boolean);
   return lines.map((line) => JSON.parse(line));
-}
-
-function readMaybe(path: string): string | null {
-  return existsSync(path) ? readFileSync(path, "utf-8") : null;
-}
-
-function loadPassArtifacts(version: string, slug: string, passDir: string) {
-  const baseDir = join(repoRoot, "runs", version, slug, passDir);
-  const summaryPath = join(baseDir, "summary.json");
-  const responsePath = join(baseDir, "response.txt");
-
-  const summary = readMaybe(summaryPath);
-  const response = readMaybe(responsePath);
-
-  let probes = "[]";
-  if (summary) {
-    try {
-      const parsed = JSON.parse(summary);
-      if (parsed?.probes) {
-        probes = JSON.stringify(parsed.probes, null, 2);
-      }
-    } catch {
-      // ignore parse failure; keep probes as default
-    }
-  }
-
-  return {
-    summaryText: summary ?? "NO_SUMMARY_AVAILABLE",
-    responseText: response ?? "NO_RESPONSE_AVAILABLE",
-    probesText: probes,
-  };
 }
 
 function getJobs(): IndexRecord[] {
@@ -165,7 +130,7 @@ function getJobs(): IndexRecord[] {
     ? normalized.replace("staging/docs/v2/", "usaspending-api/usaspending_api/api_contracts/contracts/v2/")
     : normalized;
 
-  const match = index.find((r) => {
+  const match = loadIndex().find((r) => {
     return (
       r.relative_path === contractArg ||
       r.staged_path === normalized ||
@@ -176,7 +141,7 @@ function getJobs(): IndexRecord[] {
     );
   });
   if (!match) {
-    console.error(`[codex-reconcile] contract not found in index: ${contractArg}`);
+    console.error(`[codex-probe1] contract not found in index: ${contractArg}`);
     process.exit(1);
   }
   return [match];
@@ -195,40 +160,16 @@ function readContent(relPath: string): string {
   return readFileSync(full, "utf-8");
 }
 
-function splitProfileAndPrompt(text: string) {
-  const fenceJson = text.match(/```json\s*([\s\S]*?)```/);
-  const fenceMd = text.match(/```md\s*([\s\S]*?)```/);
-  if (fenceJson && fenceMd) {
-    return { profileText: fenceJson[1].trim(), promptText: fenceMd[1].trim() };
-  }
-  const firstBrace = text.indexOf("{");
-  const lastBrace = text.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-    const profileText = text.slice(firstBrace, lastBrace + 1);
-    const promptText = text.slice(lastBrace + 1).trim();
-    return { profileText: profileText.trim(), promptText };
-  }
-  return { profileText: text.trim(), promptText: "" };
-}
-
 async function runJob(record: IndexRecord) {
   const slug = record.relative_path.replace(/\//g, "__").replace(/\.md$/, "");
   const endpointDoc = readContent(record.content_path);
   const sharedFilters = supportingManifest.always.map(readContent).join("\n\n");
-
-  const pass1 = loadPassArtifacts(record.version, slug, "");
-  const pass2 = loadPassArtifacts(record.version, slug, "pass2");
 
   const prompt = fillTemplate({
     ENDPOINT_RELATIVE_PATH: record.relative_path,
     BASE_URL: env.USASPENDING_BASE_URL,
     ENDPOINT_DOC: endpointDoc,
     SHARED_FILTERS: sharedFilters,
-    PASS1_SUMMARY: pass1.summaryText,
-    PASS1_PROBES: pass1.probesText,
-    PASS2_SUMMARY_JSON: pass2.summaryText,
-    PASS2_PROBES: pass2.probesText,
-    TAGS: "",
   });
 
   const threadOptions = buildThreadOptionsFromConfig();
@@ -246,17 +187,19 @@ async function runJob(record: IndexRecord) {
   const thread = codex.startThread(threadOptions);
   const events: any[] = [];
   console.log(
-    `[codex-reconcile] model=${codexModel ?? "default"} config_path=${
+    `[codex-probe1] model=${codexModel ?? "default"} config_path=${
       env.CODEX_CONFIG_PATH ?? join(repoRoot, "codex.config.toml")
     }`
   );
-
   const result = await thread.run(prompt, {
-    onEvent: (evt) => events.push(evt),
+    onEvent: (evt) => {
+      events.push(evt);
+    },
   });
 
-  const runDir = join(repoRoot, "runs", record.version, slug, "final");
+  const runDir = join(repoRoot, "runs", record.version, slug);
   mkdirSync(runDir, { recursive: true });
+
   writeFileSync(join(runDir, "prompt.txt"), prompt, "utf-8");
 
   const finalText = (result as any)?.finalResponse ?? String(result);
@@ -280,19 +223,12 @@ async function runJob(record: IndexRecord) {
     );
   }
 
-  const { profileText, promptText } = splitProfileAndPrompt(finalText);
-  let parsedOk = false;
   try {
-    const parsed = JSON.parse(profileText);
-    writeFileSync(join(runDir, "profile.json"), JSON.stringify(parsed, null, 2), "utf-8");
-    parsedOk = true;
+    const parsed = JSON.parse(finalText);
+    writeFileSync(join(runDir, "summary.json"), JSON.stringify(parsed, null, 2), "utf-8");
+    console.log(`[codex-probe1] ✅ ${record.relative_path} -> ${relative(repoRoot, runDir)}/summary.json`);
   } catch {
-    console.warn(`[codex-reconcile] ⚠️ could not parse profile.json for ${slug}; saved raw response.txt`);
-  }
-  writeFileSync(join(runDir, "prompt.md"), promptText || "", "utf-8");
-
-  if (parsedOk) {
-    console.log(`[codex-reconcile] ✅ ${record.relative_path} -> ${relative(repoRoot, runDir)}/profile.json`);
+    console.warn(`[codex-probe1] ⚠️ ${record.relative_path} response not JSON; saved response.txt`);
   }
 }
 
@@ -305,11 +241,11 @@ async function main() {
     while (queue.length) {
       const job = queue.shift();
       if (!job) break;
-      console.log(`[codex-reconcile][w${id}] running ${job.relative_path}`);
+      console.log(`[codex-probe1][w${id}] running ${job.relative_path}`);
       try {
         await runJob(job);
       } catch (err) {
-        console.error(`[codex-reconcile][w${id}] failed ${job.relative_path}:`, err);
+        console.error(`[codex-probe1][w${id}] failed ${job.relative_path}:`, err);
       }
     }
   }

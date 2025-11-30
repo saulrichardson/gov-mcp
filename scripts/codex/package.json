@@ -8,7 +8,9 @@
     "node": ">=18"
   },
   "scripts": {
-    "probe": "tsx src/probe.ts",
+    "probe": "tsx src/probe_pass1.ts",
+    "probe1": "tsx src/probe_pass1.ts",
+    "probe2": "tsx src/probe_pass2.ts",
     "reconcile": "tsx src/reconcile.ts"
   },
   "dependencies": {
