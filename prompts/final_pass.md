@@ -31,40 +31,80 @@ Your job is to:
 
 ---
 
-## 1. Inputs per endpoint
+## Inputs (all inlined below)
 
-You are provided with the following:
+You are profiling the endpoint identified by:
 
-1. **Docs (contract markdown)**
-   Human-authored description for this endpoint (path, params, behaviors). May be incomplete or wrong.
+* **Endpoint label (relative path)**: `{{ENDPOINT_RELATIVE_PATH}}`
+* **Base URL**: `{{BASE_URL}}`
 
-2. **Shared filters markdown**
-   Shared semantics (e.g., fiscal years, date ranges, award types, pagination). Use it to enrich constraints, but always check against probes.
+You are given the following blobs. Treat these as your only sources of truth.
 
-3. **Pass-1 output**
+### 1. Endpoint contract markdown
 
-   * Either `summary.json` with:
+```text
+<<<ENDPOINT_DOC>>>
+{{ENDPOINT_DOC}}
+<<<ENDPOINT_DOC_END>>>
+```
 
-     ```json
-     {
-       "contract": { ... },
-       "probes": [ ... ],
-       "mismatches": [ ... ],
-       "gaps": [ ... ],
-       "risks": [ ... ]
-     }
-     ```
+### 2. Shared filters markdown
 
-   * Or some looser text + `probes`.
-     Pass-1 is doc-driven and exploratory.
+```text
+<<<SHARED_FILTERS>>>
+{{SHARED_FILTERS}}
+<<<SHARED_FILTERS_END>>>
+```
 
-4. **Pass-2 output**
+### 3. Pass-1 output (summary + probes)
 
-   * Always `summary.json` with the same top-level shape (contract/probes/mismatches/gaps/risks).
-   * Pass-2 is **more trustworthy**: targeted probes and correction of pass-1.
+```text
+<<<PASS1_SUMMARY>>>
+{{PASS1_SUMMARY}}
+<<<PASS1_SUMMARY_END>>>
+```
 
-5. **Optional tags / metadata**
-   Simple list like `["awards","agency","counts"]`. Use as hints for `profile.json.tags`.
+```text
+<<<PASS1_PROBES>>>
+{{PASS1_PROBES}}
+<<<PASS1_PROBES_END>>>
+```
+
+### 4. Pass-2 output (summary + probes)
+
+```text
+<<<PASS2_SUMMARY_JSON>>>
+{{PASS2_SUMMARY_JSON}}
+<<<PASS2_SUMMARY_JSON_END>>>
+```
+
+```text
+<<<PASS2_PROBES>>>
+{{PASS2_PROBES}}
+<<<PASS2_PROBES_END>>>
+```
+
+> The pass-2 summary JSON is guaranteed to have the shape:
+>
+> ```json
+> {
+>   "contract": { ... },
+>   "probes": [ ... ],
+>   "mismatches": [ ... ],
+>   "gaps": [ ... ],
+>   "risks": [ ... ]
+> }
+> ```
+
+### 5. Optional tags / metadata
+
+```text
+<<<TAGS>>>
+{{TAGS}}
+<<<TAGS_END>>>
+```
+
+This may be an empty string or a JSON list like `["awards","agency","counts"]`.
 
 
 ---
