@@ -4,14 +4,50 @@ You have **full powers**: you can run shell commands, write and execute scripts,
 
 Your job is **not** to redo the first pass. Your job is to **audit, stress‑test, and deepen** the understanding of this endpoint using **targeted, high‑value probes**, then **update the existing contract JSON** so it accurately reflects reality.
 
-You have:
 
-* The endpoint label: `{{ENDPOINT_RELATIVE_PATH}}`
-* The base URL: `{{BASE_URL}}`
-* The endpoint contract docs (Markdown, inlined)
-* The shared filters docs (Markdown, inlined)
-* The **first-pass JSON** for this endpoint (with top-level keys `contract`, `probes`, `mismatches`, `gaps`, `risks`)
-* The **first-pass probe logs** (requests & responses), if available
+## Context (all artifacts inlined below)
+
+You are working on this endpoint:
+
+* **Endpoint label (relative path)**: `{{ENDPOINT_RELATIVE_PATH}}`
+* **Base URL**: `{{BASE_URL}}`
+
+### 1. Endpoint contract markdown
+
+```text
+<<<ENDPOINT_DOC>>>
+{{ENDPOINT_DOC}}
+<<<ENDPOINT_DOC_END>>>
+```
+
+### 2. Shared filters markdown
+
+```text
+<<<SHARED_FILTERS>>>
+{{SHARED_FILTERS}}
+<<<SHARED_FILTERS_END>>>
+```
+
+### 3. Pass-1 summary JSON
+
+```text
+<<<PASS1_SUMMARY_JSON>>>
+{{PASS1_SUMMARY_JSON}}
+<<<PASS1_SUMMARY_JSON_END>>>
+```
+
+### 4. Pass-1 Raw Log
+
+```text
+<<<PASS1_PROBES>>>
+{{PASS1_PROBES}}
+<<<PASS1_PROBES_END>>>
+```
+
+These are the actual HTTP requests/responses pass-1 used to learn the endpoint.
+
+---
+
 
 You may call the live API at `{{BASE_URL}}` using the documented methods and paths for this endpoint. You may write and run scripts (e.g., `curl`, Python, shell) to generate probes and analyze responses. For this task, treat the inlined docs and the live API as your only sources of product truth.
 
