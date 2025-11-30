@@ -253,15 +253,10 @@ async function runJob(record: IndexRecord) {
   if (existsSync(summaryPath)) {
     console.log(`[codex-probe2] ✅ ${record.relative_path} -> ${relative(repoRoot, summaryPath)}`);
   } else {
-    try {
-      const parsed = JSON.parse(finalText);
-      writeFileSync(summaryPath, JSON.stringify(parsed, null, 2), "utf-8");
-      console.log(`[codex-probe2] ✅ ${record.relative_path} -> ${relative(repoRoot, summaryPath)}`);
-    } catch {
-      console.warn(
-        `[codex-probe2] ⚠️ ${record.relative_path} summary.json missing and response not JSON; saved response.txt`
-      );
-    }
+    console.error(
+      `[codex-probe2] ❌ ${record.relative_path} expected ${summaryPath} but it was not created. See response.txt.`
+    );
+    process.exit(1);
   }
 }
 

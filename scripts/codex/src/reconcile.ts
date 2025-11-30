@@ -286,20 +286,6 @@ async function runJob(record: IndexRecord) {
 
   let parsedOk = false;
   if (existsSync(profilePath) && existsSync(promptPath)) {
-    parsedOk = true;
-  } else {
-    const { profileText, promptText } = splitProfileAndPrompt(finalText);
-    try {
-      const parsed = JSON.parse(profileText);
-      writeFileSync(profilePath, JSON.stringify(parsed, null, 2), "utf-8");
-      parsedOk = true;
-    } catch {
-      console.warn(`[codex-reconcile] ⚠️ could not parse profile.json for ${slug}; saved raw response.txt`);
-    }
-    writeFileSync(promptPath, promptText || "", "utf-8");
-  }
-
-  if (parsedOk) {
     console.log(
       `[codex-reconcile] ✅ ${record.relative_path} -> ${relative(repoRoot, profilePath)}, ${relative(
         repoRoot,
@@ -307,9 +293,10 @@ async function runJob(record: IndexRecord) {
       )}`
     );
   } else {
-    console.warn(
-      `[codex-reconcile] ⚠️ missing profile/prompt for ${record.relative_path}; see response.txt for details`
+    console.error(
+      `[codex-reconcile] ❌ expected profile at ${profilePath} and prompt at ${promptPath}; see response.txt`
     );
+    process.exit(1);
   }
 }
 
