@@ -192,6 +192,9 @@ async function runJob(record: IndexRecord) {
   const endpointDoc = readContent(record.content_path);
   const sharedFilters = supportingManifest.always.map(readContent).join("\n\n");
   const pass1 = loadPass1Artifacts(record.version, slug);
+  const runDir = join(repoRoot, "runs", record.version, slug, "pass2");
+  const summaryPath = join(runDir, "summary.json");
+  mkdirSync(runDir, { recursive: true });
 
   const prompt = fillTemplate({
     ENDPOINT_RELATIVE_PATH: record.relative_path,
@@ -200,6 +203,7 @@ async function runJob(record: IndexRecord) {
     SHARED_FILTERS: sharedFilters,
     PASS1_SUMMARY_JSON: pass1.summaryText,
     PASS1_PROBES: pass1.probesText,
+    OUTPUT_SUMMARY_PATH: summaryPath,
   });
 
   const threadOptions = buildThreadOptionsFromConfig();
@@ -222,9 +226,6 @@ async function runJob(record: IndexRecord) {
     }`
   );
   const result = await runWithRetries(thread, prompt, events);
-
-  const runDir = join(repoRoot, "runs", record.version, slug, "pass2");
-  mkdirSync(runDir, { recursive: true });
 
   writeFileSync(join(runDir, "prompt.txt"), prompt, "utf-8");
 
@@ -249,12 +250,18 @@ async function runJob(record: IndexRecord) {
     );
   }
 
-  try {
-    const parsed = JSON.parse(finalText);
-    writeFileSync(join(runDir, "summary.json"), JSON.stringify(parsed, null, 2), "utf-8");
-    console.log(`[codex-probe2] ✅ ${record.relative_path} -> ${relative(repoRoot, runDir)}/summary.json`);
-  } catch {
-    console.warn(`[codex-probe2] ⚠️ ${record.relative_path} response not JSON; saved response.txt`);
+  if (existsSync(summaryPath)) {
+    console.log(`[codex-probe2] ✅ ${record.relative_path} -> ${relative(repoRoot, summaryPath)}`);
+  } else {
+    try {
+      const parsed = JSON.parse(finalText);
+      writeFileSync(summaryPath, JSON.stringify(parsed, null, 2), "utf-8");
+      console.log(`[codex-probe2] ✅ ${record.relative_path} -> ${relative(repoRoot, summaryPath)}`);
+    } catch {
+      console.warn(
+        `[codex-probe2] ⚠️ ${record.relative_path} summary.json missing and response not JSON; saved response.txt`
+      );
+    }
   }
 }
 

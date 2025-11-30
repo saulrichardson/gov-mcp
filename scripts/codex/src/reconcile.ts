@@ -220,6 +220,11 @@ async function runJob(record: IndexRecord) {
   const pass1 = loadPassArtifacts(record.version, slug, "");
   const pass2 = loadPassArtifacts(record.version, slug, "pass2");
 
+  const runDir = join(repoRoot, "runs", record.version, slug, "final");
+  const profilePath = join(runDir, "profile.json");
+  const promptPath = join(runDir, "prompt.md");
+  mkdirSync(runDir, { recursive: true });
+
   const prompt = fillTemplate({
     ENDPOINT_RELATIVE_PATH: record.relative_path,
     BASE_URL: env.USASPENDING_BASE_URL,
@@ -230,6 +235,8 @@ async function runJob(record: IndexRecord) {
     PASS2_SUMMARY_JSON: pass2.summaryText,
     PASS2_PROBES: pass2.probesText,
     TAGS: "",
+    PROFILE_PATH: profilePath,
+    PROMPT_PATH: promptPath,
   });
 
   const threadOptions = buildThreadOptionsFromConfig();
@@ -254,8 +261,6 @@ async function runJob(record: IndexRecord) {
 
   const result = await runWithRetries(thread, prompt, events);
 
-  const runDir = join(repoRoot, "runs", record.version, slug, "final");
-  mkdirSync(runDir, { recursive: true });
   writeFileSync(join(runDir, "prompt.txt"), prompt, "utf-8");
 
   const finalText = (result as any)?.finalResponse ?? String(result);
@@ -279,19 +284,32 @@ async function runJob(record: IndexRecord) {
     );
   }
 
-  const { profileText, promptText } = splitProfileAndPrompt(finalText);
   let parsedOk = false;
-  try {
-    const parsed = JSON.parse(profileText);
-    writeFileSync(join(runDir, "profile.json"), JSON.stringify(parsed, null, 2), "utf-8");
+  if (existsSync(profilePath) && existsSync(promptPath)) {
     parsedOk = true;
-  } catch {
-    console.warn(`[codex-reconcile] ⚠️ could not parse profile.json for ${slug}; saved raw response.txt`);
+  } else {
+    const { profileText, promptText } = splitProfileAndPrompt(finalText);
+    try {
+      const parsed = JSON.parse(profileText);
+      writeFileSync(profilePath, JSON.stringify(parsed, null, 2), "utf-8");
+      parsedOk = true;
+    } catch {
+      console.warn(`[codex-reconcile] ⚠️ could not parse profile.json for ${slug}; saved raw response.txt`);
+    }
+    writeFileSync(promptPath, promptText || "", "utf-8");
   }
-  writeFileSync(join(runDir, "prompt.md"), promptText || "", "utf-8");
 
   if (parsedOk) {
-    console.log(`[codex-reconcile] ✅ ${record.relative_path} -> ${relative(repoRoot, runDir)}/profile.json`);
+    console.log(
+      `[codex-reconcile] ✅ ${record.relative_path} -> ${relative(repoRoot, profilePath)}, ${relative(
+        repoRoot,
+        promptPath
+      )}`
+    );
+  } else {
+    console.warn(
+      `[codex-reconcile] ⚠️ missing profile/prompt for ${record.relative_path}; see response.txt for details`
+    );
   }
 }
 

@@ -51,19 +51,14 @@ These are the actual HTTP requests/responses pass-1 used to learn the endpoint.
 
 You may call the live API at `{{BASE_URL}}` using the documented methods and paths for this endpoint. You may write and run scripts (e.g., `curl`, Python, shell) to generate probes and analyze responses. For this task, treat the inlined docs and the live API as your only sources of product truth.
 
-Your output is a **single JSON object** with this exact top-level shape:
+Write your final JSON report to the file:
 
-```json
-{
-  "contract": { ... },
-  "probes": [ ... ],
-  "mismatches": [ ... ],
-  "gaps": [ ... ],
-  "risks": [ ... ]
-}
-```
+`{{OUTPUT_SUMMARY_PATH}}`
 
-You may change anything inside these sections, but **must not add or remove top-level keys**. No markdown, no commentary outside the JSON.
+The file must contain exactly one JSON object with top-level keys:
+`contract`, `probes`, `mismatches`, `gaps`, `risks`.
+
+Do **not** print the JSON in chat. When the file is written successfully, simply print: `DONE`.
 
 ---
 

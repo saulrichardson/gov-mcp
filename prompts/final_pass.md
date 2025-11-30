@@ -551,22 +551,12 @@ Host: api.usaspending.gov
 
 ## 5. Final output format
 
-When you respond for a given endpoint, your answer must contain **two parts**, in this order:
+Write your outputs to files (do not print their contents in chat):
 
-1. `profile.json` – a single valid JSON object.
-2. `prompt.md` – markdown text.
+- `profile.json` → `{{PROFILE_PATH}}`
+- `prompt.md`   → `{{PROMPT_PATH}}`
 
-If your environment requires clear separation, you may wrap each in a code fence, e.g.:
-
-```json
-{ ...profile.json... }
-````
-
-```md
-...prompt.md...
-```
-
-Do **not** include any commentary or explanation outside these two artifacts.
+`profile.json` must obey the schema above. `prompt.md` should be consistent with `profile.json` and contain the semantic guide. After writing both files, print `DONE`.
 
 ---
 
