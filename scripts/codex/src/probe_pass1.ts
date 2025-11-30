@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { z } from "zod";
 import { Codex } from "@openai/codex-sdk";
 import toml from "@iarna/toml";
+import { runWithRetries } from "./lib/runWithRetries";
 
 // Resolve repo root
 const __filename = fileURLToPath(import.meta.url);
@@ -191,11 +192,7 @@ async function runJob(record: IndexRecord) {
       env.CODEX_CONFIG_PATH ?? join(repoRoot, "codex.config.toml")
     }`
   );
-  const result = await thread.run(prompt, {
-    onEvent: (evt) => {
-      events.push(evt);
-    },
-  });
+  const result = await runWithRetries(thread, prompt, events);
 
   const runDir = join(repoRoot, "runs", record.version, slug);
   mkdirSync(runDir, { recursive: true });
