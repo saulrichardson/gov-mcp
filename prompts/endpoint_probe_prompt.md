@@ -71,6 +71,65 @@ The file must contain exactly one JSON object with top-level keys:
 
 Do **not** print the JSON in chat. When the file is written successfully, print only: `DONE`.
 
+## Required JSON shape (example)
+
+```json
+{
+  "contract": {
+    "name": "{{ENDPOINT_RELATIVE_PATH}}",
+    "endpoint": { "method": "GET|POST|PUT|PATCH|DELETE", "host": "{{BASE_URL}}", "path": "/api/v2/..." },
+    "description": "brief purpose from docs/observations",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "<field>": {
+          "location": "query|path|body",
+          "type": "string|number|array|object|boolean|null",
+          "description": "doc + observed",
+          "constraints": "min/max/pattern/enum if any"
+        }
+      },
+      "required": ["..."]
+    },
+    "outputSchema": {
+      "type": "object|array|mixed",
+      "properties": {
+        "<field>": {
+          "type": "string|number|array|object|boolean|null",
+          "description": "observed shape"
+        }
+      },
+      "required": ["..."]
+    },
+    "examples": [
+      {
+        "request": { "method": "GET|POST", "path": "/api/v2/...", "query": { }, "body": { } },
+        "response": { "status": 200, "body": { "...": "trimmed" } }
+      }
+    ],
+    "quirks": [
+      "doc vs reality mismatches, nullability surprises, pagination quirks, defaults, deprecations"
+    ]
+  },
+  "probes": [
+    {
+      "request": { "method": "GET|POST", "path": "/api/v2/...", "query": { }, "body": { } },
+      "response": { "status": 200, "bodyExcerpt": "{...}", "contentType": "application/json" },
+      "notes": "pass|fail and key observations"
+    }
+  ],
+  "mismatches": [
+    "doc claims that differed from observed responses"
+  ],
+  "gaps": [
+    "unknowns not resolved by probes"
+  ],
+  "risks": [
+    "edge cases, rate limits, pagination, auth, size limits, unstable fields"
+  ]
+}
+```
+
 ---
 
 ## Allowed actions and constraints
