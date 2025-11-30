@@ -166,11 +166,16 @@ async function runJob(record: IndexRecord) {
   const endpointDoc = readContent(record.content_path);
   const sharedFilters = supportingManifest.always.map(readContent).join("\n\n");
 
+  const runDir = join(repoRoot, "runs", record.version, slug);
+  const summaryPath = join(runDir, "summary.json");
+  mkdirSync(runDir, { recursive: true });
+
   const prompt = fillTemplate({
     ENDPOINT_RELATIVE_PATH: record.relative_path,
     BASE_URL: env.USASPENDING_BASE_URL,
     ENDPOINT_DOC: endpointDoc,
     SHARED_FILTERS: sharedFilters,
+    OUTPUT_SUMMARY_PATH: summaryPath,
   });
 
   const threadOptions = buildThreadOptionsFromConfig();
@@ -193,9 +198,6 @@ async function runJob(record: IndexRecord) {
     }`
   );
   const result = await runWithRetries(thread, prompt, events);
-
-  const runDir = join(repoRoot, "runs", record.version, slug);
-  mkdirSync(runDir, { recursive: true });
 
   writeFileSync(join(runDir, "prompt.txt"), prompt, "utf-8");
 
@@ -220,12 +222,13 @@ async function runJob(record: IndexRecord) {
     );
   }
 
-  try {
-    const parsed = JSON.parse(finalText);
-    writeFileSync(join(runDir, "summary.json"), JSON.stringify(parsed, null, 2), "utf-8");
-    console.log(`[codex-probe1] ✅ ${record.relative_path} -> ${relative(repoRoot, runDir)}/summary.json`);
-  } catch {
-    console.warn(`[codex-probe1] ⚠️ ${record.relative_path} response not JSON; saved response.txt`);
+  if (existsSync(summaryPath)) {
+    console.log(`[codex-probe1] ✅ ${record.relative_path} -> ${relative(repoRoot, summaryPath)}`);
+  } else {
+    console.error(
+      `[codex-probe1] ❌ ${record.relative_path} expected ${summaryPath} but it was not created. See response.txt.`
+    );
+    process.exit(1);
   }
 }
 

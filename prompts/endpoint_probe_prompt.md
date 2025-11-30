@@ -62,7 +62,14 @@ Treat the docs as a **hypothesis** and the live API as the **source of truth**. 
   * The complete shape and semantics of the response, including pagination and edge cases.
   * Defaults, constraints, nullability, and doc vs reality mismatches.
 
-Your final JSON must reflect an **observed, reconciled contract**: a clear, practical description of how to call this endpoint safely and correctly.
+Write your final JSON report to the file:
+
+`{{OUTPUT_SUMMARY_PATH}}`
+
+The file must contain exactly one JSON object with top-level keys:
+`contract`, `probes`, `mismatches`, `gaps`, `risks`.
+
+Do **not** print the JSON in chat. When the file is written successfully, print only: `DONE`.
 
 ---
 
@@ -453,68 +460,9 @@ If any of these lists are empty, include them as `[]` but keep the keys.
 
 ## Final Output Format (STRICT)
 
-Your final response MUST be a single JSON object with this exact top-level shape and keys (no extras):
+You must write exactly one JSON object with top-level keys
+`contract`, `probes`, `mismatches`, `gaps`, `risks` to `{{OUTPUT_SUMMARY_PATH}}`.
 
-```json
-{
-  "contract": {
-    "name": "{{ENDPOINT_RELATIVE_PATH}}",
-    "endpoint": { "method": "GET|POST|PUT|PATCH|DELETE", "host": "{{BASE_URL}}", "path": "/api/v2/..." },
-    "description": "brief purpose from docs/observations",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "<field>": {
-          "location": "query|path|body",
-          "type": "string|number|array|object|boolean|null",
-          "description": "doc + observed",
-          "constraints": "min/max/pattern/enum if any"
-        }
-      },
-      "required": ["..."]
-    },
-    "outputSchema": {
-      "type": "object|array|mixed",
-      "properties": {
-        "<field>": {
-          "type": "string|number|array|object|boolean|null",
-          "description": "observed shape"
-        }
-      },
-      "required": ["..."]
-    },
-    "examples": [
-      {
-        "request": { "method": "GET|POST", "path": "/api/v2/...", "query": { }, "body": { } },
-        "response": { "status": 200, "body": { "...": "trimmed" } }
-      }
-    ],
-    "quirks": [
-      "doc vs reality mismatches, nullability surprises, pagination quirks, defaults, deprecations"
-    ]
-  },
-  "probes": [
-    {
-      "request": { "method": "GET|POST", "path": "/api/v2/...", "query": { }, "body": { } },
-      "response": { "status": 200, "bodyExcerpt": "{...}", "contentType": "application/json" },
-      "notes": "pass|fail and key observations"
-    }
-  ],
-  "mismatches": [
-    "doc claims that differed from observed responses"
-  ],
-  "gaps": [
-    "unknowns not resolved by probes"
-  ],
-  "risks": [
-    "edge cases, rate limits, pagination, auth, size limits, unstable fields"
-  ]
-}
-```
+Do not add or remove top-level keys. No markdown, no code fences, no commentary in chat.
 
-**Rules for your own response:**
-
-* Return **JSON only** — no markdown, no prose, no code fences.
-* Do **not** add or remove top-level keys.
-* Inside each section, you may add or remove items in arrays/objects as appropriate, but do not invent new key names outside those defined above.
-* Ensure the JSON is syntactically valid (no comments, no trailing commas).
+When the file is successfully written, print only: `DONE`.
