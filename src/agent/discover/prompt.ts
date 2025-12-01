@@ -1,4 +1,4 @@
-Ingest the provided USAspending endpoint contract plus the shared filter spec. Then **exhaustively learn the endpoint** by running a **rich, systematic suite of live probes** against the API and reconciling docs vs reality. Your goal is to understand **every parameter, behavior, and output field** as fully as possible. Return one **JSON-only** report with your findings, contract, and probe evidence.
+export const discoverPrompt = `Ingest the provided USAspending endpoint contract plus the shared filter spec. Then **exhaustively learn the endpoint** by running a **rich, systematic suite of live probes** against the API and reconciling docs vs reality. Your goal is to understand **every parameter, behavior, and output field** as fully as possible. Return one **JSON-only** report with your findings, contract, and probe evidence.
 
 ---
 
@@ -7,24 +7,24 @@ Ingest the provided USAspending endpoint contract plus the shared filter spec. T
 (All doc content is inlined; do NOT read from disk or fetch anything except calling the live API host.)
 
 * **Endpoint name (label only):**
-  `{{ENDPOINT_RELATIVE_PATH}}`
+  \`{{ENDPOINT_RELATIVE_PATH}}\`
 
-  * Human-readable label only (e.g., `/api/v2/awards/`).
-  * Use this exact value as `"contract.name"` in the final JSON.
+  * Human-readable label only (e.g., \`/api/v2/awards/\`).
+  * Use this exact value as \`"contract.name"\` in the final JSON.
 
 * **Base URL (for live calls):**
-  `{{BASE_URL}}`
+  \`{{BASE_URL}}\`
 
   * All HTTP requests MUST go to this host.
   * Do not call any other hosts or external services.
 
 * **Endpoint contract (Markdown, full text provided):**
 
-  ```text
+  \`\`\`text
   <<<ENDPOINT_DOC>>>
   {{ENDPOINT_DOC}}
   <<<ENDPOINT_DOC_END>>>
-  ```
+  \`\`\`
 
   * Primary written specification for this endpoint:
 
@@ -35,16 +35,16 @@ Ingest the provided USAspending endpoint contract plus the shared filter spec. T
 
 * **Shared filters (Markdown, may be referenced by the contract):**
 
-  ```text
+  \`\`\`text
   <<<SHARED_FILTERS>>>
   {{SHARED_FILTERS}}
   <<<SHARED_FILTERS_END>>>
-  ```
+  \`\`\`
 
   * Reusable filter definitions and field structures.
   * Treat these as part of the contract whenever referenced.
 
-You MAY call the live API at `{{BASE_URL}}` using the methods/paths in the contract. For every probe you run, record the request/response (status + trimmed body) in the `probes` array of your JSON report. Do not attempt to read any files; rely only on the inlined docs above and live responses.
+You MAY call the live API at \`{{BASE_URL}}\` using the methods/paths in the contract. For every probe you run, record the request/response (status + trimmed body) in the \`probes\` array of your JSON report. Do not attempt to read any files; rely only on the inlined docs above and live responses.
 
 ---
 
@@ -64,22 +64,25 @@ Treat the docs as a **hypothesis** and the live API as the **source of truth**. 
 
 Write your final JSON report to the file:
 
-`{{OUTPUT_SUMMARY_PATH}}`
+\`{{OUTPUT_SUMMARY_PATH}}\`
 
 The file must contain exactly one JSON object with top-level keys:
-`contract`, `probes`, `mismatches`, `gaps`, `risks`.
+\`contract\`, \`probes\`, \`mismatches\`, \`gaps\`, \`risks\`.
 
-Do **not** print the JSON in chat. When the file is written successfully, print only: `DONE`.
+Within \`contract\`, both \`inputSchema\` and \`outputSchema\` must include a top-level \`confidence\` string (set it to "hypothesis").
+
+Do **not** print the JSON in chat. When the file is written successfully, print only: \`DONE\`.
 
 ## Required JSON shape (example)
 
-```json
+\`\`\`json
 {
   "contract": {
     "name": "{{ENDPOINT_RELATIVE_PATH}}",
     "endpoint": { "method": "GET|POST|PUT|PATCH|DELETE", "host": "{{BASE_URL}}", "path": "/api/v2/..." },
     "description": "brief purpose from docs/observations",
     "inputSchema": {
+      "confidence": "hypothesis",
       "type": "object",
       "properties": {
         "<field>": {
@@ -92,6 +95,7 @@ Do **not** print the JSON in chat. When the file is written successfully, print 
       "required": ["..."]
     },
     "outputSchema": {
+      "confidence": "hypothesis",
       "type": "object|array|mixed",
       "properties": {
         "<field>": {
@@ -128,7 +132,7 @@ Do **not** print the JSON in chat. When the file is written successfully, print 
     "edge cases, rate limits, pagination, auth, size limits, unstable fields"
   ]
 }
-```
+\`\`\`
 
 ---
 
@@ -136,13 +140,13 @@ Do **not** print the JSON in chat. When the file is written successfully, print 
 
 1. **You MUST:**
 
-   * Use only HTTP methods and paths explicitly documented in `{{ENDPOINT_DOC}}` for this endpoint.
+   * Use only HTTP methods and paths explicitly documented in \`{{ENDPOINT_DOC}}\` for this endpoint.
    * Capture **every** probe (request + response) you use to learn behavior.
    * Base all facts on:
 
-     * `{{ENDPOINT_DOC}}`
-     * `{{SHARED_FILTERS}}`
-     * Live responses from `{{BASE_URL}}`
+     * \`{{ENDPOINT_DOC}}\`
+     * \`{{SHARED_FILTERS}}\`
+     * Live responses from \`{{BASE_URL}}\`
 
 2. **You MUST NOT:**
 
@@ -160,11 +164,11 @@ Within those constraints, be aggressive and thorough in exploring the endpoint.
 
 1.1 **Identify the primary endpoint:**
 
-* From `{{ENDPOINT_DOC}}`, determine:
+* From \`{{ENDPOINT_DOC}}\`, determine:
 
-  * The main HTTP method (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`).
-  * The corresponding path (e.g., `/api/v2/awards/`).
-* If multiple closely related paths/methods are documented for this endpoint, focus on the one matching `{{ENDPOINT_RELATIVE_PATH}}` for `"contract.endpoint"`, but you may probe related variants to clarify behavior.
+  * The main HTTP method (\`GET\`, \`POST\`, \`PUT\`, \`PATCH\`, \`DELETE\`).
+  * The corresponding path (e.g., \`/api/v2/awards/\`).
+* If multiple closely related paths/methods are documented for this endpoint, focus on the one matching \`{{ENDPOINT_RELATIVE_PATH}}\` for \`"contract.endpoint"\`, but you may probe related variants to clarify behavior.
 
 1.2 **Catalog all documented inputs:**
 
@@ -172,24 +176,24 @@ For each parameter mentioned in the contract or shared filters:
 
 * Record:
 
-  * **Location**: `query`, `path`, or `body`.
-  * **Type**: `string`, `number`, `array`, `object`, `boolean`, or `null`.
+  * **Location**: \`query\`, \`path\`, or \`body\`.
+  * **Type**: \`string\`, \`number\`, \`array\`, \`object\`, \`boolean\`, or \`null\`.
   * **Structure**: For nested objects/arrays, note their subfields as far as docs specify.
 * Capture all documented **constraints**:
 
   * Required vs optional.
   * Enums or allowed sets.
   * Ranges and limits (min/max).
-  * Formats (e.g., `YYYY-MM-DD`, UUID).
+  * Formats (e.g., \`YYYY-MM-DD\`, UUID).
   * Defaults and fallbacks if omitted.
-* If the contract refers to shared filters (e.g., “`filters` uses the shared filter schema”), inline the structure from `{{SHARED_FILTERS}}` into your understanding.
+* If the contract refers to shared filters (e.g., “\`filters\` uses the shared filter schema”), inline the structure from \`{{SHARED_FILTERS}}\` into your understanding.
 
 1.3 **Catalog all documented outputs and behaviors:**
 
 * Determine the documented **response shape**:
 
   * Root type (object/array).
-  * Top-level fields (e.g., `results`, `count`, `page_metadata`).
+  * Top-level fields (e.g., \`results\`, \`count\`, \`page_metadata\`).
 * Note all documented behaviors that need verification:
 
   * Pagination, sorting, filtering semantics.
@@ -243,7 +247,7 @@ For **every input field**, design probes that:
     * Multi-element array with different value patterns.
 * Explore **nullability** where allowed:
 
-  * Send `null` for fields that are documented nullable to see behavior.
+  * Send \`null\` for fields that are documented nullable to see behavior.
 
 2.3 **Explore combined behaviors:**
 
@@ -261,8 +265,8 @@ For **every input field**, design probes that:
 
 * Probe:
 
-  * Different `page` values (1, 2, and high values).
-  * Different `limit`/`page_size` values:
+  * Different \`page\` values (1, 2, and high values).
+  * Different \`limit\`/\`page_size\` values:
 
     * Small limit (e.g., 1–5),
     * Typical limit,
@@ -277,9 +281,9 @@ For **every input field**, design probes that:
 
 * Test:
 
-  * Omitted `sort` parameter (default sort).
-  * Each documented `sort` field and direction.
-  * Invalid `sort` values to trigger errors.
+  * Omitted \`sort\` parameter (default sort).
+  * Each documented \`sort\` field and direction.
+  * Invalid \`sort\` values to trigger errors.
 * Check:
 
   * That results actually appear sorted as requested.
@@ -299,7 +303,7 @@ For key parameters, send **invalid** variants to reveal constraints and error st
 Use these to learn:
 
 * Exact status codes (400 vs 422 vs 500).
-* Error response shape and fields (e.g., `detail`, `messages`, `errors`).
+* Error response shape and fields (e.g., \`detail\`, \`messages\`, \`errors\`).
 * How error messages refer to fields (which may reveal hidden constraints or naming).
 
 2.7 **Probe for volume and stability (within reason):**
@@ -322,46 +326,46 @@ For **every** HTTP request you send:
 
 3.1 **Record the request object:**
 
-* `"method"`: `"GET"`, `"POST"`, `"PUT"`, `"PATCH"`, or `"DELETE"`.
-* `"path"`: the full relative path (e.g., `"/api/v2/awards/"`).
-* `"query"`:
+* \`"method"\`: \`"GET"\`, \`"POST"\`, \`"PUT"\`, \`"PATCH"\`, or \`"DELETE"\`.
+* \`"path"\`: the full relative path (e.g., \`"/api/v2/awards/"\`).
+* \`"query"\`:
 
   * A JSON object of all query parameters and values actually sent.
-* `"body"`:
+* \`"body"\`:
 
-  * A JSON object containing the request body you sent, or `{}` if no body.
+  * A JSON object containing the request body you sent, or \`{}\` if no body.
 
 3.2 **Record the response object:**
 
-* `"status"`: numeric HTTP status code.
-* `"bodyExcerpt"`:
+* \`"status"\`: numeric HTTP status code.
+* \`"bodyExcerpt"\`:
 
   * A **string** containing a trimmed JSON snippet of the response body:
 
     * Enough to show structure and key fields,
     * Do not paste the entire large response; abbreviate arrays/objects.
-* `"contentType"`:
+* \`"contentType"\`:
 
-  * The `Content-Type` header, e.g., `"application/json"`.
+  * The \`Content-Type\` header, e.g., \`"application/json"\`.
 
 3.3 **Annotate each probe with notes:**
 
-* `"notes"`:
+* \`"notes"\`:
 
-  * Indicate whether the result matched the documentation (`"pass"` or `"fail"`).
+  * Indicate whether the result matched the documentation (\`"pass"\` or \`"fail"\`).
   * Briefly summarize what you learned, such as:
 
-    * “Missing `filters` returns 400 with `detail` message.”
-    * “Omitting `page` defaults to 1; `limit` defaults to 10.”
-    * “Invalid enum value in `award_type` returns 400 with field-level error.”
+    * “Missing \`filters\` returns 400 with \`detail\` message.”
+    * “Omitting \`page\` defaults to 1; \`limit\` defaults to 10.”
+    * “Invalid enum value in \`award_type\` returns 400 with field-level error.”
 
-Your `"probes"` array should contain **all** such probe records used to derive your understanding.
+Your \`"probes"\` array should contain **all** such probe records used to derive your understanding.
 
 ---
 
 ### 4. Derive the input schema from docs + probes
 
-Using all documentation and probe evidence, construct `"contract.inputSchema"`:
+Using all documentation and probe evidence, construct \`"contract.inputSchema"\`:
 
 4.1 **Enumerate all input fields:**
 
@@ -371,13 +375,13 @@ Using all documentation and probe evidence, construct `"contract.inputSchema"`:
   * Any additional fields clearly revealed by error messages or responses (e.g., documented but only discovered via probing).
 * For each field, define:
 
-  * `"location"`: `"query"`, `"path"`, or `"body"`.
-  * `"type"`: `"string"`, `"number"`, `"array"`, `"object"`, `"boolean"`, or `"null"`.
-  * `"description"`:
+  * \`"location"\`: \`"query"\`, \`"path"\`, or \`"body"\`.
+  * \`"type"\`: \`"string"\`, \`"number"\`, \`"array"\`, \`"object"\`, \`"boolean"\`, or \`"null"\`.
+  * \`"description"\`:
 
     * Based on combined docs + live behavior.
     * Mention role (e.g., filter by date range, control pagination).
-  * `"constraints"`:
+  * \`"constraints"\`:
 
     * All known constraints:
 
@@ -390,13 +394,13 @@ Using all documentation and probe evidence, construct `"contract.inputSchema"`:
 
 4.2 **Identify required fields:**
 
-* `"inputSchema.required"` should list fields that:
+* \`"inputSchema.required"\` should list fields that:
 
   * Are truly required by the live API (requests missing them fail).
 * If docs say a field is required but live API treats it as optional:
 
   * Do **not** mark it as required.
-  * Capture the discrepancy in `"mismatches"`.
+  * Capture the discrepancy in \`"mismatches"\`.
 
 Do not invent fields or mark them required without evidence.
 
@@ -410,27 +414,27 @@ Using the union of all successful responses:
 
 * If all successful responses have a top-level JSON object:
 
-  * `"outputSchema.type": "object"`.
+  * \`"outputSchema.type": "object"\`.
 * If all are arrays:
 
-  * `"outputSchema.type": "array"`.
+  * \`"outputSchema.type": "array"\`.
 * If it varies (object vs array, or other differences based on request):
 
-  * `"outputSchema.type": "mixed"` and clarify in `"quirks"`.
+  * \`"outputSchema.type": "mixed"\` and clarify in \`"quirks"\`.
 
 5.2 **Enumerate key fields and their semantics:**
 
 For each recurring top-level field:
 
-* Add an entry in `"outputSchema.properties"`:
+* Add an entry in \`"outputSchema.properties"\`:
 
-  * `"type"`: based on observed values (`string`, `number`, `array`, `object`, `boolean`, `null`).
-  * `"description"`:
+  * \`"type"\`: based on observed values (\`string\`, \`number\`, \`array\`, \`object\`, \`boolean\`, \`null\`).
+  * \`"description"\`:
 
     * Explain what it represents (counts, metadata, a list of items, etc.).
     * Include any significant nuances (e.g., when it can be null or missing).
 
-For nested structures (e.g., elements of `results` arrays):
+For nested structures (e.g., elements of \`results\` arrays):
 
 * At minimum, describe:
 
@@ -440,40 +444,40 @@ For nested structures (e.g., elements of `results` arrays):
 
 5.3 **Identify required output fields:**
 
-* `"outputSchema.required"` should list fields that:
+* \`"outputSchema.required"\` should list fields that:
 
-  * Appear in all successful responses and are fundamental (e.g., `results`, `count`).
+  * Appear in all successful responses and are fundamental (e.g., \`results\`, \`count\`).
 * Optional or conditionally present fields:
 
-  * Should **not** be in `"required"`.
-  * Their optionality/nullability should be described in the relevant property or `"quirks"`.
+  * Should **not** be in \`"required"\`.
+  * Their optionality/nullability should be described in the relevant property or \`"quirks"\`.
 
 ---
 
 ### 6. Build concrete examples based on real probes
 
-Populate `"contract.examples"` with at least one (preferably multiple) **real** examples:
+Populate \`"contract.examples"\` with at least one (preferably multiple) **real** examples:
 
 Each example includes:
 
-* `"request"`:
+* \`"request"\`:
 
-  * `"method"`: as used.
-  * `"path"`: exact path used.
-  * `"query"`: query parameters as sent.
-  * `"body"`: request body as sent (or `{}`).
+  * \`"method"\`: as used.
+  * \`"path"\`: exact path used.
+  * \`"query"\`: query parameters as sent.
+  * \`"body"\`: request body as sent (or \`{}\`).
 
-* `"response"`:
+* \`"response"\`:
 
-  * `"status"`: typically `200` for examples (unless demonstrating a documented error).
-  * `"body"`:
+  * \`"status"\`: typically \`200\` for examples (unless demonstrating a documented error).
+  * \`"body"\`:
 
     * A **trimmed** JSON object representing the response body:
 
       * Enough to show the key structure and fields.
       * You may omit unneeded nested detail.
 
-These examples should be representative of typical usage patterns and directly traceable to entries in `"probes"`.
+These examples should be representative of typical usage patterns and directly traceable to entries in \`"probes"\`.
 
 ---
 
@@ -481,47 +485,48 @@ These examples should be representative of typical usage patterns and directly t
 
 Use these fields to concisely summarize what you learned beyond the raw schemas:
 
-* `"contract.quirks"`:
+* \`"contract.quirks"\`:
 
   * A list of human-readable observations about:
 
-    * Doc vs reality differences in behavior (not schema — schema-level go in `"mismatches"`).
+    * Doc vs reality differences in behavior (not schema — schema-level go in \`"mismatches"\`).
     * Nullability surprises.
     * Pagination oddities.
     * Defaults that are not clearly documented.
     * Any configuration or behavior that might surprise a consumer.
 
-* `"mismatches"`:
+* \`"mismatches"\`:
 
   * Each entry is a specific doc vs reality discrepancy, for example:
 
-    * `"Docs say 'limit' max is 100, but API accepts 500 and returns 500 items."`
-    * `"Docs say missing 'filters' returns 400, but API returns 200 with all results."`
+    * \`"Docs say 'limit' max is 100, but API accepts 500 and returns 500 items."\`
+    * \`"Docs say missing 'filters' returns 400, but API returns 200 with all results."\`
 
-* `"gaps"`:
+* \`"gaps"\`:
 
   * Things you **still do not know**, even after rich probing, e.g.:
 
-    * `"True maximum 'limit' not determined; only tested up to 500."`
-    * `"Unclear if sorting is stable across pages."`
+    * \`"True maximum 'limit' not determined; only tested up to 500."\`
+    * \`"Unclear if sorting is stable across pages."\`
 
-* `"risks"`:
+* \`"risks"\`:
 
   * Potential integration risks or edge cases, e.g.:
 
-    * `"Large unfiltered queries may return huge responses; client should always use filters and pagination."`
-    * `"Error response shape differs between 400 and 500; clients must handle both."`
-    * `"Some fields appear only for certain award types; schema is partially dynamic."`
+    * \`"Large unfiltered queries may return huge responses; client should always use filters and pagination."\`
+    * \`"Error response shape differs between 400 and 500; clients must handle both."\`
+    * \`"Some fields appear only for certain award types; schema is partially dynamic."\`
 
-If any of these lists are empty, include them as `[]` but keep the keys.
+If any of these lists are empty, include them as \`[]\` but keep the keys.
 
 ---
 
 ## Final Output Format (STRICT)
 
 You must write exactly one JSON object with top-level keys
-`contract`, `probes`, `mismatches`, `gaps`, `risks` to `{{OUTPUT_SUMMARY_PATH}}`.
+\`contract\`, \`probes\`, \`mismatches\`, \`gaps\`, \`risks\` to \`{{OUTPUT_SUMMARY_PATH}}\`.
 
 Do not add or remove top-level keys. No markdown, no code fences, no commentary in chat.
 
-When the file is successfully written, print only: `DONE`.
+When the file is successfully written, print only: \`DONE\`.
+`

@@ -8,10 +8,10 @@
     "node": ">=18"
   },
   "scripts": {
-    "probe": "tsx src/probe_pass1.ts",
-    "probe1": "tsx src/probe_pass1.ts",
-    "probe2": "tsx src/probe_pass2.ts",
-    "reconcile": "tsx src/reconcile.ts"
+    "discover": "tsx src/discover.ts",
+    "validate": "tsx src/validate.ts",
+    "reconcile": "tsx src/reconcile.ts",
+    "profile": "tsx src/reconcile.ts"
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",

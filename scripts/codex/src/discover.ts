@@ -6,8 +6,8 @@ import { loadConfig } from "../../../src/agent/core/config.js";
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from "fs";
 import { slugFromContract, filesForStage } from "../../../src/agent/core/paths.js";
 import { ensureValid } from "../../../src/agent/core/io.js";
-import { ProfileSchema } from "../../../src/agent/core/schema.js";
-import { reconcilePrompt } from "../../../src/agent/reconcile/prompt.js";
+import { DiscoverSchema } from "../../../src/agent/core/schema.js";
+import { discoverPrompt } from "../../../src/agent/discover/prompt.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,7 +17,7 @@ const repoRoot = join(__dirname, "..", "..", "..", "..");
 const args = process.argv.slice(2);
 const argContractIdx = args.findIndex((a) => a === "--contract");
 if (argContractIdx === -1) {
-  console.error("Usage: pnpm reconcile -- --contract staging/docs/v2/...md");
+  console.error("Usage: pnpm discover -- --contract staging/docs/v2/...md");
   process.exit(1);
 }
 const contractPath = args[argContractIdx + 1];
@@ -28,15 +28,15 @@ if (!contractPath) {
 
 const slug = slugFromContract(contractPath);
 const version = contractPath.split("/")[2] || "v2";
-const { dir, summary: profilePath, promptTxt, responseTxt } = filesForStage(repoRoot, version, slug, "final");
-const promptPath = profilePath.replace(/profile\.json$/, "prompt.md");
+const { dir, summary, promptTxt, responseTxt } = filesForStage(repoRoot, version, slug, "discover");
 mkdirSync(dir, { recursive: true });
 
-// load staging docs + pass artifacts
+// load staging docs
 const endpointDoc = readFileSync(join(repoRoot, contractPath), "utf-8");
+const indexPath = join(repoRoot, "staging", "docs", "index.jsonl");
 const supportingManifestPath = join(repoRoot, "staging", "docs", "supporting_manifest.json");
-if (!existsSync(supportingManifestPath)) {
-  console.error("[reconcile] staging artifacts missing; run scripts/stage_docs.py first.");
+if (!existsSync(indexPath) || !existsSync(supportingManifestPath)) {
+  console.error("[discover] staging artifacts missing; run scripts/stage_docs.py first.");
   process.exit(1);
 }
 const supportingManifest = JSON.parse(readFileSync(supportingManifestPath, "utf-8")) as {
@@ -47,40 +47,12 @@ const sharedFilters = supportingManifest.always
   .map((rel) => readFileSync(join(repoRoot, rel), "utf-8"))
   .join("\n\n");
 
-const pass1Summary = existsSync(join(repoRoot, "runs", version, slug, "discover", "summary.json"))
-  ? readFileSync(join(repoRoot, "runs", version, slug, "discover", "summary.json"), "utf-8")
-  : "NO_PASS1_SUMMARY";
-const pass1Probes = (() => {
-  try {
-    const parsed = JSON.parse(pass1Summary);
-    return JSON.stringify(parsed.probes ?? [], null, 2);
-  } catch {
-    return "[]";
-  }
-})();
-const pass2Summary = existsSync(join(repoRoot, "runs", version, slug, "validate", "summary.json"))
-  ? readFileSync(join(repoRoot, "runs", version, slug, "validate", "summary.json"), "utf-8")
-  : "NO_PASS2_SUMMARY";
-const pass2Probes = (() => {
-  try {
-    const parsed = JSON.parse(pass2Summary);
-    return JSON.stringify(parsed.probes ?? [], null, 2);
-  } catch {
-    return "[]";
-  }
-})();
-
-const prompt = reconcilePrompt
+const prompt = discoverPrompt
   .replaceAll("{{ENDPOINT_RELATIVE_PATH}}", contractPath)
   .replaceAll("{{BASE_URL}}", "https://api.usaspending.gov")
   .replaceAll("{{ENDPOINT_DOC}}", endpointDoc)
   .replaceAll("{{SHARED_FILTERS}}", sharedFilters)
-  .replaceAll("{{PASS1_SUMMARY}}", pass1Summary)
-  .replaceAll("{{PASS1_PROBES}}", pass1Probes)
-  .replaceAll("{{PASS2_SUMMARY_JSON}}", pass2Summary)
-  .replaceAll("{{PASS2_PROBES}}", pass2Probes)
-  .replaceAll("{{PROFILE_PATH}}", profilePath)
-  .replaceAll("{{PROMPT_PATH}}", promptPath);
+  .replaceAll("{{OUTPUT_SUMMARY_PATH}}", summary);
 
 const cfg = loadConfig(repoRoot);
 const codex = new Codex({ apiKey: cfg.apiKey, baseURL: cfg.baseURL, config: cfg.codexConfig as any });
@@ -102,23 +74,14 @@ const thread = codex.startThread(cfg.threadOptions);
     writeFileSync(join(dir, "events.jsonl"), events.map((e) => JSON.stringify(e)).join("\n"), "utf-8");
   }
 
+  // validate; retry once if invalid
   try {
-    ProfileSchema.parse(JSON.parse(readFileSync(profilePath, "utf-8")));
+    DiscoverSchema.parse(JSON.parse(readFileSync(summary, "utf-8")));
   } catch (err) {
-    await ensureValid("profile", profilePath, thread, 1);
+    await ensureValid("discover", summary, thread, 1);
   }
 
-  // prompt.md may be in response; ensure it's written if not
-  if (!existsSync(promptPath)) {
-    const last = (result as any)?.finalResponse ?? "";
-    const mdBlock = last.match(/```md[\s\S]*?```/);
-    if (mdBlock) {
-      const content = mdBlock[0].replace(/```md|```/g, "").trim();
-      writeFileSync(promptPath, content, "utf-8");
-    }
-  }
-
-  console.log(`[reconcile] ✅ ${contractPath} -> ${profilePath}`);
+  console.log(`[discover] ✅ ${contractPath} -> ${summary}`);
 })().catch((err) => {
   console.error(err);
   process.exit(1);

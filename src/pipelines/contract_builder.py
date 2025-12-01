@@ -8,23 +8,26 @@ Responsibilities (future):
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Dict
 
-Contract = Dict[str, Any]
-
-
-def stage_contract(name: str, description: str, endpoint: Dict[str, str]) -> Contract:
-    """Create a minimal contract skeleton before agent enrichment."""
-    return {
-        "name": name,
-        "description": description,
-        "endpoint": endpoint,
-        "inputSchema": {},
-        "outputSchema": {},
-        "examples": [],
-    }
+from contracts.schema import DiscoverReport, ReportBase, new_contract
 
 
-def save_contract(contract: Contract, out_path: Path) -> None:
+def stage_contract(name: str, description: str, endpoint: Dict[str, str]) -> DiscoverReport:
+    """Create a minimal discover-stage report with an empty contract body."""
+
+    contract = new_contract(name=name, description=description, endpoint=endpoint)
+    return DiscoverReport(
+        contract=contract,
+        probes=[],
+        mismatches=[],
+        gaps=[],
+        risks=[],
+    )
+
+
+def save_contract(report: ReportBase, out_path: Path) -> None:
+    """Validate and persist a report (any pass) to JSON."""
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(__import__("json").dumps(contract, indent=2))
+    out_path.write_text(report.model_dump_json(indent=2))

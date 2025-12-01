@@ -36,6 +36,9 @@ staging/
 # Node artifacts
 node_modules/
 scripts/codex/node_modules/
+scripts/mcp/node_modules/
 runs/
+.worktrees/
 npm-debug.log*
 codex.config.json
+scratch/
