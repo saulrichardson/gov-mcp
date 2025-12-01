@@ -1,12 +1,18 @@
 import { z } from "zod";
 
+const schemaShape = z.object({
+  confidence: z.string(),
+  type: z.string().optional(),
+  properties: z.record(z.any()).optional(),
+});
+
 export const DiscoverSchema = z.object({
   contract: z.object({
     name: z.string(),
     description: z.string().optional(),
     endpoint: z.object({ method: z.string(), host: z.string(), path: z.string() }),
-    inputSchema: z.object({ confidence: z.string() }).passthrough(),
-    outputSchema: z.object({ confidence: z.string() }).passthrough(),
+    inputSchema: schemaShape.passthrough(),
+    outputSchema: schemaShape.passthrough(),
     examples: z.array(z.any()),
     quirks: z.array(z.string()).optional(),
     risks: z.array(z.string()).optional(),
@@ -44,4 +50,3 @@ export function validate(kind: ReportKind, data: unknown) {
   if (kind === "validate") return ValidateSchema.parse(data);
   return ProfileSchema.parse(data);
 }
-

@@ -30,8 +30,8 @@ export function loadProfiles(): {
       const slug = file.split("/").slice(-3, -1).join("__"); // v2/<slug>/final/profile.json
 
       // Additional structural checks
-      if (!c.inputSchema?.properties || c.inputSchema.type !== "object") {
-        throw new Error("inputSchema must be an object with properties and type=object");
+      if (!c.inputSchema?.properties) {
+        throw new Error("inputSchema must include properties");
       }
       if (!c.outputSchema?.confidence) {
         throw new Error("outputSchema must include confidence");
