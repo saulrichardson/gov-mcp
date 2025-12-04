@@ -1,6 +1,6 @@
 # Gov GPT – Contract-first MCP pipeline for USAspending
 
-Turn **each USAspending API endpoint** into a contract-wrapped JSON profile, then expose those profiles through a minimal MCP server. The pipeline is Codex-orchestrated, runs in three agent stages (discover → validate → reconcile), and enforces a **forward-only contract shape** that the MCP server consumes directly.
+Turn **each USAspending API endpoint** into a contract-wrapped JSON profile, then expose those profiles through a minimal MCP server. The pipeline is Codex-orchestrated, runs in three agent stages (discover → validate → reconcile), and enforces a contract shape that the MCP server consumes directly.
 
 ```
 Docs + Live API → Codex agents (discover/validate/reconcile) → contract JSON → MCP server tools/resources
@@ -19,7 +19,7 @@ Docs + Live API → Codex agents (discover/validate/reconcile) → contract JSON
   summary.json              summary.json             profile.json, prompt.md
 ```
 
-### What’s new (forward-only)
+### What’s new 
 - Prompts, schemas, and validation live together under `src/agent`. No legacy shapes are accepted.
 - Runners are thin (`scripts/codex/src/discover.ts`, `validate.ts`, `reconcile.ts`), using shared helpers (`config`, `paths`, `schema`, `io`).
 - Strict schema enforcement: `profile.json` must have top-level `contract` with `confidence=confirmed`, `lifecycle`, `lastVerified`, and input/output schemas each with a top-level `confidence`.
