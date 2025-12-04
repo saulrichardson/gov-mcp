@@ -51,7 +51,7 @@ staging/docs/           # inlined USAspending docs and supporting files
 ```
 
 
-## Contract shape (summary)
+## Contract shape 
 
 Top-level keys: `contract`, `probes`, `mismatches`, `gaps`, `risks`
 
@@ -61,13 +61,3 @@ Top-level keys: `contract`, `probes`, `mismatches`, `gaps`, `risks`
 - `outputSchema` (top-level `confidence`)
 - `examples` (non-empty array)
 - `quirks`, `risks`, `gaps`
-- `lifecycle`, `confidence='confirmed'`, `lastVerified` (ISO timestamp)
-
-No legacy fields (e.g., top-level `slug`/`name`) are accepted by the server.
-
-## Troubleshooting
-- “profile.json missing contract”: reconcile now reprompts once; if still failing, ensure the agent wrote the contract wrapper and required fields.
-- MCP server won’t start: ensure `profile.json` follows the new shape (validated by `ProfileSchema`).
-
-## Next steps
-- Optionally, extend `io.ensureValid` retries or enrich agent prompts; add richer per-field confidence if needed.
