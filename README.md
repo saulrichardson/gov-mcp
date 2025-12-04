@@ -56,34 +56,6 @@ runs/                   # per-endpoint artifacts
 staging/docs/           # inlined USAspending docs and supporting files
 ```
 
-## Running the agents
-
-Each stage writes to `runs/v2/<slug>/<stage>/`. Use the new commands:
-
-```bash
-# Discover
-pnpm --prefix scripts/codex discover -- --contract staging/docs/v2/agency/awards/count.md
-
-# Validate (requires discover output)
-pnpm --prefix scripts/codex validate -- --contract staging/docs/v2/agency/awards/count.md
-
-# Reconcile (requires validate output)
-pnpm --prefix scripts/codex reconcile -- --contract staging/docs/v2/agency/awards/count.md
-```
-
-Validation is strict. If the agent writes an invalid JSON, the runner will attempt one reprompt in the same thread; otherwise it fails. Required for `profile.json`: top-level `contract`, `probes`, `mismatches`, `gaps`, `risks`; `contract.confidence='confirmed'`, `lifecycle`, `lastVerified`, and input/output schemas with `confidence`.
-
-## MCP server
-
-```bash
-cd scripts/mcp
-npm install
-npm run start   # stdio MCP server
-```
-
-The server loads `runs/v2/*/final/profile.json` (new contract format only) and exposes:
-- Tools: `usaspending.findEndpoints`, `usaspending.getEndpoint`, `usaspending.call`
-- Resources: `usaspending://profiles/<slug>`, `usaspending://prompts/<slug>`, and `usaspending://profiles/all`
 
 ## Contract shape (summary)
 
