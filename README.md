@@ -19,12 +19,6 @@ Docs + Live API → Codex agents (discover/validate/reconcile) → contract JSON
   summary.json              summary.json             profile.json, prompt.md
 ```
 
-### What’s new 
-- Prompts, schemas, and validation live together under `src/agent`. No legacy shapes are accepted.
-- Runners are thin (`scripts/codex/src/discover.ts`, `validate.ts`, `reconcile.ts`), using shared helpers (`config`, `paths`, `schema`, `io`).
-- Strict schema enforcement: `profile.json` must have top-level `contract` with `confidence=confirmed`, `lifecycle`, `lastVerified`, and input/output schemas each with a top-level `confidence`.
-- MCP server (`scripts/mcp/src`) loads only the new contract format; legacy profiles are rejected.
-
 ## Repo layout
 
 ```
