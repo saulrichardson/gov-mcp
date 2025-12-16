@@ -154,18 +154,18 @@ Your job is to turn all these into:
 
 ---
 
-## 3. Output 1 – `profile.json`
+## 3. Output 1 – \`profile.json\`
 
 Write exactly one JSON object with **these top-level keys only**:
 
-`contract`, `probes`, `mismatches`, `gaps`, `risks`.
+\`contract\`, \`probes\`, \`mismatches\`, \`gaps\`, \`risks\`.
 
 ### 3.1 Contract object (strict)
 
-`contract` must include all fields below. No backward-compat keys. Empty arrays
+\`contract\` must include all fields below. No backward-compat keys. Empty arrays
 are allowed except where noted.
 
-```
+\`\`\`
 "contract": {
   "name": "{{ENDPOINT_RELATIVE_PATH}}",
   "description": "...",
@@ -180,19 +180,19 @@ are allowed except where noted.
   "lifecycle": "active|deprecated|unknown",
   "lastVerified": "YYYY-MM-DD"
 }
-```
+\`\`\`
 
 Rules:
 
-* Set `contract.confidence` = `"confirmed"` in this pass.
-* Set `lastVerified` to today (YYYY-MM-DD).
-* `examples` MUST be non-empty and based on real probes.
-* `inputSchema.confidence` and `outputSchema.confidence` are mandatory.
+* Set \`contract.confidence\` = \`"confirmed"\` in this pass.
+* Set \`lastVerified\` to today (YYYY-MM-DD).
+* \`examples\` MUST be non-empty and based on real probes.
+* \`inputSchema.confidence\` and \`outputSchema.confidence\` are mandatory.
 
 ### 3.2 Input schema
 
 Concise but precise: locations, types, constraints, defaults, required list.
-Drop fields you cannot evidence; put uncertainties in `gaps` instead.
+Drop fields you cannot evidence; put uncertainties in \`gaps\` instead.
 
 ### 3.3 Output schema
 

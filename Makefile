@@ -1,44 +1,44 @@
 REPO_ROOT := $(CURDIR)
-CONTRACT ?= staging/docs/v2/agency/awards/count.md
+SLUG ?= v2__agency__awards__count
 BASE ?= main
 PARALLEL ?= 2
 
-# Find all v2 contracts
-CONTRACTS := $(shell find staging/docs/v2 -name '*.md' 2>/dev/null | sort)
-
-.PHONY: discover validate profile pipeline clean-worktrees
+.PHONY: discover validate profile pipeline clean-worktrees discover-all validate-all profile-all pipeline-all gather-runs merge-agent-branches mcp-server
 
 discover:
-	@$(REPO_ROOT)/scripts/codex/bin/run-agent.sh discover $(CONTRACT) $(BASE)
+	@$(REPO_ROOT)/scripts/codex/bin/run-agent.sh discover $(SLUG) $(BASE)
 
 validate:
-	@$(REPO_ROOT)/scripts/codex/bin/run-agent.sh validate $(CONTRACT) $(BASE)
+	@$(REPO_ROOT)/scripts/codex/bin/run-agent.sh validate $(SLUG) $(BASE)
 
 profile:
-	@$(REPO_ROOT)/scripts/codex/bin/run-agent.sh profile $(CONTRACT) $(BASE)
+	@$(REPO_ROOT)/scripts/codex/bin/run-agent.sh profile $(SLUG) $(BASE)
 
 # Run discover -> validate -> profile in sequence for the same contract
 pipeline: discover validate profile
 
 # ---- bulk helpers ----
 
-# Run a single pass for all contracts (parallel by PARALLEL, per-doc lock prevents clashes)
+# Run a single pass for all staged slugs (parallel by PARALLEL, per-slug lock prevents clashes)
 discover-all:
-	@printf '%s\n' $(CONTRACTS) | xargs -n1 -P $(PARALLEL) -I{} $(REPO_ROOT)/scripts/codex/bin/run-agent.sh discover {} $(BASE)
+	@slugs=$$(python scripts/list_staged_slugs.py); \
+	printf '%s\n' $$slugs | xargs -n1 -P $(PARALLEL) -I{} $(REPO_ROOT)/scripts/codex/bin/run-agent.sh discover {} $(BASE)
 
 validate-all:
-	@printf '%s\n' $(CONTRACTS) | xargs -n1 -P $(PARALLEL) -I{} $(REPO_ROOT)/scripts/codex/bin/run-agent.sh validate {} $(BASE)
+	@slugs=$$(python scripts/list_staged_slugs.py); \
+	printf '%s\n' $$slugs | xargs -n1 -P $(PARALLEL) -I{} $(REPO_ROOT)/scripts/codex/bin/run-agent.sh validate {} $(BASE)
 
 profile-all:
-	@printf '%s\n' $(CONTRACTS) | xargs -n1 -P $(PARALLEL) -I{} $(REPO_ROOT)/scripts/codex/bin/run-agent.sh profile {} $(BASE)
+	@slugs=$$(python scripts/list_staged_slugs.py); \
+	printf '%s\n' $$slugs | xargs -n1 -P $(PARALLEL) -I{} $(REPO_ROOT)/scripts/codex/bin/run-agent.sh profile {} $(BASE)
 
-# Run discover->validate->profile for every contract, one doc at a time (keeps pass order serial per doc)
+# Run discover->validate->profile for every staged slug, one doc at a time (keeps pass order serial per slug)
 pipeline-all:
-	@for c in $(CONTRACTS); do \
-		echo "[pipeline-all] $$c"; \
-		$(REPO_ROOT)/scripts/codex/bin/run-agent.sh discover $$c $(BASE); \
-		$(REPO_ROOT)/scripts/codex/bin/run-agent.sh validate $$c $(BASE); \
-		$(REPO_ROOT)/scripts/codex/bin/run-agent.sh profile  $$c $(BASE); \
+	@for s in $$(python scripts/list_staged_slugs.py); do \
+		echo "[pipeline-all] $$s"; \
+		$(REPO_ROOT)/scripts/codex/bin/run-agent.sh discover $$s $(BASE); \
+		$(REPO_ROOT)/scripts/codex/bin/run-agent.sh validate $$s $(BASE); \
+		$(REPO_ROOT)/scripts/codex/bin/run-agent.sh profile  $$s $(BASE); \
 	done
 
 # Consolidate run artifacts from all worktrees into the main worktree's runs/
@@ -70,4 +70,4 @@ clean-worktrees:
 # Start the MCP-ish HTTP server that exposes profiles/prompts/tools
 mcp-server:
 	@npm --prefix scripts/mcp install --silent
-	@npm --prefix scripts/mcp run start
+	@$(REPO_ROOT)/scripts/mcp/bin/stdio-server

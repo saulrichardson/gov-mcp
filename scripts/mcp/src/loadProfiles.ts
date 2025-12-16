@@ -1,6 +1,6 @@
 import fg from "fast-glob";
 import { readFileSync } from "fs";
-import { join, dirname } from "path";
+import { join, dirname, basename } from "path";
 import { fileURLToPath } from "url";
 import { ProfileReportSchema, Profile, EndpointSummary } from "./types.js";
 
@@ -14,7 +14,7 @@ export function loadProfiles(): {
   profilePaths: Record<string, string>;
   promptPaths: Record<string, string>;
 } {
-  const pattern = join(repoRoot, "runs", "v2", "*", "final", "profile.json");
+  const pattern = join(repoRoot, "runs", "*", "*", "final", "profile.json");
   const files = fg.sync(pattern, { dot: false, onlyFiles: true });
   const profiles: Profile[] = [];
   const profilePaths: Record<string, string> = {};
@@ -27,7 +27,12 @@ export function loadProfiles(): {
       }
       const pr = ProfileReportSchema.parse(parsed);
       const c = pr.contract;
-      const slug = file.split("/").slice(-3, -1).join("__"); // v2/<slug>/final/profile.json
+      // runs/<version>/<slug>/final/profile.json -> <slug>
+      const slug = basename(dirname(dirname(file)));
+      const version = basename(dirname(dirname(dirname(file))));
+      if (!slug.startsWith(`${version}__`)) {
+        throw new Error(`invalid slug '${slug}' for version '${version}' (expected prefix '${version}__')`);
+      }
 
       // Additional structural checks
       if (!c.inputSchema?.properties) {

@@ -2,21 +2,21 @@
 Stage USAspending API documentation into plain files Codex can ingest.
 
 Usage (from repo root):
-  python scripts/stage_docs.py [--copy-files]
+  python scripts/stage_docs.py
 
 Fails fast if the contracts source is missing or no docs are found.
 Produces:
-  staging/docs/index.jsonl               # one line per staged doc
-  staging/docs/supporting_manifest.json  # always-include files for probes
-  (optional when --copy-files is set)
-    staging/docs/<version>/<relative>.md
-    staging/docs/supporting/<file>.md
+  staging/docs/<version>/index.jsonl               # one line per staged doc
+  staging/docs/<version>/supporting_manifest.json  # always-include files for probes
+  staging/docs/<version>/<relative>.md
+  staging/docs/<version>/supporting/<file>.md
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -26,24 +26,39 @@ EXTRA_FILES = [
 ]
 
 
-def stage(version: str, *, copy_files: bool) -> None:
+def stage(version: str) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     source_root = repo_root / "usaspending-api" / "usaspending_api" / "api_contracts" / "contracts" / version
     staging_root = repo_root / "staging" / "docs" / version
-    index_path = repo_root / "staging" / "docs" / "index.jsonl"
-    supporting_manifest = repo_root / "staging" / "docs" / "supporting_manifest.json"
-    support_index_path = repo_root / "staging" / "docs" / "supporting_index.jsonl"
+    legacy_root = staging_root.parent
+    index_path = staging_root / "index.jsonl"
+    supporting_manifest = staging_root / "supporting_manifest.json"
+    support_index_path = staging_root / "supporting_index.jsonl"
 
     if not source_root.exists():
         sys.exit(f"[stage-docs] missing source contracts at {source_root}")
+
+    # No backward compatibility: clean legacy root-level staging artifacts.
+    legacy_files = [
+        legacy_root / "index.jsonl",
+        legacy_root / "supporting_manifest.json",
+        legacy_root / "supporting_index.jsonl",
+    ]
+    for p in legacy_files:
+        if p.exists():
+            p.unlink()
+    legacy_supporting_dir = legacy_root / "supporting"
+    if legacy_supporting_dir.is_dir():
+        shutil.rmtree(legacy_supporting_dir)
+    elif legacy_supporting_dir.exists():
+        legacy_supporting_dir.unlink()
 
     md_files = sorted(source_root.rglob("*.md"))
     if not md_files:
         sys.exit(f"[stage-docs] no markdown docs found under {source_root}")
 
     index_path.parent.mkdir(parents=True, exist_ok=True)
-    if copy_files:
-        staging_root.mkdir(parents=True, exist_ok=True)
+    staging_root.mkdir(parents=True, exist_ok=True)
 
     with index_path.open("w", encoding="utf-8") as index_file:
         # Contracts
@@ -52,24 +67,26 @@ def stage(version: str, *, copy_files: bool) -> None:
 
             digest = hashlib.sha256(md.read_bytes()).hexdigest()
 
-            staged_path = None
-            if copy_files:
-                dest = staging_root / rel
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_text(md.read_text(encoding="utf-8"), encoding="utf-8")
-                staged_path = dest.relative_to(repo_root).as_posix()
+            dest = staging_root / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(md.read_text(encoding="utf-8"), encoding="utf-8")
+            staged_path = dest.relative_to(repo_root).as_posix()
+            content_path = staged_path
 
-            content_path = staged_path or md.relative_to(repo_root).as_posix()
+            # Canonical identifier used by the pipeline + MCP server.
+            # Example: version=v2, rel=agency/awards/count.md -> v2__agency__awards__count
+            slug = f"{version}__{rel.as_posix().removesuffix('.md').replace('/', '__')}"
 
             record = {
                 "kind": "contract",
                 "version": version,
                 "relative_path": str(rel),
+                "slug": slug,
                 "source_path": str(md.relative_to(repo_root)),
                 "content_path": content_path,
                 "staged_path": staged_path,
                 "sha256": digest,
-                "copied": copy_files,
+                "copied": True,
             }
             index_file.write(json.dumps(record))
             index_file.write("\n")
@@ -85,14 +102,11 @@ def stage(version: str, *, copy_files: bool) -> None:
 
             digest = hashlib.sha256(src.read_bytes()).hexdigest()
 
-            staged_path = None
-            if copy_files:
-                dest = repo_root / "staging" / "docs" / "supporting" / Path(rel_path).name
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
-                staged_path = dest.relative_to(repo_root).as_posix()
-
-            content_path = staged_path or src.relative_to(repo_root).as_posix()
+            dest = staging_root / "supporting" / Path(rel_path).name
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+            staged_path = dest.relative_to(repo_root).as_posix()
+            content_path = staged_path
             supporting_paths.append(content_path)
 
             record = {
@@ -103,7 +117,7 @@ def stage(version: str, *, copy_files: bool) -> None:
                 "content_path": content_path,
                 "staged_path": staged_path,
                 "sha256": digest,
-                "copied": copy_files,
+                "copied": True,
             }
             index_file.write(json.dumps(record))
             index_file.write("\n")
@@ -129,19 +143,15 @@ def stage(version: str, *, copy_files: bool) -> None:
             fp.write(json.dumps(rec))
             fp.write("\n")
 
-    if copy_files:
-        print(f"[stage-docs] staged {len(md_files)} contract docs to {staging_root}")
-    else:
-        print(f"[stage-docs] manifest-only (no copies); {len(md_files)} contract docs referenced")
+    print(f"[stage-docs] staged {len(md_files)} contract docs to {staging_root}")
     print(f"[stage-docs] index written to {index_path}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Stage USAspending contracts into staging/docs for Codex consumption.")
     parser.add_argument("--version", default="v2", help="API contracts version to stage (default: v2)")
-    parser.add_argument("--copy-files", action="store_true", help="Copy docs into staging/ instead of manifest-only")
     args = parser.parse_args()
-    stage(args.version, copy_files=args.copy_files)
+    stage(args.version)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root=$(cd "$(dirname "$0")/../../.." && pwd)
+
+exec "$repo_root/scripts/mcp/node_modules/.bin/tsx" "$repo_root/scripts/mcp/src/server.ts"

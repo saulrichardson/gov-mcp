@@ -63,7 +63,7 @@ Additional requirements for this pass:
 - Wherever you update the contract based on new evidence, set \`contract.confidence\` (or per-field confidence if present) to \`observed\` or \`confirmed\`.
 
 Do **not** print the JSON in chat. When the file is written successfully, simply print: \`DONE\`.
-Within `contract`, both `inputSchema` and `outputSchema` must include a top-level `confidence` string (use `"observed"` or `"confirmed"` when backed by probes).
+Within \`contract\`, both \`inputSchema\` and \`outputSchema\` must include a top-level \`confidence\` string (use \`"observed"\` or \`"confirmed"\` when backed by probes).
 
 
 ---
