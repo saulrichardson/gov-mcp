@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "usaspending": {
+      "command": "./scripts/mcp/bin/stdio-server",
+      "args": []
+    }
+  }
+}

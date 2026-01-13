@@ -1,9 +1,10 @@
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { loadProfiles } from "./loadProfiles.js";
 import { callEndpoint } from "./call.js";
+import { buildToolInputSchema } from "./zodFromProfile.js";
 
 const { profiles, summaries, profilePaths, promptPaths } = loadProfiles();
 const profilesBySlug = Object.fromEntries(profiles.map((p) => [p.slug, p]));
@@ -12,6 +13,49 @@ const server = new McpServer({
   name: "usaspending-mcp-server",
   version: "0.1.0",
 });
+
+server.registerPrompt(
+  "usaspending.endpointUsage",
+  {
+    title: "USAspending Endpoint Usage",
+    description: "Return the semantic usage guide (prompt.md) for a given endpoint slug.",
+    argsSchema: {
+      slug: z.string().describe("Endpoint slug like v2__agency__toptier_code"),
+    },
+  },
+  async ({ slug }) => {
+    const profile = profilesBySlug[slug];
+    if (!profile) {
+      throw new Error(`unknown slug: ${slug}`);
+    }
+
+    const toolName = `usaspending.${slug}`;
+    const profileUri = `usaspending://profiles/${slug}`;
+    const promptUri = `usaspending://prompts/${slug}`;
+
+    const promptPath = promptPaths[slug];
+    if (!promptPath) {
+      throw new Error(`missing prompt path for slug: ${slug}`);
+    }
+    if (!existsSync(promptPath)) {
+      throw new Error(`prompt.md not found for slug '${slug}' at: ${promptPath}`);
+    }
+
+    const prompt = readFileSync(promptPath, "utf-8");
+
+    return {
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `Tool: ${toolName}\nProfile: ${profileUri}\nResource: ${promptUri}\n\n${prompt}`,
+          },
+        },
+      ],
+    };
+  }
+);
 
 server.registerTool(
   "usaspending.findEndpoints",
@@ -31,9 +75,15 @@ server.registerTool(
       return hay.includes(q);
     });
     const results = matches.slice(0, n);
+    const resultsWithHints = results.map((s) => ({
+      ...s,
+      toolName: `usaspending.${s.slug}`,
+      profileUri: `usaspending://profiles/${s.slug}`,
+      promptUri: `usaspending://prompts/${s.slug}`,
+    }));
     return {
-      content: [{ type: "text", text: JSON.stringify({ results }, null, 2) }],
-      structuredContent: { results },
+      content: [{ type: "text", text: JSON.stringify({ results: resultsWithHints }, null, 2) }],
+      structuredContent: { results: resultsWithHints },
     };
   }
 );
@@ -58,27 +108,23 @@ server.registerTool(
   }
 );
 
-server.registerTool(
-  "usaspending.call",
-  {
-    description: "Validate params for a slugged endpoint and execute the live API call",
-    inputSchema: {
-      slug: z.string(),
-      params: z.record(z.any()),
+for (const profile of profiles) {
+  const toolName = `usaspending.${profile.slug}`;
+  server.registerTool(
+    toolName,
+    {
+      description: `${profile.endpoint.method.toUpperCase()} ${profile.endpoint.path}${profile.description ? ` — ${profile.description}` : ""}`,
+      inputSchema: buildToolInputSchema(profile),
     },
-  },
-  async ({ slug, params }) => {
-    const profile = profilesBySlug[slug];
-    if (!profile) {
-      throw new Error(`unknown slug: ${slug}`);
+    async (params) => {
+      const result = await callEndpoint(profile, (params || {}) as any);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        structuredContent: result as any,
+      };
     }
-    const result = await callEndpoint(profile, params || {});
-    return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-      structuredContent: result as any,
-    };
-  }
-);
+  );
+}
 
 server.registerResource(
   "profiles_all",

@@ -3,4 +3,11 @@ set -euo pipefail
 
 repo_root=$(cd "$(dirname "$0")/../../.." && pwd)
 
-exec "$repo_root/scripts/mcp/node_modules/.bin/tsx" "$repo_root/scripts/mcp/src/server.ts"
+tsx_bin="$repo_root/scripts/mcp/node_modules/.bin/tsx"
+if [[ ! -x "$tsx_bin" ]]; then
+  echo "[mcp] missing $tsx_bin" >&2
+  echo "[mcp] run: (cd \"$repo_root/scripts/mcp\" && npm install)" >&2
+  exit 1
+fi
+
+exec "$tsx_bin" "$repo_root/scripts/mcp/src/server.ts"

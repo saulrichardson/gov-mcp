@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root=$(cd "$(dirname "$0")/../../.." && pwd)
+
+src_root="${1:-$repo_root/runs}"
+dest_root="${2:-$repo_root/profiles}"
+
+if [[ ! -d "$src_root" ]]; then
+  echo "[mcp] source root does not exist: $src_root" >&2
+  exit 1
+fi
+
+mkdir -p "$dest_root"
+
+shopt -s nullglob
+
+exported=0
+missing_prompt=0
+
+for profile_path in "$src_root"/*/*/final/profile.json; do
+  final_dir="$(dirname "$profile_path")"
+  slug_dir="$(dirname "$final_dir")"
+  slug="$(basename "$slug_dir")"
+
+  if [[ "$slug" != *"__"* ]]; then
+    echo "[mcp] skipping unexpected slug directory (missing '__'): $slug_dir" >&2
+    continue
+  fi
+
+  dest_dir="$dest_root/$slug"
+  mkdir -p "$dest_dir"
+
+  cp "$profile_path" "$dest_dir/profile.json"
+
+  prompt_path="$final_dir/prompt.md"
+  if [[ -f "$prompt_path" ]]; then
+    cp "$prompt_path" "$dest_dir/prompt.md"
+  else
+    missing_prompt=$((missing_prompt + 1))
+  fi
+
+  exported=$((exported + 1))
+done
+
+if [[ $exported -eq 0 ]]; then
+  echo "[mcp] no profiles found under $src_root (expected runs/<version>/<slug>/final/profile.json)" >&2
+  exit 1
+fi
+
+echo "[mcp] exported $exported profiles to $dest_root"
+if [[ $missing_prompt -gt 0 ]]; then
+  echo "[mcp] warning: $missing_prompt endpoints missing prompt.md" >&2
+fi
+
