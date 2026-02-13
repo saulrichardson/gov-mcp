@@ -25,8 +25,7 @@ venv/
 .coverage
 htmlcov/
 
-# Project staging/docs artifacts
-docs/
+# Project staging artifacts
 .DS_Store
 staging/
 
