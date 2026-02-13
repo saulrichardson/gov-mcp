@@ -10,4 +10,6 @@ if [[ ! -x "$tsx_bin" ]]; then
   exit 1
 fi
 
+export NODE_PATH="$repo_root/scripts/mcp/node_modules${NODE_PATH:+:$NODE_PATH}"
+
 exec "$tsx_bin" "$repo_root/scripts/mcp/src/server.ts"

@@ -9,11 +9,12 @@ Run a repeatable, fail-fast workflow that keeps `profiles/` publishable and `scr
 ```mermaid
 flowchart LR
     A["Install deps"] --> B["Stage docs"]
-    B --> C["Run pipeline for slug(s)"]
-    C --> D["Promote profile(s)"]
-    D --> E["Validate fixtures"]
-    E --> F["Smoke MCP server"]
-    F --> G["Publish via CI/release"]
+    B --> C["Codex preflight (auth/model)"]
+    C --> D["Run pipeline for slug(s)"]
+    D --> E["Promote profile(s)"]
+    E --> F["Validate fixtures"]
+    F --> G["Smoke MCP server"]
+    G --> H["Publish via CI/release"]
 ```
 
 ## Prerequisites
@@ -41,16 +42,59 @@ python scripts/stage_docs.py --version v2
 
 ### 3. Run pipeline
 
-Single slug:
+Preflight (recommended before any long run):
+
+```bash
+make codex-preflight
+```
+
+Foreground single slug:
 
 ```bash
 make pipeline SLUG=v2__awards__last_updated
+```
+
+Detached full v2 run with monitoring:
+
+```bash
+make pipeline-run-bg PARALLEL=4 PIPELINE_VERSION=v2
+# command prints jobDir and tail/monitor commands
+```
+
+Detached run without post-stage artifact validation (debug only):
+
+```bash
+make pipeline-run-bg PARALLEL=4 PIPELINE_VERSION=v2 SKIP_OUTPUT_VALIDATION=1
 ```
 
 All staged slugs:
 
 ```bash
 make pipeline-all
+```
+
+Live monitor for a background job:
+
+```bash
+make pipeline-status-watch JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>
+```
+
+Replay only failed slugs from a previous job:
+
+```bash
+make pipeline-retry-failed FROM_JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>
+```
+
+Coverage proof at any time:
+
+```bash
+make pipeline-coverage PIPELINE_VERSION=v2
+```
+
+Offline audit of completed outputs for a job:
+
+```bash
+make pipeline-audit JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>
 ```
 
 ### 4. Promote profile fixtures
@@ -216,4 +260,3 @@ make gather-runs
 ```bash
 scripts/mcp/bin/print-client-configs
 ```
-

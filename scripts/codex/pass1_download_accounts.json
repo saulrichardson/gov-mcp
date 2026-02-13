@@ -1,0 +1,339 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/download/accounts.md",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/download/accounts/"
+    },
+    "description": "Generates custom USAspending account download packages and returns metadata about the generated file.",
+    "inputSchema": {
+      "confidence": "hypothesis",
+      "type": "object",
+      "properties": {
+        "account_level": {
+          "location": "body",
+          "type": "string",
+          "description": "Granularity of the download; observed values decide between treasury-level and federal account level exports.",
+          "constraints": "Required. Accepts 'treasury_account' or 'federal_account'. Invalid values triggered a WAF HTML 500 block instead of JSON."
+        },
+        "file_format": {
+          "location": "body",
+          "type": "string",
+          "description": "Optional export format for files included in the zip.",
+          "constraints": "Optional. Defaults to 'csv'. Enum: ['csv','tsv','pstxt']. Invalid values return 400 with JSON error."
+        },
+        "columns": {
+          "location": "body",
+          "type": "array",
+          "description": "Optional list of column names to include in the download (not tested due to subsequent WAF blocks).",
+          "constraints": "Optional. Expected to be array of strings when used."
+        },
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Advanced filter object controlling year, submission scope, optional def codes, and other account filters. Server added defaults for agency/budget fields.",
+          "constraints": "Required object. Must include fiscal year and at least one submission selector."
+        },
+        "filters.fy": {
+          "location": "body",
+          "type": "string",
+          "description": "Fiscal year in 'YYYY' format. Server returned it as an integer in responses.",
+          "constraints": "Required per docs. Requests missing it caused the server to drop the connection (no JSON response)."
+        },
+        "filters.quarter": {
+          "location": "body",
+          "type": "string",
+          "description": "Fiscal quarter to scope submissions; server derived a corresponding fiscal period in responses.",
+          "constraints": "Provide one of quarter or period (not both). Enum: ['1','2','3','4']."
+        },
+        "filters.period": {
+          "location": "body",
+          "type": "string",
+          "description": "Fiscal period alternative to quarter. Attempts triggered a WAF HTML block, so live behavior could not be confirmed.",
+          "constraints": "Documented enum: ['2','3','4','5','6','7','8','9','10','11','12']. Server responded with WAF 500 before returning JSON."
+        },
+        "filters.submission_types": {
+          "location": "body",
+          "type": "array",
+          "description": "Primary selector for download content types.",
+          "constraints": "Required (min 1). Enum members: ['account_balances','object_class_program_activity','award_financial']. Empty arrays return 422; invalid members return 400."
+        },
+        "filters.submission_type": {
+          "location": "body",
+          "type": "string",
+          "description": "Legacy singular submission field still accepted by the endpoint; server converts it into submission_types array in the download request echo.",
+          "constraints": "Optional alternative to submission_types. Enum matches submission_types values."
+        },
+        "filters.def_codes": {
+          "location": "body",
+          "type": "array",
+          "description": "Optional Disaster Emergency Fund Code filter from docs.",
+          "constraints": "Untested: attempting to include def_codes caused the server to drop the connection before responding."
+        }
+      },
+      "required": [
+        "account_level",
+        "filters"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "hypothesis",
+      "type": "object",
+      "properties": {
+        "status_url": {
+          "type": "string",
+          "description": "Absolute HTTPS URL for polling download job status."
+        },
+        "file_name": {
+          "type": "string",
+          "description": "Generated zip filename (pattern 'FY<YYYY>P.._All_<scope>_<type>_<timestamp>.zip')."
+        },
+        "file_url": {
+          "type": "string",
+          "description": "Absolute HTTPS URL to download the generated zip once ready."
+        },
+        "download_request": {
+          "type": "object",
+          "description": "Echo of the normalized request the backend queued, including defaulted filters and derived fields such as download_types and period."
+        }
+      },
+      "required": [
+        "status_url",
+        "file_name",
+        "file_url",
+        "download_request"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/accounts/",
+          "query": {},
+          "body": {
+            "account_level": "treasury_account",
+            "filters": {
+              "fy": "2022",
+              "quarter": "1",
+              "submission_type": "account_balances"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "status_url": "https://api.usaspending.gov/api/v2/download/status?file_name=FY2022P01-P03_All_TAS_AccountBalances_2026-02-13_H22M19S52531758.zip",
+            "file_name": "FY2022P01-P03_All_TAS_AccountBalances_2026-02-13_H22M19S52531758.zip",
+            "file_url": "https://files.usaspending.gov/generated_downloads/FY2022P01-P03_All_TAS_AccountBalances_2026-02-13_H22M19S52531758.zip",
+            "download_request": {
+              "account_level": "treasury_account",
+              "download_types": [
+                "account_balances"
+              ],
+              "file_format": "csv",
+              "filters": {
+                "agency": "all",
+                "budget_function": "all",
+                "budget_subfunction": "all",
+                "federal_account": "all",
+                "fy": 2022,
+                "period": 3,
+                "quarter": 1,
+                "submission_types": [
+                  "account_balances"
+                ]
+              },
+              "request_type": "account"
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/accounts/",
+          "query": {},
+          "body": {
+            "account_level": "treasury_account",
+            "file_format": "pdf",
+            "filters": {
+              "fy": "2022",
+              "quarter": "1",
+              "submission_type": "account_balances"
+            }
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Field 'file_format' is outside valid values ['csv', 'tsv', 'pstxt']"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Server normalizes 'submission_type' into 'submission_types' array and injects default filter values such as agency/budget fields set to 'all'.",
+      "Response converts fiscal year strings into integers and derives a fiscal period number from the provided quarter.",
+      "Returned 'file_url' values are absolute HTTPS links, whereas docs show relative paths.",
+      "Invalid enumerations (e.g., bad account_level) trigger an F5 WAF HTML block with HTTP 500 rather than a JSON API error.",
+      "Repeated invalid probes led to subsequent requests being dropped without any HTTP response (curl 52)."
+    ]
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/accounts/",
+        "query": {},
+        "body": {
+          "account_level": "treasury_account",
+          "filters": {
+            "fy": "2022",
+            "quarter": "1",
+            "submission_type": "account_balances"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"status_url\":\"https://api.usaspending.gov/api/v2/download/status?file_name=FY2022P01-P03_All_TAS_AccountBalances...\",\"file_name\":\"FY2022P01-P03_All_TAS_AccountBalances_2026-02-13_H22M19S52531758.zip\",\"download_request\":{\"download_types\":[\"account_balances\"],\"filters\":{\"fy\":2022,\"period\":3,\"quarter\":1}}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: minimal body with submission_type string succeeded; server echoed defaults and derived period."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/accounts/",
+        "query": {},
+        "body": {
+          "account_level": "federal_account",
+          "filters": {
+            "fy": "2022",
+            "quarter": "2",
+            "submission_type": "award_financial"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"file_name\":\"FY2022P01-P06_All_FA_AccountBreakdownByAward_2026-02-13_H22M20S03071494.zip\",\"download_request\":{\"account_level\":\"federal_account\",\"download_types\":[\"award_financial\"],\"filters\":{\"fy\":2022,\"period\":6,\"quarter\":2}}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: federal_account option worked and produced different filename pattern with quarter 2 → period 6."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/accounts/",
+        "query": {},
+        "body": {
+          "account_level": "treasury_account",
+          "file_format": "tsv",
+          "filters": {
+            "fy": "2021",
+            "quarter": "3",
+            "submission_types": [
+              "account_balances",
+              "award_financial"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"file_name\":\"FY2021P01-P09_All_TAS_AccountData_2026-02-13_H22M20S09922382.zip\",\"download_request\":{\"file_format\":\"tsv\",\"download_types\":[\"account_balances\",\"award_financial\"]}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: multi-submission download with explicit TSV format succeeded."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/accounts/",
+        "query": {},
+        "body": {
+          "account_level": "treasury_account",
+          "file_format": "pdf",
+          "filters": {
+            "fy": "2022",
+            "quarter": "1",
+            "submission_type": "account_balances"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'file_format' is outside valid values ['csv', 'tsv', 'pstxt']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: invalid file_format rejected with clean 400 JSON error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/accounts/",
+        "query": {},
+        "body": {
+          "account_level": "invalid",
+          "filters": {
+            "fy": "2022",
+            "quarter": "1",
+            "submission_type": "account_balances"
+          }
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<html><head>...Web Page Blocked!...</head>",
+        "contentType": "text/html"
+      },
+      "notes": "fail: unrecognized account_level triggers F5 WAF block page (HTML 500) instead of structured error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/accounts/",
+        "query": {},
+        "body": {
+          "account_level": "treasury_account",
+          "filters": {
+            "fy": "2022",
+            "quarter": "1"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Missing required filter: submission_types\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: omitting submission types returns 400 complaining about submission_types."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/accounts/",
+        "query": {},
+        "body": {
+          "account_level": "treasury_account",
+          "filters": {
+            "fy": "2022",
+            "quarter": "1",
+            "submission_types": []
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'filters|submission_types' value '[]' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: empty submission_types array rejected with 422 validation error."
+    },
+    {
+      "request": {
+        "method": "POST",
+… (truncated due to message length) …

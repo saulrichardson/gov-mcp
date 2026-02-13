@@ -170,14 +170,21 @@ Failure modes are explicit (`HOST_NOT_ALLOWED`, `REQUEST_TIMEOUT`, validation fa
 ### Add or refresh a profile slug
 
 1. `python scripts/stage_docs.py --version v2`
-2. `make pipeline SLUG=<new_slug>`
-3. `make promote-profile SLUG=<new_slug>`
-4. `scripts/mcp/bin/validate-profiles`
-5. `scripts/mcp/bin/smoke-server`
+2. `make codex-preflight`
+3. `make pipeline SLUG=<new_slug>`
+4. `make promote-profile SLUG=<new_slug>`
+5. `scripts/mcp/bin/validate-profiles`
+6. `scripts/mcp/bin/smoke-server`
+
+### Prove full-contract coverage in background
+
+1. `make codex-preflight`
+2. `make pipeline-run-bg PARALLEL=4 PIPELINE_VERSION=v2`
+3. `make pipeline-status-watch JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>`
+4. `make pipeline-coverage PIPELINE_VERSION=v2`
 
 ### Add stricter constraints
 
 - Update `src/agent/core/profileSchema.ts` (canonical schema).
 - Keep `scripts/mcp/src/types.ts` and loaders aligned.
 - Run `make verify` before publishing.
-

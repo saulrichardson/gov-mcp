@@ -67,7 +67,9 @@ Write your final JSON report to the file:
 \`{{OUTPUT_SUMMARY_PATH}}\`
 
 The file must contain exactly one JSON object with top-level keys:
-\`contract\`, \`probes\`, \`mismatches\`, \`gaps\`, \`risks\`.
+\`schemaVersion\`, \`contract\`, \`probes\`, \`mismatches\`, \`gaps\`, \`risks\`.
+
+Set \`schemaVersion\` to the literal string \`"1.0.0"\`.
 
 Within \`contract\`, both \`inputSchema\` and \`outputSchema\` must include a top-level \`confidence\` string (set it to "hypothesis").
 
@@ -77,6 +79,7 @@ Do **not** print the JSON in chat. When the file is written successfully, print 
 
 \`\`\`json
 {
+  "schemaVersion": "1.0.0",
   "contract": {
     "name": "{{ENDPOINT_RELATIVE_PATH}}",
     "endpoint": { "method": "GET|POST|PUT|PATCH|DELETE", "host": "{{BASE_URL}}", "path": "/api/v2/..." },
@@ -524,7 +527,7 @@ If any of these lists are empty, include them as \`[]\` but keep the keys.
 ## Final Output Format (STRICT)
 
 You must write exactly one JSON object with top-level keys
-\`contract\`, \`probes\`, \`mismatches\`, \`gaps\`, \`risks\` to \`{{OUTPUT_SUMMARY_PATH}}\`.
+\`schemaVersion\`, \`contract\`, \`probes\`, \`mismatches\`, \`gaps\`, \`risks\` to \`{{OUTPUT_SUMMARY_PATH}}\`.
 
 Do not add or remove top-level keys. No markdown, no code fences, no commentary in chat.
 

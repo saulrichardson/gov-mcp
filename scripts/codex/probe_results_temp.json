@@ -1,0 +1,900 @@
+[
+  {
+    "label": "P1_minimal_award_only",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[{\"total_transaction_obligated_amount\":11234642.22,\"federal_account\":\"057-3600\",\"account_title\":\"Research, Development, Test, and Evaluation, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amount\":8738570466.81,\"federal_account\":\"057-3010\",\"account_title\":\"Aircraft Procurement, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amo...",
+    "raw_body": {
+      "results": [
+        {
+          "total_transaction_obligated_amount": 11234642.22,
+          "federal_account": "057-3600",
+          "account_title": "Research, Development, Test, and Evaluation, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 8738570466.81,
+          "federal_account": "057-3010",
+          "account_title": "Aircraft Procurement, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 2653385877.35,
+          "federal_account": "017-1506",
+          "account_title": "Aircraft Procurement, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 5775565.34,
+          "federal_account": "017-1319",
+          "account_title": "Research, Development, Test, and Evaluation, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 27000000.0,
+          "federal_account": "011-8242",
+          "account_title": "Advances, Foreign Military Sales, Funds Appropriated to the President",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        }
+      ],
+      "page_metadata": {
+        "page": 1,
+        "count": 5,
+        "next": null,
+        "previous": null,
+        "hasNext": false,
+        "hasPrevious": false
+      }
+    },
+    "notes": "Minimal request to observe defaults"
+  },
+  {
+    "label": "P2_limit_2",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "limit": 2
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[{\"total_transaction_obligated_amount\":11234642.22,\"federal_account\":\"057-3600\",\"account_title\":\"Research, Development, Test, and Evaluation, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amount\":8738570466.81,\"federal_account\":\"057-3010\",\"account_title\":\"Aircraft Procurement, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"}],\"page_metadata\":{\"page\":1,\"count...",
+    "raw_body": {
+      "results": [
+        {
+          "total_transaction_obligated_amount": 11234642.22,
+          "federal_account": "057-3600",
+          "account_title": "Research, Development, Test, and Evaluation, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 8738570466.81,
+          "federal_account": "057-3010",
+          "account_title": "Aircraft Procurement, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        }
+      ],
+      "page_metadata": {
+        "page": 1,
+        "count": 5,
+        "next": 2,
+        "previous": null,
+        "hasNext": true,
+        "hasPrevious": false
+      }
+    },
+    "notes": "Check limit smaller than default"
+  },
+  {
+    "label": "P3_limit_2_order_asc",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "limit": 2,
+        "order": "asc"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[{\"total_transaction_obligated_amount\":27000000.0,\"federal_account\":\"011-8242\",\"account_title\":\"Advances, Foreign Military Sales, Funds Appropriated to the President\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amount\":5775565.34,\"federal_account\":\"017-1319\",\"account_title\":\"Research, Development, Test, and Evaluation, Navy\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"}],\"pa...",
+    "raw_body": {
+      "results": [
+        {
+          "total_transaction_obligated_amount": 27000000.0,
+          "federal_account": "011-8242",
+          "account_title": "Advances, Foreign Military Sales, Funds Appropriated to the President",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 5775565.34,
+          "federal_account": "017-1319",
+          "account_title": "Research, Development, Test, and Evaluation, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        }
+      ],
+      "page_metadata": {
+        "page": 1,
+        "count": 5,
+        "next": 2,
+        "previous": null,
+        "hasNext": true,
+        "hasPrevious": false
+      }
+    },
+    "notes": "Test order asc with default sort"
+  },
+  {
+    "label": "P4_sort_total_desc",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "sort": "total_transaction_obligated_amount",
+        "order": "desc",
+        "limit": 3
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[{\"total_transaction_obligated_amount\":8738570466.81,\"federal_account\":\"057-3010\",\"account_title\":\"Aircraft Procurement, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amount\":2653385877.35,\"federal_account\":\"017-1506\",\"account_title\":\"Aircraft Procurement, Navy\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amount\":27000000.0,\"federal_a...",
+    "raw_body": {
+      "results": [
+        {
+          "total_transaction_obligated_amount": 8738570466.81,
+          "federal_account": "057-3010",
+          "account_title": "Aircraft Procurement, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 2653385877.35,
+          "federal_account": "017-1506",
+          "account_title": "Aircraft Procurement, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 27000000.0,
+          "federal_account": "011-8242",
+          "account_title": "Advances, Foreign Military Sales, Funds Appropriated to the President",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        }
+      ],
+      "page_metadata": {
+        "page": 1,
+        "count": 5,
+        "next": 2,
+        "previous": null,
+        "hasNext": true,
+        "hasPrevious": false
+      }
+    },
+    "notes": "Sort by total obligation descending"
+  },
+  {
+    "label": "P5_sort_total_asc",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "sort": "total_transaction_obligated_amount",
+        "order": "asc",
+        "limit": 3
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[{\"total_transaction_obligated_amount\":5775565.34,\"federal_account\":\"017-1319\",\"account_title\":\"Research, Development, Test, and Evaluation, Navy\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amount\":11234642.22,\"federal_account\":\"057-3600\",\"account_title\":\"Research, Development, Test, and Evaluation, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transactio...",
+    "raw_body": {
+      "results": [
+        {
+          "total_transaction_obligated_amount": 5775565.34,
+          "federal_account": "017-1319",
+          "account_title": "Research, Development, Test, and Evaluation, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 11234642.22,
+          "federal_account": "057-3600",
+          "account_title": "Research, Development, Test, and Evaluation, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 27000000.0,
+          "federal_account": "011-8242",
+          "account_title": "Advances, Foreign Military Sales, Funds Appropriated to the President",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        }
+      ],
+      "page_metadata": {
+        "page": 1,
+        "count": 5,
+        "next": 2,
+        "previous": null,
+        "hasNext": true,
+        "hasPrevious": false
+      }
+    },
+    "notes": "Sort by total obligation ascending"
+  },
+  {
+    "label": "P6_sort_account_title",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "sort": "account_title",
+        "order": "asc",
+        "limit": 3
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[{\"total_transaction_obligated_amount\":27000000.0,\"federal_account\":\"011-8242\",\"account_title\":\"Advances, Foreign Military Sales, Funds Appropriated to the President\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amount\":8738570466.81,\"federal_account\":\"057-3010\",\"account_title\":\"Aircraft Procurement, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction...",
+    "raw_body": {
+      "results": [
+        {
+          "total_transaction_obligated_amount": 27000000.0,
+          "federal_account": "011-8242",
+          "account_title": "Advances, Foreign Military Sales, Funds Appropriated to the President",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 8738570466.81,
+          "federal_account": "057-3010",
+          "account_title": "Aircraft Procurement, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 2653385877.35,
+          "federal_account": "017-1506",
+          "account_title": "Aircraft Procurement, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        }
+      ],
+      "page_metadata": {
+        "page": 1,
+        "count": 5,
+        "next": 2,
+        "previous": null,
+        "hasNext": true,
+        "hasPrevious": false
+      }
+    },
+    "notes": "Sort by account title"
+  },
+  {
+    "label": "P7_sort_federal_account_desc",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "sort": "federal_account",
+        "order": "desc",
+        "limit": 3
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[{\"total_transaction_obligated_amount\":11234642.22,\"federal_account\":\"057-3600\",\"account_title\":\"Research, Development, Test, and Evaluation, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amount\":8738570466.81,\"federal_account\":\"057-3010\",\"account_title\":\"Aircraft Procurement, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amo...",
+    "raw_body": {
+      "results": [
+        {
+          "total_transaction_obligated_amount": 11234642.22,
+          "federal_account": "057-3600",
+          "account_title": "Research, Development, Test, and Evaluation, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 8738570466.81,
+          "federal_account": "057-3010",
+          "account_title": "Aircraft Procurement, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 2653385877.35,
+          "federal_account": "017-1506",
+          "account_title": "Aircraft Procurement, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        }
+      ],
+      "page_metadata": {
+        "page": 1,
+        "count": 5,
+        "next": 2,
+        "previous": null,
+        "hasNext": true,
+        "hasPrevious": false
+      }
+    },
+    "notes": "Sort by federal account desc"
+  },
+  {
+    "label": "P8_sort_agency",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "sort": "agency",
+        "order": "asc",
+        "limit": 3
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[{\"total_transaction_obligated_amount\":27000000.0,\"federal_account\":\"011-8242\",\"account_title\":\"Advances, Foreign Military Sales, Funds Appropriated to the President\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amount\":5775565.34,\"federal_account\":\"017-1319\",\"account_title\":\"Research, Development, Test, and Evaluation, Navy\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"to...",
+    "raw_body": {
+      "results": [
+        {
+          "total_transaction_obligated_amount": 27000000.0,
+          "federal_account": "011-8242",
+          "account_title": "Advances, Foreign Military Sales, Funds Appropriated to the President",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 5775565.34,
+          "federal_account": "017-1319",
+          "account_title": "Research, Development, Test, and Evaluation, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 2653385877.35,
+          "federal_account": "017-1506",
+          "account_title": "Aircraft Procurement, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        }
+      ],
+      "page_metadata": {
+        "page": 1,
+        "count": 5,
+        "next": 2,
+        "previous": null,
+        "hasNext": true,
+        "hasPrevious": false
+      }
+    },
+    "notes": "Sort by agency (undocumented alias?)"
+  },
+  {
+    "label": "P9_invalid_sort",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "sort": "not_a_field"
+      }
+    },
+    "status": 400,
+    "content_type": "application/json",
+    "body_excerpt": "{\"detail\":\"Field 'sort' is outside valid values ['federal_account', 'total_transaction_obligated_amount', 'agency', 'account_title']\"}",
+    "raw_body": {
+      "detail": "Field 'sort' is outside valid values ['federal_account', 'total_transaction_obligated_amount', 'agency', 'account_title']"
+    },
+    "notes": "Expect validation error for bad sort"
+  },
+  {
+    "label": "P10_invalid_order",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "order": "ascending"
+      }
+    },
+    "status": 400,
+    "content_type": "application/json",
+    "body_excerpt": "{\"detail\":\"Field 'order' is outside valid values ['asc', 'desc']\"}",
+    "raw_body": {
+      "detail": "Field 'order' is outside valid values ['asc', 'desc']"
+    },
+    "notes": "Expect validation error for bad order"
+  },
+  {
+    "label": "P11_missing_award",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {}
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "body_excerpt": "{\"detail\":\"Missing value: 'award_id' is a required field\"}",
+    "raw_body": {
+      "detail": "Missing value: 'award_id' is a required field"
+    },
+    "notes": "Missing required award_id"
+  },
+  {
+    "label": "P12_award_null",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": null
+      }
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "body_excerpt": "{\"detail\":\"Invalid value in 'award_id'. 'None' is not a valid type (integer, text)\"}",
+    "raw_body": {
+      "detail": "Invalid value in 'award_id'. 'None' is not a valid type (integer, text)"
+    },
+    "notes": "Null award id"
+  },
+  {
+    "label": "P13_award_unknown",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "FAKE_AWARD_ID_DOES_NOT_EXIST"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[],\"page_metadata\":{\"page\":1,\"count\":0,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false}}",
+    "raw_body": {
+      "results": [],
+      "page_metadata": {
+        "page": 1,
+        "count": 0,
+        "next": null,
+        "previous": null,
+        "hasNext": false,
+        "hasPrevious": false
+      }
+    },
+    "notes": "Unknown award id to observe empty set"
+  },
+  {
+    "label": "P14_limit_string",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "limit": "5"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[{\"total_transaction_obligated_amount\":11234642.22,\"federal_account\":\"057-3600\",\"account_title\":\"Research, Development, Test, and Evaluation, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amount\":8738570466.81,\"federal_account\":\"057-3010\",\"account_title\":\"Aircraft Procurement, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amo...",
+    "raw_body": {
+      "results": [
+        {
+          "total_transaction_obligated_amount": 11234642.22,
+          "federal_account": "057-3600",
+          "account_title": "Research, Development, Test, and Evaluation, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 8738570466.81,
+          "federal_account": "057-3010",
+          "account_title": "Aircraft Procurement, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 2653385877.35,
+          "federal_account": "017-1506",
+          "account_title": "Aircraft Procurement, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 5775565.34,
+          "federal_account": "017-1319",
+          "account_title": "Research, Development, Test, and Evaluation, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 27000000.0,
+          "federal_account": "011-8242",
+          "account_title": "Advances, Foreign Military Sales, Funds Appropriated to the President",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        }
+      ],
+      "page_metadata": {
+        "page": 1,
+        "count": 5,
+        "next": null,
+        "previous": null,
+        "hasNext": false,
+        "hasPrevious": false
+      }
+    },
+    "notes": "String limit should error"
+  },
+  {
+    "label": "P15_limit_zero",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "limit": 0
+      }
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "body_excerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}",
+    "raw_body": {
+      "detail": "Field 'limit' value '0' is below min '1'"
+    },
+    "notes": "Limit zero boundary"
+  },
+  {
+    "label": "P16_limit_negative",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "limit": -5
+      }
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "body_excerpt": "{\"detail\":\"Field 'limit' value '-5' is below min '1'\"}",
+    "raw_body": {
+      "detail": "Field 'limit' value '-5' is below min '1'"
+    },
+    "notes": "Negative limit"
+  },
+  {
+    "label": "P17_limit_large",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "limit": 200
+      }
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "body_excerpt": "{\"detail\":\"Field 'limit' value '200' is above max '100'\"}",
+    "raw_body": {
+      "detail": "Field 'limit' value '200' is above max '100'"
+    },
+    "notes": "Large limit to see max"
+  },
+  {
+    "label": "P18_page_2",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "limit": 2,
+        "page": 2
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[{\"total_transaction_obligated_amount\":2653385877.35,\"federal_account\":\"017-1506\",\"account_title\":\"Aircraft Procurement, Navy\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amount\":5775565.34,\"federal_account\":\"017-1319\",\"account_title\":\"Research, Development, Test, and Evaluation, Navy\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"}],\"page_metadata\":{\"page\":2,\"count\":5,\"next\":...",
+    "raw_body": {
+      "results": [
+        {
+          "total_transaction_obligated_amount": 2653385877.35,
+          "federal_account": "017-1506",
+          "account_title": "Aircraft Procurement, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 5775565.34,
+          "federal_account": "017-1319",
+          "account_title": "Research, Development, Test, and Evaluation, Navy",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        }
+      ],
+      "page_metadata": {
+        "page": 2,
+        "count": 5,
+        "next": 3,
+        "previous": 1,
+        "hasNext": true,
+        "hasPrevious": true
+      }
+    },
+    "notes": "Pagination second page"
+  },
+  {
+    "label": "P19_page_far",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "limit": 2,
+        "page": 999
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[],\"page_metadata\":{\"page\":999,\"count\":5,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false}}",
+    "raw_body": {
+      "results": [],
+      "page_metadata": {
+        "page": 999,
+        "count": 5,
+        "next": null,
+        "previous": null,
+        "hasNext": false,
+        "hasPrevious": false
+      }
+    },
+    "notes": "Page beyond data set"
+  },
+  {
+    "label": "P20_page_zero",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "page": 0
+      }
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "body_excerpt": "{\"detail\":\"Field 'page' value '0' is below min '1'\"}",
+    "raw_body": {
+      "detail": "Field 'page' value '0' is below min '1'"
+    },
+    "notes": "Page zero boundary"
+  },
+  {
+    "label": "P21_page_negative",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "page": -3
+      }
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "body_excerpt": "{\"detail\":\"Field 'page' value '-3' is below min '1'\"}",
+    "raw_body": {
+      "detail": "Field 'page' value '-3' is below min '1'"
+    },
+    "notes": "Negative page"
+  },
+  {
+    "label": "P22_page_string",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "page": "2"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[],\"page_metadata\":{\"page\":2,\"count\":5,\"next\":null,\"previous\":1,\"hasNext\":false,\"hasPrevious\":true}}",
+    "raw_body": {
+      "results": [],
+      "page_metadata": {
+        "page": 2,
+        "count": 5,
+        "next": null,
+        "previous": 1,
+        "hasNext": false,
+        "hasPrevious": true
+      }
+    },
+    "notes": "Non-integer page"
+  },
+  {
+    "label": "P23_extra_field",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/awards/accounts/",
+      "query": {},
+      "body": {
+        "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+        "limit": 2,
+        "unexpected": "value"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "body_excerpt": "{\"results\":[{\"total_transaction_obligated_amount\":11234642.22,\"federal_account\":\"057-3600\",\"account_title\":\"Research, Development, Test, and Evaluation, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"},{\"total_transaction_obligated_amount\":8738570466.81,\"federal_account\":\"057-3010\",\"account_title\":\"Aircraft Procurement, Air Force\",\"funding_agency_abbreviation\":\"DOD\",\"funding_agency_name\":\"Department of Defense\",\"funding_agency_id\":1174,\"funding_toptier_agency_id\":126,\"funding_agency_slug\":\"department-of-defense\"}],\"page_metadata\":{\"page\":1,\"count...",
+    "raw_body": {
+      "results": [
+        {
+          "total_transaction_obligated_amount": 11234642.22,
+          "federal_account": "057-3600",
+          "account_title": "Research, Development, Test, and Evaluation, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        },
+        {
+          "total_transaction_obligated_amount": 8738570466.81,
+          "federal_account": "057-3010",
+          "account_title": "Aircraft Procurement, Air Force",
+          "funding_agency_abbreviation": "DOD",
+          "funding_agency_name": "Department of Defense",
+          "funding_agency_id": 1174,
+          "funding_toptier_agency_id": 126,
+          "funding_agency_slug": "department-of-defense"
+        }
+      ],
+      "page_metadata": {
+        "page": 1,
+        "count": 5,
+        "next": 2,
+        "previous": null,
+        "hasNext": true,
+        "hasPrevious": false
+      }
+    },
+    "notes": "Unknown field handling"
+  }
+]

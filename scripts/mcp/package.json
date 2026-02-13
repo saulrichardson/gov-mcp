@@ -6,6 +6,11 @@
   "description": "MCP-ish server exposing USAspending profiles as tools/resources",
   "scripts": {
     "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "validate-profiles": "tsx src/validateProfiles.ts",
+    "promote-profile": "tsx src/promoteProfile.ts",
+    "smoke": "tsx src/smokeServer.ts",
     "lint": "echo 'no lint configured'"
   },
   "dependencies": {
@@ -17,7 +22,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/node": "^24.10.1",
     "tsx": "^4.15.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^3.2.4"
   }
 }

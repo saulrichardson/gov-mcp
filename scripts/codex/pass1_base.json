@@ -1,0 +1,15 @@
+{
+  "mismatches": [
+    "Docs imply DEF codes map to CARES Act entries, but live validation admits a broader set including digits (1-9) and multi-letter codes such as AAA, AAB, and QQQ.",
+    "Docs enumerate award_type_codes without '-1', yet the API accepts '-1' as a valid value."
+  ],
+  "gaps": [
+    "Unclear whether shared filters like time_period, keywords, or agencies are supposed to affect this endpoint; probes showed no change in counts despite varied inputs.",
+    "Full authoritative list of DEF codes was inferred from error messaging only; additional values may exist beyond those revealed."
+  ],
+  "risks": [
+    "Silent acceptance of unsupported filter keys can mislead clients into thinking filters were applied when counts remain unchanged.",
+    "Differences between 422 (missing) and 400 (invalid) errors require client handling of both validation styles.",
+    "Award type sentinel '-1' is undocumented; relying on docs alone could lead to unexpected zero results."
+  ]
+}

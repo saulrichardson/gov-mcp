@@ -1,0 +1,174 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/search/spending_by_award.md",
+    "description": "Search and paginate award-level spending records using filter criteria.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/search/spending_by_award/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Search filter object aligned with shared search filter contract.",
+          "constraints": "Required."
+        },
+        "fields": {
+          "location": "body",
+          "type": "array",
+          "description": "Output field selection list.",
+          "constraints": "Required non-empty array of field names."
+        },
+        "page": {
+          "location": "body",
+          "type": "integer",
+          "description": "1-indexed page number.",
+          "constraints": "Optional; default server behavior applies if omitted."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Page size.",
+          "constraints": "Optional; server validates limits."
+        },
+        "sort": {
+          "location": "body",
+          "type": "string",
+          "description": "Sort field token.",
+          "constraints": "Optional."
+        },
+        "order": {
+          "location": "body",
+          "type": "string",
+          "description": "Sort direction.",
+          "constraints": "Optional enum ['asc','desc']."
+        }
+      },
+      "required": [
+        "filters",
+        "fields"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Award-level rows matching filters."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata for the current result set."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Warnings or informational response messages."
+        }
+      },
+      "required": [
+        "results",
+        "page_metadata"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/search/spending_by_award/",
+          "query": {},
+          "body": {
+            "filters": {
+              "time_period": [
+                {
+                  "start_date": "2025-01-01",
+                  "end_date": "2025-12-31"
+                }
+              ]
+            },
+            "fields": [
+              "Award ID",
+              "Recipient Name",
+              "Award Amount"
+            ],
+            "page": 1,
+            "limit": 10
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [],
+            "page_metadata": {
+              "page": 1,
+              "hasNext": false,
+              "hasPrevious": false,
+              "limit": 10
+            },
+            "messages": []
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Field names are API-defined labels rather than always being snake_case keys.",
+      "Filter behavior can evolve with upstream search index updates."
+    ],
+    "risks": [
+      "Large result sets can be expensive; always use bounded pagination.",
+      "Query semantics depend on shared filter schema version alignment."
+    ],
+    "gaps": [
+      "Some sort-field compatibility combinations are not exhaustively enumerated in this fixture."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-07"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/search/spending_by_award/",
+        "query": {},
+        "body": {
+          "filters": {
+            "time_period": [
+              {
+                "start_date": "2025-01-01",
+                "end_date": "2025-12-31"
+              }
+            ]
+          },
+          "fields": [
+            "Award ID",
+            "Recipient Name"
+          ],
+          "page": 1,
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[],\"page_metadata\":{\"page\":1,\"limit\":5},\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Validated expected POST request envelope and paginated response shape.",
+      "meta": {
+        "fixture": true
+      }
+    }
+  ],
+  "mismatches": [],
+  "gaps": [
+    "Exact field catalog should be refreshed with upstream data dictionary releases."
+  ],
+  "risks": [
+    "Filter semantics can change across API releases and should be regression-tested."
+  ]
+}

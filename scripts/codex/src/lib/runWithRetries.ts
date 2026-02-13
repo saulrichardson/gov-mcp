@@ -13,10 +13,10 @@ export async function runWithRetries(
     attempt += 1;
     try {
       const result = await thread.run(prompt, {
-        onEvent: (evt) => {
+        onEvent: (evt: any) => {
           events.push(evt);
         },
-      });
+      } as any);
       return result;
     } catch (err: any) {
       const msg = String(err?.message ?? err);

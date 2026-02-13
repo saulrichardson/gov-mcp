@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root=$(cd "$(dirname "$0")/../../.." && pwd)
+
+tsx_bin="$repo_root/scripts/mcp/node_modules/.bin/tsx"
+if [[ ! -x "$tsx_bin" ]]; then
+  echo "[mcp] missing $tsx_bin" >&2
+  echo "[mcp] run: (cd \"$repo_root/scripts/mcp\" && npm install)" >&2
+  exit 1
+fi
+
+export NODE_PATH="$repo_root/scripts/mcp/node_modules${NODE_PATH:+:$NODE_PATH}"
+
+exec "$tsx_bin" "$repo_root/scripts/mcp/src/promoteProfile.ts" "$@"

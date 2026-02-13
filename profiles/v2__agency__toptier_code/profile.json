@@ -1,0 +1,123 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code.md",
+    "description": "Return metadata and DEF code context for a single toptier agency code.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "CGAC/FREC toptier code.",
+          "constraints": "Required path parameter."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Fiscal year context.",
+          "constraints": "Optional integer; server validates supported year window."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echoed agency code."
+        },
+        "name": {
+          "type": "string",
+          "description": "Agency name."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Resolved fiscal year used for response."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Warning/info list, often empty."
+        }
+      },
+      "required": [
+        "toptier_code",
+        "name",
+        "fiscal_year",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/020/",
+          "query": {
+            "fiscal_year": 2025
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "020",
+            "name": "Department of the Treasury",
+            "fiscal_year": 2025,
+            "messages": []
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Malformed path codes can return non-JSON 404 payloads.",
+      "Default fiscal_year behavior may differ from explicit latest-year requests."
+    ],
+    "risks": [
+      "Client-side path validation is recommended before issuing calls."
+    ],
+    "gaps": [
+      "All message trigger conditions are not fully characterized."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-07"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/",
+        "query": {
+          "fiscal_year": 2025
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"020\",\"name\":\"Department of the Treasury\",\"fiscal_year\":2025,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Validated baseline path+query behavior.",
+      "meta": {
+        "fixture": true
+      }
+    }
+  ],
+  "mismatches": [
+    "Some invalid path formats return HTML 404 pages instead of JSON errors."
+  ],
+  "gaps": [
+    "Observed warning message scenarios remain sparse."
+  ],
+  "risks": [
+    "Consumers should treat this endpoint as strict on path format and year ranges."
+  ]
+}

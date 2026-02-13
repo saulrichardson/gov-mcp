@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/references/award_types.md",
+    "description": "Return canonical award type metadata used by filtering and reporting endpoints.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/references/award_types/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "award_types": {
+          "type": "array",
+          "description": "List of award type objects with labels and category metadata."
+        }
+      },
+      "required": [
+        "award_types"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/references/award_types/",
+          "query": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "award_types": [
+              {
+                "label": "Contract",
+                "value": "A"
+              },
+              {
+                "label": "Grant",
+                "value": "02"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Returned values are authoritative mapping keys for several downstream filters."
+    ],
+    "risks": [
+      "Award-type code sets can change; consumers should avoid hard-coding."
+    ],
+    "gaps": [
+      "Per-type deprecation metadata is not fully represented in this fixture."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-07"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/references/award_types/",
+        "query": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"award_types\":[{\"label\":\"Contract\",\"value\":\"A\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Validated shape of reference list response.",
+      "meta": {
+        "fixture": true
+      }
+    }
+  ],
+  "mismatches": [],
+  "gaps": [
+    "Full category taxonomy expansion is not included in this fixture snapshot."
+  ],
+  "risks": [
+    "Pinned mappings should be refreshed if upstream values change."
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/awards/last_updated.md",
+    "description": "Returns the most recent awards dataset refresh date as a single MM/DD/YYYY string; GET is the only method that produces the payload.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/awards/last_updated/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "description": "Endpoint does not expect query or body parameters; unexpected query keys are ignored."
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "last_updated": {
+          "type": "string",
+          "description": "Most recent awards data refresh date formatted as MM/DD/YYYY; docs claim it may be empty when no data exists but that state is unverified."
+        }
+      },
+      "required": [
+        "last_updated"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/awards/last_updated/",
+          "query": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "last_updated": "02/06/2026"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/awards/last_updated/",
+          "query": {}
+        },
+        "response": {
+          "status": 405,
+          "body": {
+            "detail": "Method \"POST\" not allowed."
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Trailing slash is optional; /api/v2/awards/last_updated returns the same payload as the documented path with a slash.",
+      "Ignores unexpected query parameters and still emits the same timestamp.",
+      "Response body is a display string in MM/DD/YYYY format rather than ISO-8601.",
+      "Responses are frequently served from cache (Cache-Trace: hit-cache) and may include cookies even for GET."
+    ],
+    "risks": [
+      "Clients must handle the MM/DD/YYYY string carefully to avoid mis-parsing or incorrect ordering because no timezone information is provided.",
+      "Cached responses can lag behind the authoritative refresh event; callers who need real-time data may need to bypass caches."
+    ],
+    "gaps": [
+      "Docs describe an empty-string sentinel when no award data exists, but that behavior has not been observed.",
+      "The timezone or schedule that determines the reported date is undocumented."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-06"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/last_updated/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"last_updated\":\"02/06/2026\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Baseline documented path returns the MM/DD/YYYY string as described."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/last_updated",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"last_updated\":\"02/06/2026\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Trailing slash is optional; both URIs return the same payload."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/last_updated/",
+        "query": {
+          "foo": "bar"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"last_updated\":\"02/06/2026\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Extraneous query parameters are ignored; response matches the baseline."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/last_updated/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 405,
+        "bodyExcerpt": "{\"detail\":\"Method \\\"POST\\\" not allowed.\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Invalid methods yield a JSON 405 explaining the rejection."
+    }
+  ],
+  "mismatches": [],
+  "gaps": [
+    "Docs describe an empty-string sentinel when no award data exists, but that behavior has not been observed.",
+    "The timezone or schedule that determines the reported date is undocumented."
+  ],
+  "risks": [
+    "Clients must handle the MM/DD/YYYY string carefully to avoid mis-parsing or incorrect ordering because no timezone information is provided.",
+    "Cached responses can lag behind the authoritative refresh event; callers who need real-time data may need to bypass caches."
+  ]
+}

@@ -1,0 +1,149 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/awards/count.md",
+    "description": "Return award counts by awarding toptier agency with optional fiscal year, pagination, and CFO-only filtering.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/awards/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Appropriations fiscal year.",
+          "constraints": "Optional; validated server-side."
+        },
+        "group": {
+          "location": "query",
+          "type": "string",
+          "description": "Agency subset selector.",
+          "constraints": "Optional enum ['all','cfo']."
+        },
+        "page": {
+          "location": "query",
+          "type": "integer",
+          "description": "1-indexed page.",
+          "constraints": "Optional; must be >= 1."
+        },
+        "limit": {
+          "location": "query",
+          "type": "integer",
+          "description": "Page size.",
+          "constraints": "Optional; observed bounds 1..100."
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Observed as nested array where results[0] holds current page rows."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata including page, total, next, previous."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Warning/info strings, often empty."
+        }
+      },
+      "required": [
+        "results",
+        "page_metadata",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/awards/count/",
+          "query": {
+            "fiscal_year": 2025,
+            "limit": 2
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              [
+                {
+                  "awarding_toptier_agency_name": "Department of Defense",
+                  "contracts": 3818081
+                },
+                {
+                  "awarding_toptier_agency_name": "Department of Agriculture",
+                  "contracts": 40817
+                }
+              ]
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 76,
+              "limit": 2,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "messages": []
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "results is observed as a nested array shape.",
+      "messages may contain warnings even with status=200."
+    ],
+    "risks": [
+      "Consumers must handle nested result shape consistently.",
+      "Server-side sort semantics can diverge from documentation."
+    ],
+    "gaps": [
+      "Default fiscal-year snapshot semantics remain implementation-specific."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-07"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/awards/count/",
+        "query": {
+          "fiscal_year": 2025,
+          "limit": 2
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[[{\"awarding_toptier_agency_name\":\"Department of Defense\"}]],\"page_metadata\":{\"page\":1,\"total\":76},\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Validated baseline response shape and pagination envelope.",
+      "meta": {
+        "fixture": true
+      }
+    }
+  ],
+  "mismatches": [
+    "Observed payload uses page_metadata.total where docs may reference count."
+  ],
+  "gaps": [
+    "Long-term behavior for omitted fiscal_year should be revalidated periodically."
+  ],
+  "risks": [
+    "Data freshness depends on upstream USAspending publication cadence."
+  ]
+}

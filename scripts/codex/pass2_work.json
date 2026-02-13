@@ -1,0 +1,834 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/treasury_account/tas/object_class.md",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/treasury_account/{tas}/object_class/"
+    },
+    "description": "Returns obligated and outlay totals by object class for a Treasury Account Symbol, with optional filtering, sorting, and pagination.",
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "tas": {
+          "location": "path",
+          "type": "string",
+          "description": "Treasury Account Symbol identifier for the account to summarize; echoed in responses even when no data is found.",
+          "constraints": "Required; accepts account strings with digits and hyphens and optionally one embedded slash; endpoint expects trailing slash or returns 301."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Appropriations fiscal year to evaluate; defaults to the API's current FY (observed: 2026) when omitted.",
+          "constraints": "Required when you need historical data; integer between 2017 and 2026 inclusive; higher values return 422 and pre-FY2017 returns succeed with no rows plus a warning message; non-integers produce 400."
+        },
+        "filter": {
+          "location": "query",
+          "type": "string",
+          "description": "Case-insensitive token filter applied to object class names only; does not search program activity names.",
+          "constraints": "Optional; multi-word filters behave oddly\u2014rows may return with parent totals reduced while child values remain unfiltered, and queries like 'contract' that don't match a full token return zero rows."
+        },
+        "order": {
+          "location": "query",
+          "type": "string",
+          "description": "Sort direction for the selected field. Default is 'desc'.",
+          "constraints": "Optional enum ['asc','desc']; default is 'desc'; invalid values return 400.",
+          "enum": [
+            "asc",
+            "desc"
+          ]
+        },
+        "sort": {
+          "location": "query",
+          "type": "string",
+          "description": "Field used for ordering results. Default is 'obligated_amount'.",
+          "constraints": "Optional enum ['name','obligated_amount','gross_outlay_amount']; default is 'obligated_amount'; invalid values return 400.",
+          "enum": [
+            "name",
+            "obligated_amount",
+            "gross_outlay_amount"
+          ]
+        },
+        "page": {
+          "location": "query",
+          "type": "integer",
+          "description": "Page number for paginated data.",
+          "constraints": "Optional integer >= 1; defaults to 1; out-of-range pages return empty results with metadata for the requested page; zero triggers 422."
+        },
+        "limit": {
+          "location": "query",
+          "type": "integer",
+          "description": "Maximum number of rows per page.",
+          "constraints": "Optional integer between 1 and 100 inclusive; default 10; out-of-range values return 422; non-integer input returns 400."
+        }
+      },
+      "required": [
+        "tas"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "treasury_account_symbol": {
+          "type": "string",
+          "description": "Echo of the requested TAS, including any slash-suffixed components."
+        },
+        "fiscal_year": {
+          "type": "number",
+          "description": "Fiscal year actually queried (defaults to the API's current FY when omitted)."
+        },
+        "page_metadata": {
+          "type": "object",
+          "required": [
+            "page",
+            "total",
+            "limit",
+            "next",
+            "previous",
+            "hasNext",
+            "hasPrevious"
+          ],
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "Requested page number."
+            },
+            "total": {
+              "type": "integer",
+              "description": "Total result rows available for the query."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Page size applied to the query."
+            },
+            "next": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Next page number when more data exists, otherwise null."
+            },
+            "previous": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Previous page number when applicable, otherwise null."
+            },
+            "hasNext": {
+              "type": "boolean",
+              "description": "True if additional pages follow."
+            },
+            "hasPrevious": {
+              "type": "boolean",
+              "description": "True if earlier pages exist."
+            }
+          },
+          "description": "Pagination metadata for the result set."
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "obligated_amount",
+              "gross_outlay_amount",
+              "children"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Object class name label."
+              },
+              "obligated_amount": {
+                "type": "number",
+                "description": "Total obligations for the object class; may be negative when deobligations occur."
+              },
+              "gross_outlay_amount": {
+                "type": "number",
+                "description": "Gross outlays for the object class; may be negative."
+              },
+              "children": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "obligated_amount",
+                    "gross_outlay_amount"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Program activity name."
+                    },
+                    "obligated_amount": {
+                      "type": "number",
+                      "description": "Program activity obligations; values may be negative."
+                    },
+                    "gross_outlay_amount": {
+                      "type": "number",
+                      "description": "Program activity gross outlays; may be negative."
+                    }
+                  }
+                },
+                "description": "Program activity breakdown; will be an empty array when activities are not yet published."
+              }
+            }
+          },
+          "description": "Object class entries for the treasury account, including nested program activities."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Informational strings. The array is always present; pre-FY2017 requests populate it with a warning about DATA Act coverage.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "treasury_account_symbol",
+        "fiscal_year",
+        "page_metadata",
+        "results",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+          "query": {
+            "fiscal_year": "2024"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "treasury_account_symbol": "097-X-0100-000",
+            "fiscal_year": 2024,
+            "page_metadata": {
+              "page": 1,
+              "total": 5,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "name": "Grants and fixed charges",
+                "obligated_amount": 321974526.61,
+                "gross_outlay_amount": 118404738.84,
+                "children": [
+                  {
+                    "name": "ADMINISTRATION AND SERVICE-WIDE ACTIVITIES",
+                    "obligated_amount": 321974526.61,
+                    "gross_outlay_amount": 118404738.84
+                  }
+                ]
+              }
+            ],
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+          "query": {
+            "fiscal_year": "2016"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "treasury_account_symbol": "097-X-0100-000",
+            "fiscal_year": 2016,
+            "page_metadata": {
+              "page": 1,
+              "total": 0,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "results": [],
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+          "query": {
+            "limit": "1000"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'limit' value '1000' is above max '100'"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Requests without the trailing slash receive a 301 redirect to the slash-terminated URL.",
+      "Filter tokens must match the object class name exactly; multi-word strings and partial tokens either return no rows or shrink parent totals while leaving child amounts untouched, so consumer-side reconciliation is required.",
+      "Pages beyond the available data return empty result sets while echoing the requested page number in metadata rather than raising errors.",
+      "Fiscal years earlier than FY2017 return 200 with an explanatory message, while values above the current FY (2026) are rejected with 422.",
+      "404 responses for malformed paths and 301 redirects return HTML rather than JSON, so clients must handle non-JSON bodies."
+    ],
+    "confidence": "observed"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/001-X-0000-000/object_class/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"treasury_account_symbol\":\"001-X-0000-000\",\"fiscal_year\":2026,\"page_metadata\":{\"total\":0},\"results\":[],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - TAS with no data returns 200 and an empty result list using the default FY2026."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2024"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"treasury_account_symbol\":\"097-X-0100-000\",\"fiscal_year\":2024,\"page_metadata\":{\"total\":5},\"results\":[\"Grants and fixed charges\",\"Contractual services and supplies\"],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - baseline successful request with five object classes and populated children."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2024",
+          "limit": "2"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":1,\"limit\":2,\"next\":2,\"hasNext\":true},\"results\":[\"Grants and fixed charges\",\"Contractual services and supplies\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - limit=2 pagination exposes hasNext/next pointers."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2024",
+          "limit": "2",
+          "page": "2"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":2,\"previous\":1,\"next\":3},\"results\":[\"Personnel compensation and benefits\",\"Unknown\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - middle page reveals both previous and next metadata fields."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2024",
+          "limit": "2",
+          "page": "4"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":4,\"total\":5},\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - requesting a page beyond available rows returns an empty array without error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "limit": "100"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"limit\":100,\"total\":5},\"results\":[\"Grants and fixed charges\",\"Contractual services and supplies\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - limit=100 succeeds, suggesting it is the maximum accepted page size."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "limit": "1000"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '1000' is above max '100'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - documentation omits the enforced 1-100 limit range."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "limit": "0"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - validation rejects limit values below 1."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "limit": "ten"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. 'ten' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - non-numeric limit triggers a 400 type error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "page": "0"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'page' value '0' is below min '1'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - page enforces a minimum of 1."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "notanumber"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'fiscal_year'. 'notanumber' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - fiscal_year must be an integer; strings are rejected."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2024.5"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'fiscal_year'. '2024.5' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - non-integer numeric fiscal_year is also rejected."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2030"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2030' is above max '2026'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - hard upper bound of 2026 is not documented."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2016"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[],\"messages\":[\"Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - earlier fiscal years return no data but emit an explanatory message."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"treasury_account_symbol\":\"097-X-0100-000\",\"fiscal_year\":2026,\"results\":[\"Unknown\",\"Grants and fixed charges\"],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - omitting fiscal_year defaults to FY2026 data with empty children arrays."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2024",
+          "sort": "name"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"Unknown\",\"Personnel compensation and benefits\",\"Grants and fixed charges\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - sort=name uses descending order when order is omitted."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2024",
+          "sort": "name",
+          "order": "asc"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"Acquisition of assets\",\"Contractual services and supplies\",\"Grants and fixed charges\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - combining sort=name with order=asc yields alphabetical ordering."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "sort": "invalid"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'sort' is outside valid values ['name', 'obligated_amount', 'gross_outlay_amount']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - invalid sort values raise 400 errors listing allowed options."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "order": "sideways"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'order' is outside valid values ['asc', 'desc']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - invalid order parameter returns 400 with enum guidance."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2024",
+          "filter": "grant"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"total\":1},\"results\":[\"Grants and fixed charges\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - filter 'grant' returns the matching object class regardless of case."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2024",
+          "filter": "person"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"total\":2},\"results\":[{\"name\":\"Contractual services and supplies\",\"obligated_amount\":1289681.18},{\"name\":\"Personnel compensation and benefits\",\"obligated_amount\":683879.87}]}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - filter 'person' returns unexpected rows with totals that diverge from child sums, contradicting the simple name-matching description."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2024",
+          "filter": "nonexistent"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"total\":0},\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - unmatched filters return an empty set without error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2024",
+          "filter": "contract"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"total\":0},\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - filter 'contract' finds nothing even though an object class named 'Contractual services and supplies' exists."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/2024/object_class/",
+        "query": {
+          "fiscal_year": "2024"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"treasury_account_symbol\":\"097-X-0100-000/2024\",\"results\":[],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - TAS strings with a slash component are accepted but may not map to data."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "page": "999"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":999,\"total\":5},\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - extreme page numbers simply return empty results while echoing the requested page."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 301,
+        "bodyExcerpt": "",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail - missing trailing slash triggers a 301 redirect with an HTML response body."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-4930-000/2022/EXTRA/object_class/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>...<h1>Not Found</h1>...",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail - paths with more than one slash segment return HTML 404 pages."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2022"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":2022,\"results\":[{\"name\":\"Grants and fixed charges\",\"obligated_amount\":106501615.33},{\"name\":\"Contractual services and supplies\",\"obligated_amount\":37476697.52}],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - FY2022 demonstrates typical data including children with names like 'N/A' and negative amounts."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":2026,\"results\":[{\"name\":\"Unknown\",\"children\":[]},{\"name\":\"Grants and fixed charges\",\"children\":[]}],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass-2 - omitting fiscal_year defaults to FY2026 where every object class returns an empty children array despite populated totals.",
+      "meta": {
+        "newFromPass2": true
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2016"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"total\":0},\"messages\":[\"Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass-2 - confirms pre-FY2017 queries succeed with an empty result set and populate the messages array with the DATA Act warning.",
+      "meta": {
+        "newFromPass2": true
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/097-X-0100-000/object_class/",
+        "query": {
+          "fiscal_year": "2024",
+          "filter": "personnel compensation"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"total\":1},\"results\":[{\"name\":\"Personnel compensation and benefits\",\"obligated_amount\":30900.0,\"children\":[{\"name\":\"ADMINISTRATION AND SERVICE-WIDE ACTIVITIES\",\"obligated_amount\":2551892.88}] }]}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - multi-word filter narrows parent totals but leaves child program activity values unfiltered, demonstrating inconsistent subtotaling.",
+      "meta": {
+        "newFromPass2": true
+      }
+    }
+  ],
+  "mismatches": [
+    "Docs do not mention the enforced 1-100 range on 'limit', yet the API rejects values outside that window with 422 errors.",
+    "Docs describe 'filter' as matching object class names, but live behavior includes multi-word inconsistencies and leaves child program activity totals untouched, causing totals to disagree.",
+    "Docs imply fully populated ProgramActivity children, but live FY2026 responses return object classes with empty child arrays."
+  ],
+  "gaps": [
+    "Exact tokenization and ranking rules for 'filter' remain unknown; we cannot predict which partial strings will match.",
+    "The backend logic producing filtered child totals is opaque\u2014we cannot determine whether the mismatch is a bug or intentional aggregation strategy.",
+    "Accepted TAS path variants beyond single optional slash (e.g., normalization of zero-padded segments) were not exhaustively enumerated."
+  ],
+  "risks": [
+    "Clients expecting JSON everywhere must cope with HTML bodies for 301/404 responses.",
+    "Filter results may mislead consumers because parent totals change while child program activity totals stay unfiltered, making reconciliation difficult.",
+    "Requests default to the current fiscal year (2026), which contains preliminary values and empty children arrays; callers should explicitly set fiscal_year for stable data."
+  ],
+  "deltas": {
+    "added": [
+      "Recorded pass-2 probes covering default FY2026 behavior and multi-word filter anomalies."
+    ],
+    "changed": [
+      "Set contract and schema confidence to observed and expanded the output schema with explicit field definitions.",
+      "Clarified filter semantics, fiscal_year bounds, and pagination metadata requirements in the contract."
+    ],
+    "removed": []
+  }
+}

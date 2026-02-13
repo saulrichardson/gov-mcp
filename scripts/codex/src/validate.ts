@@ -2,18 +2,19 @@ import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { Codex } from "@openai/codex-sdk";
 import { runWithRetries } from "./lib/runWithRetries";
-import configModule from "../../../src/agent/core/config.ts";
+import { PipelineError, toPipelineError } from "./lib/pipelineError";
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from "fs";
-import pathsModule from "../../../src/agent/core/paths.ts";
-import ioModule from "../../../src/agent/core/io.ts";
-import schemas from "../../../src/agent/core/schema.ts";
-import stagingModule from "../../../src/agent/core/staging.ts";
+import * as configModule from "../../../src/agent/core/config.ts";
+import * as pathsModule from "../../../src/agent/core/paths.ts";
+import * as ioModule from "../../../src/agent/core/io.ts";
+import * as schemas from "../../../src/agent/core/schema.ts";
+import * as stagingModule from "../../../src/agent/core/staging.ts";
+import * as promptModule from "../../../src/agent/validate/prompt.ts";
 const { ValidateSchema } = (schemas as any).default ?? (schemas as any);
 const { loadConfig } = (configModule as any).default ?? (configModule as any);
 const { filesForStage } = (pathsModule as any).default ?? (pathsModule as any);
 const { ensureValid } = (ioModule as any).default ?? (ioModule as any);
 const { resolveContractBySlug, loadSupportingManifest } = (stagingModule as any).default ?? (stagingModule as any);
-import promptModule from "../../../src/agent/validate/prompt.ts";
 const { validatePrompt } = (promptModule as any).default ?? (promptModule as any);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,13 +34,14 @@ if (!slugArg) {
   process.exit(1);
 }
 
-let contract: { version: string; slug: string; relativePath: string; stagedPath: string };
-try {
-  contract = resolveContractBySlug(repoRoot, slugArg);
-} catch (err: any) {
-  console.error(`[validate] ${String(err?.message ?? err)}`);
-  process.exit(1);
-}
+const contract = (() => {
+  try {
+    return resolveContractBySlug(repoRoot, slugArg);
+  } catch (err: any) {
+    console.error(`[validate] ${String(err?.message ?? err)}`);
+    process.exit(1);
+  }
+})();
 
 const slug = contract.slug;
 const version = contract.version;
@@ -57,14 +59,15 @@ if (!existsSync(contractAbs)) {
 }
 const endpointDoc = readFileSync(contractAbs, "utf-8");
 
-let supporting: { version: string; always: string[] };
-try {
-  supporting = loadSupportingManifest(repoRoot, version);
-} catch (err: any) {
-  console.error(`[validate] ${String(err?.message ?? err)}`);
-  process.exit(1);
-}
-const sharedFilters = supporting.always.map((rel) => readFileSync(join(repoRoot, rel), "utf-8")).join("\n\n");
+const supporting = (() => {
+  try {
+    return loadSupportingManifest(repoRoot, version);
+  } catch (err: any) {
+    console.error(`[validate] ${String(err?.message ?? err)}`);
+    process.exit(1);
+  }
+})();
+const sharedFilters = supporting.always.map((rel: string) => readFileSync(join(repoRoot, rel), "utf-8")).join("\n\n");
 
 const pass1SummaryPath = join(repoRoot, "runs", version, slug, "discover", "summary.json");
 if (!existsSync(pass1SummaryPath)) {
@@ -83,8 +86,11 @@ const pass1Probes = (() => {
 })();
 
 const cfg = loadConfig(repoRoot);
+for (const w of cfg.configWarnings || []) {
+  console.error(`[validate][config] ${w}`);
+}
 if (!cfg.apiKey) {
-  console.error("[validate] CODEX_API_KEY is required (set it in .env or your environment).");
+  console.error("[validate] CODEX_API_KEY or OPENAI_API_KEY is required (set it in .env or your environment).");
   process.exit(1);
 }
 
@@ -97,12 +103,22 @@ const prompt = validatePrompt
   .replaceAll("{{PASS1_PROBES}}", pass1Probes)
   .replaceAll("{{OUTPUT_SUMMARY_PATH}}", summary);
 
-const codex = new Codex({ apiKey: cfg.apiKey, baseURL: cfg.baseURL, config: cfg.codexConfig as any });
-const thread = codex.startThread(cfg.threadOptions);
+const codex = new Codex({ apiKey: cfg.apiKey, baseUrl: cfg.baseURL } as any);
+const thread = codex.startThread(cfg.threadOptions as any);
 
 (async () => {
   const events: any[] = [];
-  const result = await runWithRetries(thread, prompt, events);
+  let result: any;
+  try {
+    result = await runWithRetries(thread, prompt, events);
+  } catch (err) {
+    throw toPipelineError(err, "THREAD_FAILURE", "Thread execution failed", {
+      stage: "validate",
+      slug,
+      path: summary,
+    });
+  }
+
   writeFileSync(promptTxt, prompt, "utf-8");
   const finalText = (result as any)?.finalResponse ?? String(result);
   writeFileSync(responseTxt, finalText, "utf-8");
@@ -119,11 +135,24 @@ const thread = codex.startThread(cfg.threadOptions);
   try {
     ValidateSchema.parse(JSON.parse(readFileSync(summary, "utf-8")));
   } catch (err) {
-    await ensureValid("validate", summary, thread, 1);
+    try {
+      await ensureValid("validate", summary, thread, { retries: 2, context: { stage: "validate", slug } });
+    } catch (repairErr) {
+      const code = existsSync(summary) ? "INVALID_SCHEMA" : "MISSING_OUTPUT_FILE";
+      throw toPipelineError(repairErr, code, "Validate output is missing or invalid", {
+        stage: "validate",
+        slug,
+        path: summary,
+      });
+    }
   }
 
   console.log(`[validate] ✅ ${contractLabel} -> ${summary}`);
 })().catch((err) => {
-  console.error(err);
+  if (err instanceof PipelineError) {
+    console.error(err.message);
+  } else {
+    console.error(toPipelineError(err, "THREAD_FAILURE", "Unhandled validate failure", { stage: "validate", slug, path: summary }).message);
+  }
   process.exit(1);
 });

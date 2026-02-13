@@ -1,0 +1,5089 @@
+[
+  {
+    "name": "valid_with_filter_recipient_state",
+    "request_body": {
+      "search_text": "Springfield",
+      "limit": 40,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location",
+        "state_code": "VA"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":1,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"}]}",
+    "parsed": {
+      "count": 1,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        }
+      ]
+    }
+  },
+  {
+    "name": "valid_filter_country_only",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 20,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":160,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"},{\"city_name\":\"SPRING\",\"state_code\":\"TX\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MA\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"CO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"NJ\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"OH\"},{\"city_name\":\"SPRINGDALE\",\"state_code\":\"AR\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"TN\"},{\"city_name\":\"SPRING VALLEY\",\"state_code\":\"NY\"},{\"city_name\":\"SPRING HILL\",\"state_code\":\"FL\"},{\"city_name\":\"SPRINGFIELD\",\"...",
+    "parsed": {
+      "count": 160,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "KY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "SPRINGFIELD GARDENS",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGBORO",
+          "state_code": "OH"
+        }
+      ]
+    }
+  },
+  {
+    "name": "valid_primary_scope_with_state",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 20,
+      "filter": {
+        "country_code": "USA",
+        "scope": "primary_place_of_performance",
+        "state_code": "IL"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":5,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"},{\"city_name\":\"SPRING GROVE\",\"state_code\":\"IL\"},{\"city_name\":\"SPRINGERTON\",\"state_code\":\"IL\"},{\"city_name\":\"SPRING VALLEY\",\"state_code\":\"IL\"},{\"city_name\":\"SPRING BAY\",\"state_code\":\"IL\"}]}",
+    "parsed": {
+      "count": 5,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGERTON",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRING BAY",
+          "state_code": "IL"
+        }
+      ]
+    }
+  },
+  {
+    "name": "primary_no_state",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 20,
+      "filter": {
+        "country_code": "USA",
+        "scope": "primary_place_of_performance"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":132,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"CO\"},{\"city_name\":\"SPRING\",\"state_code\":\"TX\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MA\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"OH\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"TN\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"OR\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"NJ\"},{\"city_name\":\"SPRINGDALE\",\"state_code\":\"AR\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"KY\"},{\"city_name\":\"SPRING VALLEY\",\"...",
+    "parsed": {
+      "count": 132,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "KY"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "SPRING ARBOR",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "SPRINGERVILLE",
+          "state_code": "AZ"
+        }
+      ]
+    }
+  },
+  {
+    "name": "primary_foreign",
+    "request_body": {
+      "search_text": "London",
+      "limit": 10,
+      "filter": {
+        "country_code": "FOREIGN",
+        "scope": "primary_place_of_performance"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":2,\"results\":[{\"city_name\":\"LONDON\",\"state_code\":\"GBR\"},{\"city_name\":\"LONDON\",\"state_code\":\"CAN\"}]}",
+    "parsed": {
+      "count": 2,
+      "results": [
+        {
+          "city_name": "LONDON",
+          "state_code": "GBR"
+        },
+        {
+          "city_name": "LONDON",
+          "state_code": "CAN"
+        }
+      ]
+    }
+  },
+  {
+    "name": "foreign_foreign_code",
+    "request_body": {
+      "search_text": "London",
+      "limit": 10,
+      "filter": {
+        "country_code": "FOREIGN",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":45,\"results\":[{\"city_name\":\"LONDON\",\"state_code\":\"CAN\"},{\"city_name\":\"LONDON\",\"state_code\":\"GBR\"},{\"city_name\":\"LONDON\",\"state_code\":\"CANADA\"},{\"city_name\":\"LONDON\",\"state_code\":\"UNITED KINGDOM\"},{\"city_name\":\"LONDON\",\"state_code\":\"NAN\"},{\"city_name\":\"LONDON EC1V 9NR\",\"state_code\":\"GBR\"},{\"city_name\":\"LONDON, ONTARIO\",\"state_code\":\"CAN\"},{\"city_name\":\"LONDON  WC1H 9HF\",\"state_code\":\"GBR\"},{\"city_name\":\"LONDON EC1M4AR\",\"state_code\":\"GBR\"},{\"city_name\":\"LONDON SW1H0QS\",\"state_code\":\"GBR\"}]}",
+    "parsed": {
+      "count": 45,
+      "results": [
+        {
+          "city_name": "LONDON",
+          "state_code": "CAN"
+        },
+        {
+          "city_name": "LONDON",
+          "state_code": "GBR"
+        },
+        {
+          "city_name": "LONDON",
+          "state_code": "CANADA"
+        },
+        {
+          "city_name": "LONDON",
+          "state_code": "UNITED KINGDOM"
+        },
+        {
+          "city_name": "LONDON",
+          "state_code": "NAN"
+        },
+        {
+          "city_name": "LONDON EC1V 9NR",
+          "state_code": "GBR"
+        },
+        {
+          "city_name": "LONDON, ONTARIO",
+          "state_code": "CAN"
+        },
+        {
+          "city_name": "LONDON  WC1H 9HF",
+          "state_code": "GBR"
+        },
+        {
+          "city_name": "LONDON EC1M4AR",
+          "state_code": "GBR"
+        },
+        {
+          "city_name": "LONDON SW1H0QS",
+          "state_code": "GBR"
+        }
+      ]
+    }
+  },
+  {
+    "name": "foreign_specific_country",
+    "request_body": {
+      "search_text": "Toronto",
+      "limit": 10,
+      "filter": {
+        "country_code": "CAN",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":13,\"results\":[{\"city_name\":\"TORONTO\",\"state_code\":\"CAN\"},{\"city_name\":\"TORONTO, ONTARIO\",\"state_code\":\"CAN\"},{\"city_name\":\"TORONTO  ONTARIO\",\"state_code\":\"CAN\"},{\"city_name\":\"TORONTO ONTARTIO\",\"state_code\":\"CAN\"},{\"city_name\":\"TORONTO, ON\",\"state_code\":\"CAN\"},{\"city_name\":\"TORONTO ONTARIO\",\"state_code\":\"CAN\"},{\"city_name\":\"TORONTO - M3H 5T4\",\"state_code\":\"CAN\"},{\"city_name\":\"TORONTO,ON\",\"state_code\":\"CAN\"},{\"city_name\":\"TORONTO M5C2B8\",\"state_code\":\"CAN\"},{\"city_name\":\"TORONTO M5H1L6\",\"state_code\":\"CAN\"}]}",
+    "parsed": {
+      "count": 13,
+      "results": [
+        {
+          "city_name": "TORONTO",
+          "state_code": "CAN"
+        },
+        {
+          "city_name": "TORONTO, ONTARIO",
+          "state_code": "CAN"
+        },
+        {
+          "city_name": "TORONTO  ONTARIO",
+          "state_code": "CAN"
+        },
+        {
+          "city_name": "TORONTO ONTARTIO",
+          "state_code": "CAN"
+        },
+        {
+          "city_name": "TORONTO, ON",
+          "state_code": "CAN"
+        },
+        {
+          "city_name": "TORONTO ONTARIO",
+          "state_code": "CAN"
+        },
+        {
+          "city_name": "TORONTO - M3H 5T4",
+          "state_code": "CAN"
+        },
+        {
+          "city_name": "TORONTO,ON",
+          "state_code": "CAN"
+        },
+        {
+          "city_name": "TORONTO M5C2B8",
+          "state_code": "CAN"
+        },
+        {
+          "city_name": "TORONTO M5H1L6",
+          "state_code": "CAN"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing_filter",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 5
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "response_trimmed": "{\"detail\":\"Missing value: 'filter|country_code' is a required field\"}",
+    "parsed": {
+      "detail": "Missing value: 'filter|country_code' is a required field"
+    }
+  },
+  {
+    "name": "filter_null",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10,
+      "filter": null
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "response_trimmed": "{\"detail\":\"Missing value: 'filter|country_code' is a required field\"}",
+    "parsed": {
+      "detail": "Missing value: 'filter|country_code' is a required field"
+    }
+  },
+  {
+    "name": "filter_missing_scope",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10,
+      "filter": {
+        "country_code": "USA"
+      }
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "response_trimmed": "{\"detail\":\"Missing value: 'filter|scope' is a required field\"}",
+    "parsed": {
+      "detail": "Missing value: 'filter|scope' is a required field"
+    }
+  },
+  {
+    "name": "filter_missing_country",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10,
+      "filter": {
+        "scope": "recipient_location"
+      }
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "response_trimmed": "{\"detail\":\"Missing value: 'filter|country_code' is a required field\"}",
+    "parsed": {
+      "detail": "Missing value: 'filter|country_code' is a required field"
+    }
+  },
+  {
+    "name": "search_missing",
+    "request_body": {
+      "limit": 10,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "response_trimmed": "{\"detail\":\"Missing value: 'search_text' is a required field\"}",
+    "parsed": {
+      "detail": "Missing value: 'search_text' is a required field"
+    }
+  },
+  {
+    "name": "search_empty",
+    "request_body": {
+      "search_text": "",
+      "limit": 10,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "response_trimmed": "{\"detail\":\"Field 'search_text' value '' is below min '1' items\"}",
+    "parsed": {
+      "detail": "Field 'search_text' value '' is below min '1' items"
+    }
+  },
+  {
+    "name": "search_null",
+    "request_body": {
+      "search_text": null,
+      "limit": 10,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 400,
+    "content_type": "application/json",
+    "response_trimmed": "{\"detail\":\"Invalid value in 'search_text'. 'None' is not a valid type (text)\"}",
+    "parsed": {
+      "detail": "Invalid value in 'search_text'. 'None' is not a valid type (text)"
+    }
+  },
+  {
+    "name": "limit_missing",
+    "request_body": {
+      "search_text": "spring",
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":160,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"},{\"city_name\":\"SPRING\",\"state_code\":\"TX\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MA\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"CO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"NJ\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"OH\"},{\"city_name\":\"SPRINGDALE\",\"state_code\":\"AR\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"TN\"}]}",
+    "parsed": {
+      "count": 160,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TN"
+        }
+      ]
+    }
+  },
+  {
+    "name": "limit_default_string",
+    "request_body": {
+      "search_text": "spring",
+      "limit": "10",
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":160,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"},{\"city_name\":\"SPRING\",\"state_code\":\"TX\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MA\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"CO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"NJ\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"OH\"},{\"city_name\":\"SPRINGDALE\",\"state_code\":\"AR\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"TN\"}]}",
+    "parsed": {
+      "count": 160,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TN"
+        }
+      ]
+    }
+  },
+  {
+    "name": "limit_zero",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 0,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":160,\"results\":[]}",
+    "parsed": {
+      "count": 160,
+      "results": []
+    }
+  },
+  {
+    "name": "limit_positive_small",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 1,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":160,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"}]}",
+    "parsed": {
+      "count": 160,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        }
+      ]
+    }
+  },
+  {
+    "name": "limit_high_500",
+    "request_body": {
+      "search_text": "a",
+      "limit": 500,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":1722,\"results\":[{\"city_name\":\"ALEXANDRIA\",\"state_code\":\"VA\"},{\"city_name\":\"ATLANTA\",\"state_code\":\"GA\"},{\"city_name\":\"ARLINGTON\",\"state_code\":\"VA\"},{\"city_name\":\"AUSTIN\",\"state_code\":\"TX\"},{\"city_name\":\"ANN ARBOR\",\"state_code\":\"MI\"},{\"city_name\":\"ANCHORAGE\",\"state_code\":\"AK\"},{\"city_name\":\"ALBUQUERQUE\",\"state_code\":\"NM\"},{\"city_name\":\"ALBANY\",\"state_code\":\"NY\"},{\"city_name\":\"ANAHEIM\",\"state_code\":\"CA\"},{\"city_name\":\"ASHBURN\",\"state_code\":\"VA\"},{\"city_name\":\"ASHLAND\",\"state_code\":\"VA\"},{\"city_name\":\"AUBURN HILLS\",\"state_code\":\"MI\"},{\"city_name\":\"ARLINGTON\",\"state_code\":\"TX\"},{\"city_name...",
+    "parsed": {
+      "count": 1722,
+      "results": [
+        {
+          "city_name": "ALEXANDRIA",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "ATLANTA",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "ARLINGTON",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "AUSTIN",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ANN ARBOR",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "ANCHORAGE",
+          "state_code": "AK"
+        },
+        {
+          "city_name": "ALBUQUERQUE",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "ALBANY",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ANAHEIM",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ASHBURN",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "ASHLAND",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "AUBURN HILLS",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "ARLINGTON",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "AMARILLO",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ALPHARETTA",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "AURORA",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "ANNAPOLIS",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "ANDALUSIA",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "AKRON",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "AUGUSTA",
+          "state_code": "ME"
+        },
+        {
+          "city_name": "AUGUSTA",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "ANDOVER",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "ANNISTON",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "ALLENTOWN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "ABILENE",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "AMES",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ABBOTT PARK",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ATHENS",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "ASHEVILLE",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "ABERDEEN",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "ALEXANDRIA",
+          "state_code": "LA"
+        },
+        {
+          "city_name": "ARVADA",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "ABILENE",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "ALGONA",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "APPLETON",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "ALBANY",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "AMBLER",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "ALLISON",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ANADARKO",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "ABBEVILLE",
+          "state_code": "LA"
+        },
+        {
+          "city_name": "AUBURN",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ADDISON",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ALEDO",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ALEDO",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ALTUS",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "ASTORIA",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "AUSTIN",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "AUDUBON",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ALAMO",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "AURORA",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ADRIAN",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "ARECIBO",
+          "state_code": "PR"
+        },
+        {
+          "city_name": "ALHAMBRA",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ATHENS",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "ALBERT LEA",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "AKRON",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "ANDERSON",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "ALEXANDRIA",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ALAMEDA",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "AMHERST",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ALTAMONTE SPRINGS",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "ASAN",
+          "state_code": "GU"
+        },
+        {
+          "city_name": "ANNANDALE",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "ANSON",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ALBIA",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "AIKEN",
+          "state_code": "SC"
+        },
+        {
+          "city_name": "ALLIANCE",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ALVA",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "ANOKA",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ANKENY",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ANAMOSA",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "AVONDALE",
+          "state_code": "AZ"
+        },
+        {
+          "city_name": "ANDERSON",
+          "state_code": "SC"
+        },
+        {
+          "city_name": "ALLEN",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "AMHERST",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "AMBOY",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ATLANTIC",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ADDISON",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ADA",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ALBANY",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "ANTHONY",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "ADA",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "ALTAMONT",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "AMERICUS",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "ATWOOD",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "AUBURN",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "AUBURN",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "AUGUSTA",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "ALTOONA",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "ANNA",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "AZUSA",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ASHLAND",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "ALBION",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ANGOLA",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "ALBEMARLE",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "ANNAPOLIS JUNCTION",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "ATHENS",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "ABERDEEN",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "AURORA",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ASHLAND",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "ARLINGTON HEIGHTS",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ADEL",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ALAMOGORDO",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "AUBURN",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "AUBURN",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ACCOMAC",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "APOPKA",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "ATTLEBORO",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "ALBION",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "ALLIANCE",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "ARMOUR",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "ALGONA",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "ASHBURN",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "ABERDEEN",
+          "state_code": "MS"
+        },
+        {
+          "city_name": "ASHLAND",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "ARNETT",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "ALMA",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "APEX",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "AGUADILLA",
+          "state_code": "PR"
+        },
+        {
+          "city_name": "ASBURY PARK",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "ARCADIA",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ASTON",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "AGOURA HILLS",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ALTOONA",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "AUBURN",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ABINGDON",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "ATLANTIC CITY",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "ATHENS",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ASHLEY",
+          "state_code": "ND"
+        },
+        {
+          "city_name": "ALLEGAN",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "AUSTELL",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "AMITYVILLE",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ASHEBORO",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "ATHENS",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "ALISO VIEJO",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ANTIOCH",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ALCOA",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "AIEA",
+          "state_code": "HI"
+        },
+        {
+          "city_name": "ABBEVILLE",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "ARCATA",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ANGLETON",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ACWORTH",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "AMELIA COURT HOUSE",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "ARLINGTON",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "ALEXANDER",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "ALBANY",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "ALMA",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ALPENA",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "ATOKA",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "ALMA",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "AINSWORTH",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ARKADELPHIA",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "AMERICAN FALLS",
+          "state_code": "ID"
+        },
+        {
+          "city_name": "ALTON",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ATMORE",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "ASHLAND",
+          "state_code": "KY"
+        },
+        {
+          "city_name": "AURORA",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "ASH FLAT",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "ANTIOCH",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "ALAMOSA",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "AMITE",
+          "state_code": "LA"
+        },
+        {
+          "city_name": "ABBEVILLE",
+          "state_code": "SC"
+        },
+        {
+          "city_name": "ABERDEEN",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "AVA",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "APOLLO BEACH",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "ASHLAND",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "ADEL",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "ALMA",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "AUBURN",
+          "state_code": "ME"
+        },
+        {
+          "city_name": "ALICE",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "AMSTERDAM",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ANTIGO",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "APPLE VALLEY",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ALPINE",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ARLINGTON",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "ALVIN",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "AUGUSTA",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "ARNOLD",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "ALTADENA",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ALBERTVILLE",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "ARCHER CITY",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ARDMORE",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "AMERICAN FORK",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "AZTEC",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "ASPERMONT",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "AVON",
+          "state_code": "CT"
+        },
+        {
+          "city_name": "APTOS",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ALACHUA",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "ALTURAS",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "AVON",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "ABERDEEN PROVING GROUND",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "ASTORIA",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "ATLANTIC BEACH",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "ALBION",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ARROYO GRANDE",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ARTESIA",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "AHOSKIE",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "AMELIA",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "AYER",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "ALEXANDER CITY",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "ALAMO",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ATCHISON",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "ARDEN",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "ALPINE",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "AVON PARK",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "ARTESIA",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "ARKANSAS CITY",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "ALLISON PARK",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "AUBURN UNIVERSITY",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "AVON",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "ARKPORT",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "AUBREY",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ANACORTES",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "ALABASTER",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "ARLINGTON",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "ALSIP",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "AUDUBON",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "ATASCADERO",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ARCHBOLD",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "AGUADA",
+          "state_code": "PR"
+        },
+        {
+          "city_name": "ASHDOWN",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "ALBANY",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ALDIE",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "ALTON",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "ADJUNTAS",
+          "state_code": "PR"
+        },
+        {
+          "city_name": "ANNVILLE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "ASHLEY",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "AFTON",
+          "state_code": "WY"
+        },
+        {
+          "city_name": "AURORA",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "AUTAUGAVILLE",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "ABERDEEN",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "ACTON",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "ASPEN",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "ABSECON",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "ALLENDALE",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "ACCOKEEK",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "AYDEN",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "AMESBURY",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "APACHE JUNCTION",
+          "state_code": "AZ"
+        },
+        {
+          "city_name": "ADELANTO",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ALBION",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "ARCADIA",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "ASHTABULA",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "ACCIDENT",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "AVENEL",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "ARMONK",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ANGUILLA",
+          "state_code": "MS"
+        },
+        {
+          "city_name": "ANDERSON",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ALMIRA",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "ALMA",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "AGANA",
+          "state_code": "GU"
+        },
+        {
+          "city_name": "ARGYLE",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ALGONQUIN",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ARCO",
+          "state_code": "ID"
+        },
+        {
+          "city_name": "ABINGDON",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "ABERNATHY",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "APACHE",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "ALTAMONT",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ALLSTON",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "ANDOVER",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ALBION",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ATWATER",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ANTELOPE",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ALAMO",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ARNOLD",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "ARAB",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "ALBANY",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "ARROYO",
+          "state_code": "PR"
+        },
+        {
+          "city_name": "ATHENS",
+          "state_code": "WV"
+        },
+        {
+          "city_name": "ADDIS",
+          "state_code": "LA"
+        },
+        {
+          "city_name": "AUBURNDALE",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "AGAWAM",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "ANACONDA",
+          "state_code": "MT"
+        },
+        {
+          "city_name": "APPLETON CITY",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "AVON LAKE",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "ALBANY",
+          "state_code": "KY"
+        },
+        {
+          "city_name": "ANTLERS",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "ACKERLY",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ADAMS",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "ALBANY",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ANTON",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "AUBURNDALE",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "APPLETON",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ARCHBALD",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "ASHTON",
+          "state_code": "ID"
+        },
+        {
+          "city_name": "AZLE",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "AMERY",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "ALBANY",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ALIQUIPPA",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "AUBURN",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "ATHENS",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "ABINGTON",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "ALLEN",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "AUBURN",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "AMORY",
+          "state_code": "MS"
+        },
+        {
+          "city_name": "AMBROSE",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "AIBONITO",
+          "state_code": "PR"
+        },
+        {
+          "city_name": "ANTIOCH",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "AITKIN",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ARLINGTON",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "AGENCY VILLAGE",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "ASHLAND",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ADRIAN",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "AVON",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ALTA",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ADA",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "ALDEN",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ALLIANCE",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "ARDMORE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "ADAMS",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "ALTHEIMER",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "ASHLAND",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "ARAPAHOE",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "AURORA",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "AYNOR",
+          "state_code": "SC"
+        },
+        {
+          "city_name": "ASSUMPTION",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "AURORA",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "ARVERNE",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ASHLAND",
+          "state_code": "MS"
+        },
+        {
+          "city_name": "ASHVILLE",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "ALBERT CITY",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "AMHERST",
+          "state_code": "NH"
+        },
+        {
+          "city_name": "ADA",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "ATKINS",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "ABINGTON",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "AUMSVILLE",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "ALEXANDRIA",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "AUBURN",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ANGWIN",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ALICEVILLE",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "ANDOVER",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "ATWOOD",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "ARANSAS PASS",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "AMHERST",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "ATHERTON",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ANGIER",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "ATKINSON",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ALVARADO",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ANDREWS",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ADAMSVILLE",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "ADAIRVILLE",
+          "state_code": "KY"
+        },
+        {
+          "city_name": "ANSONIA",
+          "state_code": "CT"
+        },
+        {
+          "city_name": "ASHLAND CITY",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "ARLINGTON",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "ALLEN PARK",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "AGUAS BUENAS",
+          "state_code": "PR"
+        },
+        {
+          "city_name": "AXTELL",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ARBUCKLE",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ATOKA",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "ARCOLA",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "AVON",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "ARNAUDVILLE",
+          "state_code": "LA"
+        },
+        {
+          "city_name": "ALFRED",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ARTHUR",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ATHOL",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "ANASCO",
+          "state_code": "PR"
+        },
+        {
+          "city_name": "ATHENA",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "ACKLEY",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ANNA",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "AKRON",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ADDIEVILLE",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "AUBURN",
+          "state_code": "KY"
+        },
+        {
+          "city_name": "AUXVASSE",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "ALPINE",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "ALMYRA",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "ASHAWAY",
+          "state_code": "RI"
+        },
+        {
+          "city_name": "ALBERTA",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "ADVANCE",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "AFTON",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "AFTON",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "ARCADIA",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "ANNA",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "ARLINGTON",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "ATTICA",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "AINSWORTH",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "APPLING",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "ALGODONES",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "ARGYLE",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ALBANY",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "ALHAMBRA",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "AMBRIDGE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "ADAIRSVILLE",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "ARLEE",
+          "state_code": "MT"
+        },
+        {
+          "city_name": "ARCANUM",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "AIRWAY HEIGHTS",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "ARDSLEY",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ADAMS",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ATWATER",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ALTONA",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ABBOTT",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ALTOONA",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "AMERICAN CANYON",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ARNOLD",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "AMHERST",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "ALMA",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "ALLENDALE",
+          "state_code": "SC"
+        },
+        {
+          "city_name": "ALBERTSON",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ARCADE",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "AVE MARIA",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "AULANDER",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "ATLANTA",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "ARLINGTON",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "ADVANCE",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "ASOTIN",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "AGAT",
+          "state_code": "GU"
+        },
+        {
+          "city_name": "ADRIAN",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "ASHLAND",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "AMANDA",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "ABBEVILLE",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "ALLENDALE",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "ARGYLE",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "ALDERSON",
+          "state_code": "WV"
+        },
+        {
+          "city_name": "ANTHONY",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "AUTRYVILLE",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "ALTHA",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "AVONDALE ESTATES",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "ATTICA",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "ANNANDALE",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ANSELMO",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "AUGUSTA",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "AUDUBON",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "ACKERMAN",
+          "state_code": "MS"
+        },
+        {
+          "city_name": "ASHLEY",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "APPOMATTOX",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "ANETA",
+          "state_code": "ND"
+        },
+        {
+          "city_name": "ARAPAHO",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "ADAMS",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ALLENTOWN",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "ARCADIA",
+          "state_code": "LA"
+        },
+        {
+          "city_name": "ATCO",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "AVOCA",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "AVOCA",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "ATLANTA",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ANAHUAC",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ATLANTA",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "ATHENS",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ALEXANDRIA",
+          "state_code": "KY"
+        },
+        {
+          "city_name": "AUBERRY",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ABERDEEN",
+          "state_code": "ID"
+        },
+        {
+          "city_name": "ALDEN",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ACAMPO",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ARLINGTON",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "ASHFORD",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "ALEXIS",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ALEXANDRIA",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "AURELIA",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ADAIR",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ARGENTA",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "AURORA",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "ANDREWS",
+          "state_code": "SC"
+        },
+        {
+          "city_name": "ALCESTER",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "AUGUSTA",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "ANIAK",
+          "state_code": "AK"
+        },
+        {
+          "city_name": "ASHTON",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ANNANDALE",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "AVON",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ALTON",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "AUBURNDALE",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "ALBERTVILLE",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "AVON",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "ALTON",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ANDREWS",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "AVON",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "APLINGTON",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ALBERT",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "ALMENA",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "ARLINGTON",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "AURORA",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "AUBURN",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "AMHERST",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ACTON",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "AYR",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ASHLAND",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ALLENDALE",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ARCADIA",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ANDERSON",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "ASHKUM",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ANSLEY",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ANTHONY",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "AXTELL",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "AVONDALE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "ALGOMA",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "ARCADIA",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "ALTOONA",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "ANNANDALE ON HUDSON",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "ARMSTRONG",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ASHMORE",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "AURORA",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "ASHLEY",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ALBERTSON",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "ALTONA",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "AVISTON",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "ALMENA",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "AVON",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "ANZA",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "ATTLEBORO FALLS",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "AGRA",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "ANDALE",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "ARMSTRONG",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "ATLANTIC HIGHLANDS",
+          "state_code": "NJ"
+        }
+      ]
+    }
+  },
+  {
+    "name": "limit_above_total_200",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 200,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":160,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"},{\"city_name\":\"SPRING\",\"state_code\":\"TX\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MA\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"CO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"NJ\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"OH\"},{\"city_name\":\"SPRINGDALE\",\"state_code\":\"AR\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"TN\"},{\"city_name\":\"SPRING VALLEY\",\"state_code\":\"NY\"},{\"city_name\":\"SPRING HILL\",\"state_code\":\"FL\"},{\"city_name\":\"SPRINGFIELD\",\"...",
+    "parsed": {
+      "count": 160,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "KY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "SPRINGFIELD GARDENS",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGBORO",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRING ARBOR",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRING LAKE",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRING LAKE",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VT"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRING HOPE",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGTOWN",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRING GREEN",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGLAKE",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRING CREEK",
+          "state_code": "NV"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "SPRING CITY",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGERVILLE",
+          "state_code": "AZ"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "SPRING LAKE",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "LA"
+        },
+        {
+          "city_name": "SPRING LAKE",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "SPRINGVIEW",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "SPRING MILLS",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "SC"
+        },
+        {
+          "city_name": "SPRINGER",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGHILL",
+          "state_code": "LA"
+        },
+        {
+          "city_name": "SPRING CITY",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRINGERTON",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGPORT",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRING PARK",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGER",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "SPRINGBORO",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRINGVALE",
+          "state_code": "ME"
+        },
+        {
+          "city_name": "SPRING HOUSE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "WV"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING CITY",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRINGPORT",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING CHURCH",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGBROOK",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING RUN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGWATER",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NH"
+        },
+        {
+          "city_name": "SPRINGFIELD CENTER",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING CREEK",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING LAKE PARK",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRING GLEN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING CREEK",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRINGBROOK",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "SPRINGS",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "ME"
+        },
+        {
+          "city_name": "SPRING ARBOR",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "ID"
+        },
+        {
+          "city_name": "SPRING BROOK TOWNSHIP",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGTOWN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGWOOD",
+          "state_code": "SC"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "MT"
+        },
+        {
+          "city_name": "SPRING BAY",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRING MOUNT",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "WV"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "WY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "SPRING GLEN",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING GARDEN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "SPRINGER",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRINGFILED",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRING DALE",
+          "state_code": "WV"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRINGFILED",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD,",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "AZ"
+        },
+        {
+          "city_name": "SPRING PARK",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRING GARDENS",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD ARMORY NA",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VI"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "SPRINGPORT",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGFILED",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRING GARDEN",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "SPRINGFIELD (TOWNSHIP",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING BROOK",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGVIEW",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING LAKE HEIGHTS",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGWELLS",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "00"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "MT"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "SPRINGLAKE",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "SPRINGFIELD (TOWNSHIP",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRING LAKE PA",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGETTSBURY TOWNSHIP",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGFIELD REGIONAL",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGVALLEY",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "AK"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "SPRINGS",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "SPRING BROOK TOWNS..",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGBOTO",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGEDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIED",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD (CENSUS N",
+          "state_code": "VT"
+        },
+        {
+          "city_name": "SPRINGFIELD (GREENE)",
+          "state_code": "MO"
+        }
+      ]
+    }
+  },
+  {
+    "name": "limit_negative_-1",
+    "request_body": {
+      "search_text": "spring",
+      "limit": -1,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":160,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"},{\"city_name\":\"SPRING\",\"state_code\":\"TX\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MA\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"CO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"NJ\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"OH\"},{\"city_name\":\"SPRINGDALE\",\"state_code\":\"AR\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"TN\"},{\"city_name\":\"SPRING VALLEY\",\"state_code\":\"NY\"},{\"city_name\":\"SPRING HILL\",\"state_code\":\"FL\"},{\"city_name\":\"SPRINGFIELD\",\"...",
+    "parsed": {
+      "count": 160,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "KY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "SPRINGFIELD GARDENS",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGBORO",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRING ARBOR",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRING LAKE",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRING LAKE",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VT"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRING HOPE",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGTOWN",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRING GREEN",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGLAKE",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRING CREEK",
+          "state_code": "NV"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "SPRING CITY",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGERVILLE",
+          "state_code": "AZ"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "SPRING LAKE",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "LA"
+        },
+        {
+          "city_name": "SPRING LAKE",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "SPRINGVIEW",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "SPRING MILLS",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "SC"
+        },
+        {
+          "city_name": "SPRINGER",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGHILL",
+          "state_code": "LA"
+        },
+        {
+          "city_name": "SPRING CITY",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRINGERTON",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGPORT",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRING PARK",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGER",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "SPRINGBORO",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRINGVALE",
+          "state_code": "ME"
+        },
+        {
+          "city_name": "SPRING HOUSE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "WV"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING CITY",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRINGPORT",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING CHURCH",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGBROOK",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING RUN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGWATER",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NH"
+        },
+        {
+          "city_name": "SPRINGFIELD CENTER",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING CREEK",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING LAKE PARK",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRING GLEN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING CREEK",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRINGBROOK",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "SPRINGS",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "ME"
+        },
+        {
+          "city_name": "SPRING ARBOR",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "ID"
+        },
+        {
+          "city_name": "SPRING BROOK TOWNSHIP",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGTOWN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGWOOD",
+          "state_code": "SC"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "MT"
+        },
+        {
+          "city_name": "SPRING BAY",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRING MOUNT",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "WV"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "WY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "SPRING GLEN",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING GARDEN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "SPRINGER",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRINGFILED",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRING DALE",
+          "state_code": "WV"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRINGFILED",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD,",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "AZ"
+        },
+        {
+          "city_name": "SPRING PARK",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRING GARDENS",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD ARMORY NA",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VI"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "SPRINGPORT",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGFILED",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRING GARDEN",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "SPRINGFIELD (TOWNSHIP",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING BROOK",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGVIEW",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING LAKE HEIGHTS",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGWELLS",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "00"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "MT"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "SPRINGLAKE",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "SPRINGFIELD (TOWNSHIP",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRING LAKE PA",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGETTSBURY TOWNSHIP",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGFIELD REGIONAL",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGVALLEY",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "AK"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "SPRINGS",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "SPRING BROOK TOWNS..",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGBOTO",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGEDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIED",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD (CENSUS N",
+          "state_code": "VT"
+        }
+      ]
+    }
+  },
+  {
+    "name": "limit_negative_-5",
+    "request_body": {
+      "search_text": "spring",
+      "limit": -5,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":160,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"},{\"city_name\":\"SPRING\",\"state_code\":\"TX\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MA\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"CO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"NJ\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"OH\"},{\"city_name\":\"SPRINGDALE\",\"state_code\":\"AR\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"TN\"},{\"city_name\":\"SPRING VALLEY\",\"state_code\":\"NY\"},{\"city_name\":\"SPRING HILL\",\"state_code\":\"FL\"},{\"city_name\":\"SPRINGFIELD\",\"...",
+    "parsed": {
+      "count": 160,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "KY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "SPRINGFIELD GARDENS",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGBORO",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRING ARBOR",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRING LAKE",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRING LAKE",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VT"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRING HOPE",
+          "state_code": "NC"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGTOWN",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRING GREEN",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGLAKE",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRING CREEK",
+          "state_code": "NV"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "GA"
+        },
+        {
+          "city_name": "SPRING CITY",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGERVILLE",
+          "state_code": "AZ"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "SPRING LAKE",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "LA"
+        },
+        {
+          "city_name": "SPRING LAKE",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "SPRINGVIEW",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "SPRING MILLS",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "SC"
+        },
+        {
+          "city_name": "SPRINGER",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGHILL",
+          "state_code": "LA"
+        },
+        {
+          "city_name": "SPRING CITY",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRINGERTON",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGPORT",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRING PARK",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGER",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "SPRINGBORO",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRINGVALE",
+          "state_code": "ME"
+        },
+        {
+          "city_name": "SPRING HOUSE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "WV"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING CITY",
+          "state_code": "UT"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRINGPORT",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING CHURCH",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGBROOK",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING RUN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGWATER",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NH"
+        },
+        {
+          "city_name": "SPRINGFIELD CENTER",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING CREEK",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING LAKE PARK",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRING GLEN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING CREEK",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRINGBROOK",
+          "state_code": "IA"
+        },
+        {
+          "city_name": "SPRINGS",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "ME"
+        },
+        {
+          "city_name": "SPRING ARBOR",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "ID"
+        },
+        {
+          "city_name": "SPRING BROOK TOWNSHIP",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGTOWN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGWOOD",
+          "state_code": "SC"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "MT"
+        },
+        {
+          "city_name": "SPRING BAY",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRING MOUNT",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "WV"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "WY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "SPRING GLEN",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING GARDEN",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "NE"
+        },
+        {
+          "city_name": "SPRINGER",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRINGFILED",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRING DALE",
+          "state_code": "WV"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRINGFILED",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD,",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "AZ"
+        },
+        {
+          "city_name": "SPRING PARK",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRING GARDENS",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD ARMORY NA",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VI"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "SPRINGPORT",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGFILED",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRING GARDEN",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "SPRINGFIELD (TOWNSHIP",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRING BROOK",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "WA"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGVIEW",
+          "state_code": "WI"
+        },
+        {
+          "city_name": "SPRING LAKE HEIGHTS",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGWELLS",
+          "state_code": "MI"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "00"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "AL"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "MT"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "KS"
+        },
+        {
+          "city_name": "SPRINGLAKE",
+          "state_code": "MD"
+        },
+        {
+          "city_name": "SPRINGFIELD (TOWNSHIP",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRING LAKE PA",
+          "state_code": "MN"
+        },
+        {
+          "city_name": "SPRINGETTSBURY TOWNSHIP",
+          "state_code": "PA"
+        },
+        {
+          "city_name": "SPRINGFIELD REGIONAL",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGVALLEY",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "AK"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IN"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "OK"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGVILLE",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "NM"
+        },
+        {
+          "city_name": "SPRING BRANCH",
+          "state_code": "SD"
+        },
+        {
+          "city_name": "SPRINGS",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "SPRING BROOK TOWNS..",
+          "state_code": "PA"
+        }
+      ]
+    }
+  },
+  {
+    "name": "limit_negative_-160",
+    "request_body": {
+      "search_text": "spring",
+      "limit": -160,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 503,
+    "content_type": null,
+    "response_trimmed": "",
+    "parsed": null
+  },
+  {
+    "name": "limit_negative_-200",
+    "request_body": {
+      "search_text": "spring",
+      "limit": -200,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 503,
+    "content_type": null,
+    "response_trimmed": "",
+    "parsed": null
+  },
+  {
+    "name": "limit_float",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10.5,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 400,
+    "content_type": "application/json",
+    "response_trimmed": "{\"detail\":\"Invalid value in 'limit'. '10.5' is not a valid type (integer)\"}",
+    "parsed": {
+      "detail": "Invalid value in 'limit'. '10.5' is not a valid type (integer)"
+    }
+  },
+  {
+    "name": "limit_string",
+    "request_body": {
+      "search_text": "spring",
+      "limit": "15",
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":160,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"},{\"city_name\":\"SPRING\",\"state_code\":\"TX\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MA\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"CO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"NJ\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"OH\"},{\"city_name\":\"SPRINGDALE\",\"state_code\":\"AR\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"TN\"},{\"city_name\":\"SPRING VALLEY\",\"state_code\":\"NY\"},{\"city_name\":\"SPRING HILL\",\"state_code\":\"FL\"},{\"city_name\":\"SPRINGFIELD\",\"...",
+    "parsed": {
+      "count": 160,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TN"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "NY"
+        },
+        {
+          "city_name": "SPRING HILL",
+          "state_code": "FL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OR"
+        },
+        {
+          "city_name": "SPRING VALLEY",
+          "state_code": "CA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "KY"
+        }
+      ]
+    }
+  },
+  {
+    "name": "limit_over_max_1000",
+    "request_body": {
+      "search_text": "a",
+      "limit": 1000,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "response_trimmed": "{\"detail\":\"Field 'limit' value '1000' is above max '500'\"}",
+    "parsed": {
+      "detail": "Field 'limit' value '1000' is above max '500'"
+    }
+  },
+  {
+    "name": "filter_state_null",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location",
+        "state_code": null
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":160,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"},{\"city_name\":\"SPRING\",\"state_code\":\"TX\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MA\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"CO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"NJ\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"OH\"},{\"city_name\":\"SPRINGDALE\",\"state_code\":\"AR\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"TN\"}]}",
+    "parsed": {
+      "count": 160,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TN"
+        }
+      ]
+    }
+  },
+  {
+    "name": "filter_state_lowercase",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location",
+        "state_code": "va"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":2,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"},{\"city_name\":\"SPRING GROVE\",\"state_code\":\"VA\"}]}",
+    "parsed": {
+      "count": 2,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING GROVE",
+          "state_code": "VA"
+        }
+      ]
+    }
+  },
+  {
+    "name": "filter_state_empty",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location",
+        "state_code": ""
+      }
+    },
+    "status": 422,
+    "content_type": "application/json",
+    "response_trimmed": "{\"detail\":\"Field 'filter|state_code' value '' is below min '1' items\"}",
+    "parsed": {
+      "detail": "Field 'filter|state_code' value '' is below min '1' items"
+    }
+  },
+  {
+    "name": "filter_state_numeric",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location",
+        "state_code": "12"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":0,\"results\":[]}",
+    "parsed": {
+      "count": 0,
+      "results": []
+    }
+  },
+  {
+    "name": "filter_state_long",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location",
+        "state_code": "Virginia"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":0,\"results\":[]}",
+    "parsed": {
+      "count": 0,
+      "results": []
+    }
+  },
+  {
+    "name": "scope_invalid",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10,
+      "filter": {
+        "country_code": "USA",
+        "scope": "invalid_scope"
+      }
+    },
+    "status": 400,
+    "content_type": "application/json",
+    "response_trimmed": "{\"detail\":\"Field 'filter|scope' is outside valid values ['recipient_location', 'primary_place_of_performance']\"}",
+    "parsed": {
+      "detail": "Field 'filter|scope' is outside valid values ['recipient_location', 'primary_place_of_performance']"
+    }
+  },
+  {
+    "name": "country_lowercase",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10,
+      "filter": {
+        "country_code": "usa",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":160,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"},{\"city_name\":\"SPRING\",\"state_code\":\"TX\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MA\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"CO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"NJ\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"OH\"},{\"city_name\":\"SPRINGDALE\",\"state_code\":\"AR\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"TN\"}]}",
+    "parsed": {
+      "count": 160,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TN"
+        }
+      ]
+    }
+  },
+  {
+    "name": "country_invalid",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10,
+      "filter": {
+        "country_code": "ZZZ",
+        "scope": "recipient_location"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":0,\"results\":[]}",
+    "parsed": {
+      "count": 0,
+      "results": []
+    }
+  },
+  {
+    "name": "filter_extra_field_city",
+    "request_body": {
+      "search_text": "spring",
+      "limit": 10,
+      "filter": {
+        "country_code": "USA",
+        "scope": "recipient_location",
+        "city": "Springfield"
+      }
+    },
+    "status": 200,
+    "content_type": "application/json",
+    "response_trimmed": "{\"count\":160,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"IL\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"},{\"city_name\":\"SPRING\",\"state_code\":\"TX\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"MA\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"CO\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"NJ\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"OH\"},{\"city_name\":\"SPRINGDALE\",\"state_code\":\"AR\"},{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"TN\"}]}",
+    "parsed": {
+      "count": 160,
+      "results": [
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "IL"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "VA"
+        },
+        {
+          "city_name": "SPRING",
+          "state_code": "TX"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "MA"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "CO"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "NJ"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "OH"
+        },
+        {
+          "city_name": "SPRINGDALE",
+          "state_code": "AR"
+        },
+        {
+          "city_name": "SPRINGFIELD",
+          "state_code": "TN"
+        }
+      ]
+    }
+  }
+]

@@ -56,7 +56,9 @@ Write your final JSON report to the file:
 \`{{OUTPUT_SUMMARY_PATH}}\`
 
 The file must contain exactly one JSON object with top-level keys:
-\`contract\`, \`probes\`, \`mismatches\`, \`gaps\`, \`risks\`, **plus** a \`deltas\` object \`{added, changed, removed}\`.
+\`schemaVersion\`, \`contract\`, \`probes\`, \`mismatches\`, \`gaps\`, \`risks\`, **plus** a \`deltas\` object \`{added, changed, removed}\`.
+
+Set \`schemaVersion\` to the literal string \`"1.0.0"\`.
 
 Additional requirements for this pass:
 - Every new probe you add MUST set \`probe.meta.newFromPass2 = true\`.
@@ -240,8 +242,7 @@ Make these sections concise, concrete, and based on evidence.
 Your final answer must be:
 
 * Exactly **one JSON object**, with top-level keys:
-
-  * \`"contract"\`, \`"probes"\`, \`"mismatches"\`, \`"gaps"\`, \`"risks"\`.
+  * \`"schemaVersion"\`, \`"contract"\`, \`"probes"\`, \`"mismatches"\`, \`"gaps"\`, \`"risks"\`, \`"deltas"\`.
 * No other top-level keys.
 * No markdown, no comments, no extra prose.
 `

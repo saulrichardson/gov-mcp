@@ -1,0 +1,1 @@
+{"totals":{"obligation":0.0,"outlay":0.0,"face_value_of_loan":0.0,"award_count":0},"results":[],"page_metadata":{"page":1,"total":0,"limit":10,"next":null,"previous":null,"hasNext":false,"hasPrevious":false},"messages":["Notice! API Request to sort on 'id' field isn't fully implemented. Results were actually sorted using 'description' field."]}

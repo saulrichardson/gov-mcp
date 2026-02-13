@@ -1,0 +1,538 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/awarding_agency.md",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/awarding_agency/"
+    },
+    "description": "Autocomplete lookup returning awarding agency candidates with toptier and subtier metadata for a search string.",
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "search_text": {
+          "location": "body",
+          "type": "string",
+          "description": "Text fragment matched against awarding agency names or abbreviations (case-insensitive).",
+          "constraints": "Required; rejecting null, empty string, or omitted values; whitespace-only strings are allowed and yield broad matches; non-string JSON values (numbers, booleans, arrays) are coerced to their string representation before search."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of matches to include in the response.",
+          "constraints": "Optional; default 10; accepts positive integers and JSON numeric values (floats are truncated toward zero); integer strings with whitespace or leading zeros are allowed; decimal strings are rejected with 400; zero returns an empty result set without error; negative numbers cause a 500 HTML error; no server-imposed maximum observed up to 1,000,000.",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "search_text"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Autocomplete matches including agency identifiers and toptier/subtier metadata.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "toptier_flag",
+              "toptier_agency",
+              "subtier_agency"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "Internal USAspending agency identifier used by the autocomplete."
+              },
+              "toptier_flag": {
+                "type": "boolean",
+                "description": "True when the match represents a toptier agency entry."
+              },
+              "toptier_agency": {
+                "type": "object",
+                "required": [
+                  "toptier_code",
+                  "abbreviation",
+                  "name"
+                ],
+                "properties": {
+                  "toptier_code": {
+                    "type": "string",
+                    "description": "Three-digit code assigned to the toptier agency."
+                  },
+                  "abbreviation": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Agency abbreviation; observed as uppercase strings."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Full toptier agency name."
+                  }
+                }
+              },
+              "subtier_agency": {
+                "type": "object",
+                "required": [
+                  "abbreviation",
+                  "name"
+                ],
+                "properties": {
+                  "abbreviation": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Subtier abbreviation; can be null for agencies without one."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Subtier agency display name."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Always present. Currently always a single element containing the deprecation warning.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "results",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/awarding_agency/",
+          "query": {},
+          "body": {
+            "search_text": "Defense",
+            "limit": 5
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "id": 1137,
+                "toptier_flag": true,
+                "toptier_agency": {
+                  "toptier_code": "347",
+                  "abbreviation": "DNFSB",
+                  "name": "Defense Nuclear Facilities Safety Board"
+                },
+                "subtier_agency": {
+                  "abbreviation": "DNFSB",
+                  "name": "Defense Nuclear Facilities Safety Board"
+                }
+              },
+              {
+                "id": 1173,
+                "toptier_flag": true,
+                "toptier_agency": {
+                  "toptier_code": "097",
+                  "abbreviation": "DOD",
+                  "name": "Department of Defense"
+                },
+                "subtier_agency": {
+                  "abbreviation": "DOD",
+                  "name": "Department of Defense"
+                }
+              }
+            ],
+            "messages": [
+              "This endpoint is DEPRECATED. Please refer to the api contracts."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/awarding_agency/",
+          "query": {},
+          "body": {
+            "search_text": "District of Columbia Courts"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "id": 1523,
+                "toptier_flag": true,
+                "toptier_agency": {
+                  "toptier_code": "349",
+                  "abbreviation": "DC COURTS",
+                  "name": "District of Columbia Courts"
+                },
+                "subtier_agency": {
+                  "abbreviation": null,
+                  "name": "District of Columbia Courts"
+                }
+              }
+            ],
+            "messages": [
+              "This endpoint is DEPRECATED. Please refer to the api contracts."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/awarding_agency/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Missing one or more required request parameters: search_text"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/awarding_agency/",
+          "query": {},
+          "body": {
+            "search_text": "Defense",
+            "limit": "2.9"
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Limit request parameter is not a valid, positive integer"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Responses always include a deprecation warning string in the `messages` array, even when no matches are found.",
+      "`limit` accepts JSON floats (truncating toward zero) and integer-like strings, but decimal strings are rejected with 400 and negative values still crash the server with an HTML 500 error.",
+      "Whitespace-only `search_text` values are treated as valid and return a broad, alphabetized list of agencies.",
+      "Non-string `search_text` inputs are stringified server-side, so booleans or arrays succeed but usually return zero matches.",
+      "500 errors are returned as HTML rather than JSON."
+    ],
+    "confidence": "observed"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"id\":1137,\"toptier_flag\":true},{\"id\":1173,\"toptier_flag\":true}],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - omitting limit returns 10 matches and the deprecation warning."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"id\":1137},{\"id\":1173},{\"id\":1216},{\"id\":1222},{\"id\":1209}],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - limit caps response length at five records."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": 15
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"id\":1137},{\"id\":1173},...,{\"id\":1237}],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - higher limit yields additional matches beyond default 10."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - zero limit returns an empty list without error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": -5
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html><html><head><title>Server Error (500)</title></head>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail - negative limit causes server error with HTML payload."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": 2.5
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"id\":1137},{\"id\":1173}],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - fractional limit is truncated to two results."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "a",
+          "limit": 500
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"id\":1136,\"toptier_flag\":true},{\"id\":1527,\"toptier_flag\":true},...],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - large limit accepted; response included 294 matches."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "",
+          "limit": 10
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Missing one or more required request parameters: search_text\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - empty string treated as missing required parameter."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": " "
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"id\":1136},{\"id\":1527},...],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - whitespace-only search returns broad list of agencies."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Missing one or more required request parameters: search_text\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - omitting search_text yields 400 with detail message."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": null
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Missing one or more required request parameters: search_text\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - null search_text rejected as missing required parameter."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": 123
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - non-string value is coerced (no matches, but request succeeds)."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": "5"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"id\":1137},{\"id\":1173},...],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - numeric string for limit is accepted and cast to five."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "District of Columbia Courts"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"id\":1523,\"toptier_flag\":true,\"toptier_agency\":{\"toptier_code\":\"349\",\"abbreviation\":\"DC COURTS\",\"name\":\"District of Columbia Courts\"},\"subtier_agency\":{\"abbreviation\":null,\"name\":\"District of Columbia Courts\"}}],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass-2 - demonstrates a null subtier abbreviation while confirming the deprecation message persists.",
+      "meta": {
+        "newFromPass2": true
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass-2 - boolean search_text is stringified, succeeds, and returns no matches.",
+      "meta": {
+        "newFromPass2": true
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": "2.9"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Limit request parameter is not a valid, positive integer\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - decimal strings for limit now confirmed to trigger a validation error rather than silent truncation.",
+      "meta": {
+        "newFromPass2": true
+      }
+    }
+  ],
+  "mismatches": [
+    "Docs describe `limit` as a generic number, but the API enforces positive integers: decimal strings return 400 and negatives still yield HTML 500 responses."
+  ],
+  "gaps": [],
+  "risks": [
+    "Endpoint is deprecated and may be removed or behave differently in future releases.",
+    "Negative limit inputs crash the server with HTML error payloads; clients must validate locally.",
+    "Large unfiltered queries can return hundreds of rows and may change frequently; clients should set appropriate limits.",
+    "Clients that stringify numeric inputs should ensure they send integer values; decimal strings now fail validation even though JSON floats are silently truncated.",
+    "Because non-string `search_text` inputs are coerced to strings, unexpected payload shapes may silently succeed but return zero results."
+  ],
+  "deltas": {
+    "added": [
+      "Captured pass-2 probes covering null subtier abbreviations, boolean search_text coercion, and decimal-string limit validation.",
+      "Documented example for agencies without a subtier abbreviation and for the 400 response triggered by a decimal string limit."
+    ],
+    "changed": [
+      "Elevated schema confidence to observed and expanded the output schema to spell out result object structure.",
+      "Refined limit parameter documentation to reflect positive-integer enforcement and updated quirks and risks accordingly."
+    ],
+    "removed": [
+      "Cleared the prior gap about unknown limit ceilings after testing large values without encountering a server cap."
+    ]
+  }
+}

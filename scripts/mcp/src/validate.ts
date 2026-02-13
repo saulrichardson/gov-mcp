@@ -14,7 +14,7 @@ export function buildInputValidator(profile: Profile) {
     type: "object",
     properties: profile.inputSchema.properties ?? {},
     required: profile.inputSchema.required ?? [],
-    additionalProperties: true,
+    additionalProperties: false,
   } as any;
   const validate = ajv.compile(schema);
   return (params: any) => {

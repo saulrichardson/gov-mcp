@@ -1,0 +1,407 @@
+[
+  {
+    "name": "baseline_current_fy",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/086/budget_function/",
+      "query": {},
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2026,\"results\":[{\"name\":\"Income Security\",\"children\":[{\"name\":\"Housing assistance\",\"obligated_amount\":22218626268.13,\"gross_outlay_amount\":18588023015.65}],\"obligated_amount\":22218626268.13,\"gross_outlay_amount\":18588023015.65},{\"name\":\"Community and Regional Development\",\"children\":[{\"name\":\"Community development\",\"obligated_amount\":1402442045.56,\"gross_outlay_amount\":2529326706.92}],\"obligated_amount\":1402442045.56,\"gross_outlay_amount\":2529326706.92},{\"name\":\"Commerce and Housing Credit\",\"children\":[{\"name\":\"Mortgage credit\",\"obligated_amount\":176332670.8,\"gross_outlay_amount\":154055953.26},{\"name\":\"Other advancement of commerce\",\"obligated_amount\":1531887.0,\"gross_outlay_amount\":3775755.3}],\"obligated_amount\":177864557.8,\"gross_outlay_amount\":1578317...",
+      "contentType": "application/json"
+    },
+    "notes": "pass - defaults to FY 2026 with expected metadata"
+  },
+  {
+    "name": "fiscal_year_2022",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/086/budget_function/",
+      "query": {
+        "fiscal_year": "2022"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2022,\"results\":[{\"name\":\"Income Security\",\"children\":[{\"name\":\"Housing assistance\",\"obligated_amount\":59175698386.06,\"gross_outlay_amount\":57564336703.0}],\"obligated_amount\":59175698386.06,\"gross_outlay_amount\":57564336703.0},{\"name\":\"Community and Regional Development\",\"children\":[{\"name\":\"Community development\",\"obligated_amount\":6174485320.02,\"gross_outlay_amount\":8200033216.14}],\"obligated_amount\":6174485320.02,\"gross_outlay_amount\":8200033216.14},{\"name\":\"Commerce and Housing Credit\",\"children\":[{\"name\":\"Mortgage credit\",\"obligated_amount\":2366015731.23,\"gross_outlay_amount\":2274271934.95},{\"name\":\"Other advancement of commerce\",\"obligated_amount\":12377972.62,\"gross_outlay_amount\":10541208.89}],\"obligated_amount\":2378393703.85,\"gross_outlay_amount\":...",
+      "contentType": "application/json"
+    },
+    "notes": "pass - fiscal_year query switches data set"
+  },
+  {
+    "name": "filter_health_no_match",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/086/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "filter": "Health"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2022,\"results\":[],\"messages\":[],\"page_metadata\":{\"page\":1,\"total\":0,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false}}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - filter is substring match; none for HHS 'Health' in FY2022"
+  },
+  {
+    "name": "sort_name_asc",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/086/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "sort": "name",
+        "order": "asc"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2022,\"results\":[{\"name\":\"Administration of Justice\",\"children\":[{\"name\":\"Federal law enforcement activities\",\"obligated_amount\":92778863.63,\"gross_outlay_amount\":65360740.15}],\"obligated_amount\":92778863.63,\"gross_outlay_amount\":65360740.15},{\"name\":\"Commerce and Housing Credit\",\"children\":[{\"name\":\"Mortgage credit\",\"obligated_amount\":2366015731.23,\"gross_outlay_amount\":2274271934.95},{\"name\":\"Other advancement of commerce\",\"obligated_amount\":12377972.62,\"gross_outlay_amount\":10541208.89}],\"obligated_amount\":2378393703.85,\"gross_outlay_amount\":2284813143.84},{\"name\":\"Community and Regional Development\",\"children\":[{\"name\":\"Community development\",\"obligated_amount\":6174485320.02,\"gross_outlay_amount\":8200033216.14}],\"obligated_amount\":6174485320.02,\"gross...",
+      "contentType": "application/json"
+    },
+    "notes": "pass - sort=name order=asc alphabetizes budget functions"
+  },
+  {
+    "name": "sort_gross_desc",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/086/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "sort": "gross_outlay_amount",
+        "order": "desc"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2022,\"results\":[{\"name\":\"Income Security\",\"children\":[{\"name\":\"Housing assistance\",\"obligated_amount\":59175698386.06,\"gross_outlay_amount\":57564336703.0}],\"obligated_amount\":59175698386.06,\"gross_outlay_amount\":57564336703.0},{\"name\":\"Community and Regional Development\",\"children\":[{\"name\":\"Community development\",\"obligated_amount\":6174485320.02,\"gross_outlay_amount\":8200033216.14}],\"obligated_amount\":6174485320.02,\"gross_outlay_amount\":8200033216.14},{\"name\":\"Commerce and Housing Credit\",\"children\":[{\"name\":\"Mortgage credit\",\"obligated_amount\":2366015731.23,\"gross_outlay_amount\":2274271934.95},{\"name\":\"Other advancement of commerce\",\"obligated_amount\":12377972.62,\"gross_outlay_amount\":10541208.89}],\"obligated_amount\":2378393703.85,\"gross_outlay_amount\":...",
+      "contentType": "application/json"
+    },
+    "notes": "pass - sort=gross_outlay_amount order=desc sorts by numeric field"
+  },
+  {
+    "name": "limit_5",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "limit": "5"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "bodyExcerpt": "{\"toptier_code\":\"097\",\"fiscal_year\":2022,\"results\":[{\"name\":\"National Defense\",\"children\":[{\"name\":\"Department of Defense-Military\",\"obligated_amount\":989759970057.43,\"gross_outlay_amount\":953610570797.91},{\"name\":\"Defense-related activities\",\"obligated_amount\":121966000000.0,\"gross_outlay_amount\":121966000000.0}],\"obligated_amount\":1111725970057.43,\"gross_outlay_amount\":1075576570797.91},{\"name\":\"Income Security\",\"children\":[{\"name\":\"Federal employee retirement and disability\",\"obligated_amount\":66724042454.96,\"gross_outlay_amount\":71531836937.08}],\"obligated_amount\":66724042454.96,\"gross_outlay_amount\":71531836937.08},{\"name\":\"Health\",\"children\":[{\"name\":\"Health care services\",\"obligated_amount\":11222327924.3,\"gross_outlay_amount\":11174509979.67}],\"obligated_amount\":11222327924.3,\"gross_...",
+      "contentType": "application/json"
+    },
+    "notes": "pass - limit trims results and adjusts page_metadata"
+  },
+  {
+    "name": "limit_5_page_2",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "limit": "5",
+        "page": "2"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "bodyExcerpt": "{\"toptier_code\":\"097\",\"fiscal_year\":2022,\"results\":[{\"name\":\"International Affairs\",\"children\":[{\"name\":\"International security assistance\",\"obligated_amount\":4179914.85,\"gross_outlay_amount\":6471486.47},{\"name\":\"International development and humanitarian assistance\",\"obligated_amount\":736.48,\"gross_outlay_amount\":0.0}],\"obligated_amount\":4180651.33,\"gross_outlay_amount\":6471486.47}],\"messages\":[],\"page_metadata\":{\"page\":2,\"total\":6,\"limit\":5,\"next\":null,\"previous\":1,\"hasNext\":false,\"hasPrevious\":true}}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - pagination works; next null when no additional pages"
+  },
+  {
+    "name": "limit_100",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "limit": "100"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "bodyExcerpt": "{\"toptier_code\":\"097\",\"fiscal_year\":2022,\"results\":[{\"name\":\"National Defense\",\"children\":[{\"name\":\"Department of Defense-Military\",\"obligated_amount\":989759970057.43,\"gross_outlay_amount\":953610570797.91},{\"name\":\"Defense-related activities\",\"obligated_amount\":121966000000.0,\"gross_outlay_amount\":121966000000.0}],\"obligated_amount\":1111725970057.43,\"gross_outlay_amount\":1075576570797.91},{\"name\":\"Income Security\",\"children\":[{\"name\":\"Federal employee retirement and disability\",\"obligated_amount\":66724042454.96,\"gross_outlay_amount\":71531836937.08}],\"obligated_amount\":66724042454.96,\"gross_outlay_amount\":71531836937.08},{\"name\":\"Health\",\"children\":[{\"name\":\"Health care services\",\"obligated_amount\":11222327924.3,\"gross_outlay_amount\":11174509979.67}],\"obligated_amount\":11222327924.3,\"gross_...",
+      "contentType": "application/json"
+    },
+    "notes": "pass - server accepts limit up to 100"
+  },
+  {
+    "name": "limit_500",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "limit": "500"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 422,
+      "bodyExcerpt": "{\"detail\":\"Field 'limit' value '500' is above max '100'\"}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - validation rejects limit above 100"
+  },
+  {
+    "name": "page_999",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "page": "999"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "bodyExcerpt": "{\"toptier_code\":\"097\",\"fiscal_year\":2022,\"results\":[],\"messages\":[],\"page_metadata\":{\"page\":999,\"total\":6,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false}}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - out-of-range pages return empty results with metadata"
+  },
+  {
+    "name": "filter_case_insensitive",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "filter": "health"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "bodyExcerpt": "{\"toptier_code\":\"097\",\"fiscal_year\":2022,\"results\":[{\"name\":\"Health\",\"children\":[{\"name\":\"Health care services\",\"obligated_amount\":11222327924.3,\"gross_outlay_amount\":11174509979.67}],\"obligated_amount\":11222327924.3,\"gross_outlay_amount\":11174509979.67}],\"messages\":[],\"page_metadata\":{\"page\":1,\"total\":1,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false}}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - filter is case-insensitive"
+  },
+  {
+    "name": "future_year",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2050"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 422,
+      "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2050' is above max '2026'\"}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - fiscal_year above max 2026 yields 422"
+  },
+  {
+    "name": "invalid_order",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "order": "invalid"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 400,
+      "bodyExcerpt": "{\"detail\":\"Field 'order' is outside valid values ['asc', 'desc']\"}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - invalid order triggers 400 enumerated error"
+  },
+  {
+    "name": "invalid_sort",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "sort": "invalid"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 400,
+      "bodyExcerpt": "{\"detail\":\"Field 'sort' is outside valid values ['name', 'obligated_amount', 'gross_outlay_amount']\"}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - invalid sort triggers 400 enumerated error"
+  },
+  {
+    "name": "limit_zero",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "limit": "0"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 422,
+      "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - limit must be >=1"
+  },
+  {
+    "name": "limit_negative",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "limit": "-5"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 422,
+      "bodyExcerpt": "{\"detail\":\"Field 'limit' value '-5' is below min '1'\"}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - negative limit rejected with min=1"
+  },
+  {
+    "name": "non_numeric_toptier",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/ABC/budget_function/",
+      "query": {},
+      "body": {}
+    },
+    "response": {
+      "status": 404,
+      "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1><p>The requested resource was not found on this server.</p>\n</body>\n</html>",
+      "contentType": "text/html; charset=utf-8"
+    },
+    "notes": "fail - route 404 HTML when path is non-numeric"
+  },
+  {
+    "name": "unknown_toptier",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/999/budget_function/",
+      "query": {
+        "fiscal_year": "2022"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 404,
+      "bodyExcerpt": "{\"detail\":\"Agency with a toptier code of '999' does not exist\"}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - unknown numeric toptier returns 404 JSON detail"
+  },
+  {
+    "name": "string_fiscal_year",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "abc"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 400,
+      "bodyExcerpt": "{\"detail\":\"Invalid value in 'fiscal_year'. 'abc' is not a valid type (integer)\"}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - non-integer fiscal_year rejected"
+  },
+  {
+    "name": "decimal_fiscal_year",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022.5"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 400,
+      "bodyExcerpt": "{\"detail\":\"Invalid value in 'fiscal_year'. '2022.5' is not a valid type (integer)\"}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - decimal fiscal_year rejected"
+  },
+  {
+    "name": "filter_empty",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "filter": ""
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 200,
+      "bodyExcerpt": "{\"toptier_code\":\"097\",\"fiscal_year\":2022,\"results\":[{\"name\":\"National Defense\",\"children\":[{\"name\":\"Department of Defense-Military\",\"obligated_amount\":989759970057.43,\"gross_outlay_amount\":953610570797.91},{\"name\":\"Defense-related activities\",\"obligated_amount\":121966000000.0,\"gross_outlay_amount\":121966000000.0}],\"obligated_amount\":1111725970057.43,\"gross_outlay_amount\":1075576570797.91},{\"name\":\"Income Security\",\"children\":[{\"name\":\"Federal employee retirement and disability\",\"obligated_amount\":66724042454.96,\"gross_outlay_amount\":71531836937.08}],\"obligated_amount\":66724042454.96,\"gross_outlay_amount\":71531836937.08},{\"name\":\"Health\",\"children\":[{\"name\":\"Health care services\",\"obligated_amount\":11222327924.3,\"gross_outlay_amount\":11174509979.67}],\"obligated_amount\":11222327924.3,\"gross_...",
+      "contentType": "application/json"
+    },
+    "notes": "pass - empty filter behaves like no filter"
+  },
+  {
+    "name": "page_zero",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2022",
+        "page": "0"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 422,
+      "bodyExcerpt": "{\"detail\":\"Field 'page' value '0' is below min '1'\"}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - page must be >=1"
+  },
+  {
+    "name": "fiscal_year_min",
+    "request": {
+      "method": "GET",
+      "path": "/api/v2/agency/097/budget_function/",
+      "query": {
+        "fiscal_year": "2000"
+      },
+      "body": {}
+    },
+    "response": {
+      "status": 422,
+      "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2000' is below min '2008'\"}",
+      "contentType": "application/json"
+    },
+    "notes": "pass - fiscal_year below 2008 rejected"
+  }
+]

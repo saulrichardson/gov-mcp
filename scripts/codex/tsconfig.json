@@ -1,15 +1,23 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2021",
+    "lib": ["ES2021"],
     "module": "ESNext",
     "moduleResolution": "Node",
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "strict": true,
     "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
     "types": ["node"],
     "outDir": "dist",
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "zod": ["./node_modules/zod"],
+      "dotenv": ["./node_modules/dotenv"],
+      "@iarna/toml": ["./node_modules/@iarna/toml"]
+    }
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "tests/**/*"]
 }

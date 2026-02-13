@@ -1,0 +1,852 @@
+[
+  {
+    "name": "missing_filters",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {}
+    },
+    "response": {
+      "status": 500,
+      "body": null,
+      "bodyExcerpt": "\n<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>\n",
+      "contentType": "text/html; charset=utf-8"
+    },
+    "notes": "Test behavior when required filters key is absent."
+  },
+  {
+    "name": "empty_filters_object",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {}
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 213811611,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": true,
+        "calculated_count": 213811611,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": true,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 213811611, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": true, \"calculated_count\": 213811611, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": true, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields ",
+      "contentType": "application/json"
+    },
+    "notes": "Check if empty filter object is accepted and what defaults apply."
+  },
+  {
+    "name": "transactions_default_time_period",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "time_period": [
+            {
+              "start_date": "2023-10-01",
+              "end_date": "2023-12-31"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 3331810,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": true,
+        "calculated_count": 3331810,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": true,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 3331810, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": true, \"calculated_count\": 3331810, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": true, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields with",
+      "contentType": "application/json"
+    },
+    "notes": "Baseline query with time period, expecting default spending_level transactions."
+  },
+  {
+    "name": "spending_level_awards",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "time_period": [
+            {
+              "start_date": "2022-10-01",
+              "end_date": "2023-09-30"
+            }
+          ]
+        },
+        "spending_level": "awards"
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 11494010,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": true,
+        "calculated_count": 11494010,
+        "spending_level": "awards",
+        "maximum_limit": 500000,
+        "rows_gt_limit": true,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 11494010, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": true, \"calculated_count\": 11494010, \"spending_level\": \"awards\", \"maximum_limit\": 500000, \"rows_gt_limit\": true, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without ",
+      "contentType": "application/json"
+    },
+    "notes": "Check awards spending level behavior."
+  },
+  {
+    "name": "spending_level_transactions_explicit",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "time_period": [
+            {
+              "start_date": "2022-10-01",
+              "end_date": "2023-09-30"
+            }
+          ]
+        },
+        "spending_level": "transactions"
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 12868549,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": true,
+        "calculated_count": 12868549,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": true,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 12868549, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": true, \"calculated_count\": 12868549, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": true, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields wi",
+      "contentType": "application/json"
+    },
+    "notes": "Ensure explicit transactions matches default."
+  },
+  {
+    "name": "spending_level_subawards",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "time_period": [
+            {
+              "start_date": "2022-10-01",
+              "end_date": "2023-09-30"
+            }
+          ]
+        },
+        "spending_level": "subawards"
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 756418,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": true,
+        "calculated_count": 756418,
+        "spending_level": "subawards",
+        "maximum_limit": 500000,
+        "rows_gt_limit": true,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 756418, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": true, \"calculated_count\": 756418, \"spending_level\": \"subawards\", \"maximum_limit\": 500000, \"rows_gt_limit\": true, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without t",
+      "contentType": "application/json"
+    },
+    "notes": "Test subawards mode."
+  },
+  {
+    "name": "invalid_spending_level",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "time_period": [
+            {
+              "start_date": "2022-10-01",
+              "end_date": "2023-09-30"
+            }
+          ]
+        },
+        "spending_level": "invalid"
+      }
+    },
+    "response": {
+      "status": 400,
+      "body": {
+        "detail": "Field 'spending_level' is outside valid values ['awards', 'transactions', 'subawards']"
+      },
+      "bodyExcerpt": "{\"detail\": \"Field 'spending_level' is outside valid values ['awards', 'transactions', 'subawards']\"}",
+      "contentType": "application/json"
+    },
+    "notes": "Expect validation error for bad enum value."
+  },
+  {
+    "name": "keywords_filter",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "keywords": [
+            "covid",
+            "testing"
+          ],
+          "time_period": [
+            {
+              "start_date": "2020-03-01",
+              "end_date": "2020-06-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 5651280,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": true,
+        "calculated_count": 5651280,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": true,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 5651280, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": true, \"calculated_count\": 5651280, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": true, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields with",
+      "contentType": "application/json"
+    },
+    "notes": "Combine keywords with time period."
+  },
+  {
+    "name": "recipient_search_text_multi",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "recipient_search_text": [
+            "DEPARTMENT OF DEFENSE",
+            "NASA"
+          ],
+          "time_period": [
+            {
+              "start_date": "2022-10-01",
+              "end_date": "2023-09-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 1414,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": false,
+        "calculated_count": 1414,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": false,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 1414, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": false, \"calculated_count\": 1414, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": false, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without ",
+      "contentType": "application/json"
+    },
+    "notes": "Test validation on recipient_search_text length >1."
+  },
+  {
+    "name": "psc_codes_object",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "psc_codes": {
+            "require": [
+              [
+                "Product",
+                "10"
+              ]
+            ]
+          },
+          "time_period": [
+            {
+              "start_date": "2022-10-01",
+              "end_date": "2023-09-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 8961,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": false,
+        "calculated_count": 8961,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": false,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 8961, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": false, \"calculated_count\": 8961, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": false, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without ",
+      "contentType": "application/json"
+    },
+    "notes": "Test PSC code tree require variant."
+  },
+  {
+    "name": "psc_codes_list",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "psc_codes": [
+            "5411"
+          ],
+          "time_period": [
+            {
+              "start_date": "2022-10-01",
+              "end_date": "2023-09-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 171,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": false,
+        "calculated_count": 171,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": false,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 171, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": false, \"calculated_count\": 171, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": false, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without th",
+      "contentType": "application/json"
+    },
+    "notes": "Test PSC code legacy list variant."
+  },
+  {
+    "name": "award_amount_bounds",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "award_amounts": [
+            {
+              "lower_bound": 1000000,
+              "upper_bound": 5000000
+            },
+            {
+              "upper_bound": 50000
+            }
+          ],
+          "time_period": [
+            {
+              "start_date": "2021-10-01",
+              "end_date": "2022-09-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 13040997,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": true,
+        "calculated_count": 13040997,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": true,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 13040997, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": true, \"calculated_count\": 13040997, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": true, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields wi",
+      "contentType": "application/json"
+    },
+    "notes": "Test award amount upper/lower bounds inclusive behavior."
+  },
+  {
+    "name": "early_time_period",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "time_period": [
+            {
+              "start_date": "2006-10-01",
+              "end_date": "2007-09-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 422,
+      "body": {
+        "detail": "start_date falls before the earliest available search date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints listed on https://api.usaspending.gov/docs/endpoints."
+      },
+      "bodyExcerpt": "{\"detail\": \"start_date falls before the earliest available search date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints listed on https://api.usaspending.gov/docs/endpoints.\"}",
+      "contentType": "application/json"
+    },
+    "notes": "See how API handles pre-2007 ranges per documentation."
+  },
+  {
+    "name": "invalid_date_format",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "time_period": [
+            {
+              "start_date": "2022-02-30",
+              "end_date": "2022-03-15"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 400,
+      "body": {
+        "detail": "Invalid value in 'filters|time_period'. '2022-02-30' is not a valid type (date). Expected format: (%Y-%m-%d)"
+      },
+      "bodyExcerpt": "{\"detail\": \"Invalid value in 'filters|time_period'. '2022-02-30' is not a valid type (date). Expected format: (%Y-%m-%d)\"}",
+      "contentType": "application/json"
+    },
+    "notes": "Expect date parsing validation error."
+  },
+  {
+    "name": "recipient_type_names",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "recipient_type_names": [
+            "small_business",
+            "individuals"
+          ],
+          "time_period": [
+            {
+              "start_date": "2022-10-01",
+              "end_date": "2023-09-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 6807794,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": true,
+        "calculated_count": 6807794,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": true,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 6807794, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": true, \"calculated_count\": 6807794, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": true, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields with",
+      "contentType": "application/json"
+    },
+    "notes": "Test recipient type names filter."
+  },
+  {
+    "name": "naics_require_exclude",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "naics_codes": {
+            "require": [
+              "54"
+            ],
+            "exclude": [
+              "5415"
+            ]
+          },
+          "time_period": [
+            {
+              "start_date": "2022-10-01",
+              "end_date": "2023-09-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 351982,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": false,
+        "calculated_count": 351982,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": false,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 351982, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": false, \"calculated_count\": 351982, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": false, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields with",
+      "contentType": "application/json"
+    },
+    "notes": "Test NAICS require/exclude behavior."
+  },
+  {
+    "name": "tas_and_treasury_account",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "tas_codes": {
+            "require": [
+              [
+                "091"
+              ]
+            ]
+          },
+          "treasury_account_components": [
+            {
+              "aid": "091",
+              "main": "0800"
+            }
+          ],
+          "time_period": [
+            {
+              "start_date": "2022-10-01",
+              "end_date": "2023-09-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 480902,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": false,
+        "calculated_count": 480902,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": false,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 480902, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": false, \"calculated_count\": 480902, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": false, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields with",
+      "contentType": "application/json"
+    },
+    "notes": "Test TAS filters combined (should OR)."
+  },
+  {
+    "name": "award_type_codes",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "award_type_codes": [
+            "A",
+            "B",
+            "IDV_A"
+          ],
+          "time_period": [
+            {
+              "start_date": "2022-10-01",
+              "end_date": "2023-09-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 1757456,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": true,
+        "calculated_count": 1757456,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": true,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 1757456, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": true, \"calculated_count\": 1757456, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": true, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields with",
+      "contentType": "application/json"
+    },
+    "notes": "Test multiple award type codes."
+  },
+  {
+    "name": "extent_competed_and_set_aside",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "extent_competed_type_codes": [
+            "A"
+          ],
+          "set_aside_type_codes": [
+            "NONE"
+          ],
+          "contract_pricing_type_codes": [
+            "J"
+          ],
+          "time_period": [
+            {
+              "start_date": "2021-10-01",
+              "end_date": "2022-09-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 108629,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": false,
+        "calculated_count": 108629,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": false,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 108629, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": false, \"calculated_count\": 108629, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": false, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields with",
+      "contentType": "application/json"
+    },
+    "notes": "Test combination of competition-related filters."
+  },
+  {
+    "name": "recipient_locations",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "recipient_locations": [
+            {
+              "country": "USA",
+              "state": "VA"
+            },
+            {
+              "country": "USA",
+              "city": "Portland"
+            }
+          ],
+          "time_period": [
+            {
+              "start_date": "2022-10-01",
+              "end_date": "2023-09-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "calculated_transaction_count": 971819,
+        "maximum_transaction_limit": 500000,
+        "transaction_rows_gt_limit": true,
+        "calculated_count": 971819,
+        "spending_level": "transactions",
+        "maximum_limit": 500000,
+        "rows_gt_limit": true,
+        "messages": [
+          "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+          "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+          "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+        ]
+      },
+      "bodyExcerpt": "{\"calculated_transaction_count\": 971819, \"maximum_transaction_limit\": 500000, \"transaction_rows_gt_limit\": true, \"calculated_count\": 971819, \"spending_level\": \"transactions\", \"maximum_limit\": 500000, \"rows_gt_limit\": true, \"messages\": [\"For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. \", \"'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. \", \"The above fields containing the transaction_* naming convention will be deprecated and replaced with fields withou",
+      "contentType": "application/json"
+    },
+    "notes": "Test recipient location array with multiple shapes."
+  },
+  {
+    "name": "filters_null",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": null
+      }
+    },
+    "response": {
+      "status": 500,
+      "body": null,
+      "bodyExcerpt": "\n<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>\n",
+      "contentType": "text/html; charset=utf-8"
+    },
+    "notes": "Test response when filters is null."
+  },
+  {
+    "name": "keywords_string",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "keywords": "covid",
+          "time_period": [
+            {
+              "start_date": "2020-03-01",
+              "end_date": "2020-06-30"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": 400,
+      "body": {
+        "detail": "Invalid value in 'filters|keywords'. 'covid' is not a valid type (array)"
+      },
+      "bodyExcerpt": "{\"detail\":\"Invalid value in 'filters|keywords'. 'covid' is not a valid type (array)\"}",
+      "contentType": "application/json"
+    },
+    "notes": "Test keywords provided as string instead of array."
+  },
+  {
+    "name": "ipv6_post_failure",
+    "request": {
+      "method": "POST",
+      "path": "/api/v2/download/count/",
+      "query": {},
+      "body": {
+        "filters": {
+          "time_period": [
+            {
+              "start_date": "2023-10-01",
+              "end_date": "2023-12-31"
+            }
+          ]
+        }
+      }
+    },
+    "response": {
+      "status": null,
+      "body": null,
+      "bodyExcerpt": "curl: (52) Empty reply from server (IPv6)",
+      "contentType": null
+    },
+    "notes": "Reproduced IPv6-only request resulting in connection close with no response. (attempt forced IPv6)"
+  }
+]

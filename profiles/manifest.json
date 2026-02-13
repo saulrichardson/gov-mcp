@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-02-07",
+  "profiles": [
+    {
+      "slug": "v2__agency__awards__count",
+      "lastVerified": "2026-02-07",
+      "profilePath": "profiles/v2__agency__awards__count/profile.json",
+      "promptPath": "profiles/v2__agency__awards__count/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code",
+      "lastVerified": "2026-02-07",
+      "profilePath": "profiles/v2__agency__toptier_code/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code/prompt.md"
+    },
+    {
+      "slug": "v2__awards__last_updated",
+      "lastVerified": "2026-02-06",
+      "profilePath": "profiles/v2__awards__last_updated/profile.json",
+      "promptPath": "profiles/v2__awards__last_updated/prompt.md"
+    },
+    {
+      "slug": "v2__recipient__count",
+      "lastVerified": "2026-02-07",
+      "profilePath": "profiles/v2__recipient__count/profile.json",
+      "promptPath": "profiles/v2__recipient__count/prompt.md"
+    },
+    {
+      "slug": "v2__references__award_types",
+      "lastVerified": "2026-02-07",
+      "profilePath": "profiles/v2__references__award_types/profile.json",
+      "promptPath": "profiles/v2__references__award_types/prompt.md"
+    },
+    {
+      "slug": "v2__search__spending_by_award",
+      "lastVerified": "2026-02-07",
+      "profilePath": "profiles/v2__search__spending_by_award/profile.json",
+      "promptPath": "profiles/v2__search__spending_by_award/prompt.md"
+    }
+  ]
+}

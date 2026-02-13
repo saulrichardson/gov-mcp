@@ -1,44 +1,19 @@
 import { z } from "zod";
+import schemaModule from "../../../src/agent/core/profileSchema.ts";
 
-// New contract-based profile (ProfileReport.contract only; no legacy support)
-const ContractSchema = z.object({
-  name: z.string(),
-  description: z.string().optional(),
-  endpoint: z.object({
-    method: z.string(),
-    host: z.string(),
-    path: z.string(),
-  }),
-  inputSchema: z.object({
-    type: z.string(),
-    properties: z.record(z.any()),
-    required: z.array(z.string()).optional(),
-    confidence: z.string(),
-  }),
-  outputSchema: z.object({
-    confidence: z.string(),
-  }).catchall(z.any()),
-  examples: z.array(z.any()).default([]),
-  quirks: z.array(z.string()).optional(),
-  risks: z.array(z.string()).optional(),
-  gaps: z.array(z.string()).optional(),
-  lifecycle: z.string().optional(),
-  confidence: z.string().optional(),
-  lastVerified: z.string().optional(),
-});
+const { ProfileSchema, SCHEMA_VERSION } = (schemaModule as any).default ?? (schemaModule as any);
 
-export const ProfileReportSchema = z.object({
-  contract: ContractSchema,
-  probes: z.array(z.any()).optional(),
-  mismatches: z.array(z.string()).optional(),
-  gaps: z.array(z.string()).optional(),
-  risks: z.array(z.string()).optional(),
-});
+export const ProfileReportSchema = ProfileSchema as z.ZodTypeAny;
+export const CANONICAL_SCHEMA_VERSION = SCHEMA_VERSION as string;
+
+export type ProfileReport = z.infer<typeof ProfileReportSchema>;
+
 export type Profile = {
+  schemaVersion: string;
   slug: string;
   name: string;
   endpoint: {
-    method: string;
+    method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
     host: string;
     path: string;
     auth?: any;
@@ -55,6 +30,9 @@ export type Profile = {
   supports?: string[];
   status?: string;
   provenance?: any;
+  lifecycle: "active" | "deprecated" | "unknown";
+  lastVerified: string;
+  confidence: "confirmed";
 };
 
 export type EndpointSummary = {

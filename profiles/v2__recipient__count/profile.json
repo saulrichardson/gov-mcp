@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/recipient/count.md",
+    "description": "Return recipient counts for a filtered award population.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/recipient/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Recipient count filter block.",
+          "constraints": "Required."
+        }
+      },
+      "required": [
+        "filters"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "Total recipient count for the filtered set."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Optional warning/info messages."
+        }
+      },
+      "required": [
+        "count"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/recipient/count/",
+          "query": {},
+          "body": {
+            "filters": {
+              "time_period": [
+                {
+                  "start_date": "2025-01-01",
+                  "end_date": "2025-12-31"
+                }
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 0,
+            "messages": []
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Count values are sensitive to filter semantics inherited from shared filters."
+    ],
+    "risks": [
+      "A broad filter can represent expensive computation; keep filters constrained."
+    ],
+    "gaps": [
+      "Edge-case interactions across all filter dimensions are not exhaustively modeled in this fixture."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-07"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/count/",
+        "query": {},
+        "body": {
+          "filters": {
+            "time_period": [
+              {
+                "start_date": "2025-01-01",
+                "end_date": "2025-12-31"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":0,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Validated count response envelope.",
+      "meta": {
+        "fixture": true
+      }
+    }
+  ],
+  "mismatches": [],
+  "gaps": [
+    "Filter-level cardinality impacts should be monitored over time."
+  ],
+  "risks": [
+    "Result counts may shift with upstream data refreshes and should be treated as dynamic."
+  ]
+}

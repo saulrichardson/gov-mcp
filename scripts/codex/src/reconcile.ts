@@ -2,18 +2,19 @@ import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { Codex } from "@openai/codex-sdk";
 import { runWithRetries } from "./lib/runWithRetries";
-import configModule from "../../../src/agent/core/config.ts";
+import { PipelineError, toPipelineError } from "./lib/pipelineError";
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from "fs";
-import pathsModule from "../../../src/agent/core/paths.ts";
-import ioModule from "../../../src/agent/core/io.ts";
-import schemas from "../../../src/agent/core/schema.ts";
-import stagingModule from "../../../src/agent/core/staging.ts";
+import * as configModule from "../../../src/agent/core/config.ts";
+import * as pathsModule from "../../../src/agent/core/paths.ts";
+import * as ioModule from "../../../src/agent/core/io.ts";
+import * as schemas from "../../../src/agent/core/schema.ts";
+import * as stagingModule from "../../../src/agent/core/staging.ts";
+import * as promptModule from "../../../src/agent/reconcile/prompt.ts";
 const { ProfileSchema } = (schemas as any).default ?? (schemas as any);
 const { loadConfig } = (configModule as any).default ?? (configModule as any);
 const { filesForStage } = (pathsModule as any).default ?? (pathsModule as any);
 const { ensureValid } = (ioModule as any).default ?? (ioModule as any);
 const { resolveContractBySlug, loadSupportingManifest } = (stagingModule as any).default ?? (stagingModule as any);
-import promptModule from "../../../src/agent/reconcile/prompt.ts";
 const { reconcilePrompt } = (promptModule as any).default ?? (promptModule as any);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,13 +34,14 @@ if (!slugArg) {
   process.exit(1);
 }
 
-let contract: { version: string; slug: string; relativePath: string; stagedPath: string };
-try {
-  contract = resolveContractBySlug(repoRoot, slugArg);
-} catch (err: any) {
-  console.error(`[reconcile] ${String(err?.message ?? err)}`);
-  process.exit(1);
-}
+const contract = (() => {
+  try {
+    return resolveContractBySlug(repoRoot, slugArg);
+  } catch (err: any) {
+    console.error(`[reconcile] ${String(err?.message ?? err)}`);
+    process.exit(1);
+  }
+})();
 
 const slug = contract.slug;
 const version = contract.version;
@@ -58,14 +60,15 @@ if (!existsSync(contractAbs)) {
 }
 const endpointDoc = readFileSync(contractAbs, "utf-8");
 
-let supporting: { version: string; always: string[] };
-try {
-  supporting = loadSupportingManifest(repoRoot, version);
-} catch (err: any) {
-  console.error(`[reconcile] ${String(err?.message ?? err)}`);
-  process.exit(1);
-}
-const sharedFilters = supporting.always.map((rel) => readFileSync(join(repoRoot, rel), "utf-8")).join("\n\n");
+const supporting = (() => {
+  try {
+    return loadSupportingManifest(repoRoot, version);
+  } catch (err: any) {
+    console.error(`[reconcile] ${String(err?.message ?? err)}`);
+    process.exit(1);
+  }
+})();
+const sharedFilters = supporting.always.map((rel: string) => readFileSync(join(repoRoot, rel), "utf-8")).join("\n\n");
 
 const pass1SummaryPath = join(repoRoot, "runs", version, slug, "discover", "summary.json");
 if (!existsSync(pass1SummaryPath)) {
@@ -100,8 +103,11 @@ const pass2Probes = (() => {
 })();
 
 const cfg = loadConfig(repoRoot);
+for (const w of cfg.configWarnings || []) {
+  console.error(`[reconcile][config] ${w}`);
+}
 if (!cfg.apiKey) {
-  console.error("[reconcile] CODEX_API_KEY is required (set it in .env or your environment).");
+  console.error("[reconcile] CODEX_API_KEY or OPENAI_API_KEY is required (set it in .env or your environment).");
   process.exit(1);
 }
 
@@ -117,12 +123,22 @@ const prompt = reconcilePrompt
   .replaceAll("{{PROFILE_PATH}}", profilePath)
   .replaceAll("{{PROMPT_PATH}}", promptPath);
 
-const codex = new Codex({ apiKey: cfg.apiKey, baseURL: cfg.baseURL, config: cfg.codexConfig as any });
-const thread = codex.startThread(cfg.threadOptions);
+const codex = new Codex({ apiKey: cfg.apiKey, baseUrl: cfg.baseURL } as any);
+const thread = codex.startThread(cfg.threadOptions as any);
 
 (async () => {
   const events: any[] = [];
-  const result = await runWithRetries(thread, prompt, events);
+  let result: any;
+  try {
+    result = await runWithRetries(thread, prompt, events);
+  } catch (err) {
+    throw toPipelineError(err, "THREAD_FAILURE", "Thread execution failed", {
+      stage: "profile",
+      slug,
+      path: profilePath,
+    });
+  }
+
   writeFileSync(promptTxt, prompt, "utf-8");
   const finalText = (result as any)?.finalResponse ?? String(result);
   writeFileSync(responseTxt, finalText, "utf-8");
@@ -139,10 +155,19 @@ const thread = codex.startThread(cfg.threadOptions);
   try {
     ProfileSchema.parse(JSON.parse(readFileSync(profilePath, "utf-8")));
   } catch (err) {
-    await ensureValid("profile", profilePath, thread, 1);
+    try {
+      await ensureValid("profile", profilePath, thread, { retries: 2, context: { stage: "profile", slug } });
+    } catch (repairErr) {
+      const code = existsSync(profilePath) ? "INVALID_SCHEMA" : "MISSING_OUTPUT_FILE";
+      throw toPipelineError(repairErr, code, "Profile output is missing or invalid", {
+        stage: "profile",
+        slug,
+        path: profilePath,
+      });
+    }
   }
 
-  // prompt.md may be in response; ensure it's written if not
+  // prompt.md may be in the model response; extract once, then enforce strict presence.
   if (!existsSync(promptPath)) {
     const last = (result as any)?.finalResponse ?? "";
     const mdBlock = last.match(/```md[\s\S]*?```/);
@@ -151,9 +176,20 @@ const thread = codex.startThread(cfg.threadOptions);
       writeFileSync(promptPath, content, "utf-8");
     }
   }
+  if (!existsSync(promptPath)) {
+    throw new PipelineError("PROMPT_MISSING", `Missing prompt.md at ${promptPath}`, {
+      stage: "profile",
+      slug,
+      path: promptPath,
+    });
+  }
 
   console.log(`[reconcile] ✅ ${contractLabel} -> ${profilePath}`);
 })().catch((err) => {
-  console.error(err);
+  if (err instanceof PipelineError) {
+    console.error(err.message);
+  } else {
+    console.error(toPipelineError(err, "THREAD_FAILURE", "Unhandled profile failure", { stage: "profile", slug, path: profilePath }).message);
+  }
   process.exit(1);
 });

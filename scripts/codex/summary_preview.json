@@ -1,0 +1,1010 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/sub_components/bureau_slug.md",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/sub_components/{bureau_slug}/"
+    },
+    "description": "Return federal accounts and appropriation totals for a specific agency sub-component in a fiscal year.",
+    "inputSchema": {
+      "confidence": "hypothesis",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Top-tier agency code; numeric string with leading zeroes allowed.",
+          "constraints": "Required; appears limited to CGAC/FREC codes (3-4 digits). Unknown codes return 404 HTML."
+        },
+        "bureau_slug": {
+          "location": "path",
+          "type": "string",
+          "description": "Slug identifier for the agency sub-component (hyphen-separated in production).",
+          "constraints": "Required; invalid slugs return 200 with zero totals instead of 404."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "number",
+          "description": "Appropriations fiscal year to report.",
+          "constraints": "Optional; must be an integer no greater than current FY (422 when >2026). Requests <=2014 returned 500 HTML, so the lower bound is unclear."
+        },
+        "agency_type": {
+          "location": "query",
+          "type": "string",
+          "description": "Select awarding or funding agency data.",
+          "constraints": "Optional; accepts 'awarding' (default) or 'funding'. Empty string falls back to default. Case sensitive."
+        },
+        "order": {
+          "location": "query",
+          "type": "string",
+          "description": "Sort direction for the chosen field.",
+          "constraints": "Optional; 'desc' default. Only 'asc' or 'desc' accepted; case sensitive."
+        },
+        "sort": {
+          "location": "query",
+          "type": "string",
+          "description": "Field to sort results by.",
+          "constraints": "Optional; defaults to 'total_budgetary_resources'. Accepts 'name', 'id', 'total_obligations', 'total_outlays', 'total_budgetary_resources'."
+        },
+        "page": {
+          "location": "query",
+          "type": "number",
+          "description": "1-based page index of results.",
+          "constraints": "Optional; must be integer >=1. Values above available data return empty arrays; 0 or negatives yield 422."
+        },
+        "limit": {
+          "location": "query",
+          "type": "number",
+          "description": "Number of accounts to return per page.",
+          "constraints": "Optional; default 10. Must be integer between 1 and 100 inclusive; rejects values outside range with 422 and non-integers with 400."
+        }
+      },
+      "required": [
+        "toptier_code",
+        "bureau_slug"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "hypothesis",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echoed top-tier code from the request."
+        },
+        "bureau_slug": {
+          "type": "string",
+          "description": "Echoed sub-component slug (may echo invalid slug when no data)."
+        },
+        "fiscal_year": {
+          "type": "number",
+          "description": "Fiscal year used to generate the totals."
+        },
+        "totals": {
+          "type": "object",
+          "description": "Aggregated totals for the bureau in the fiscal year with monetary fields (0 when no data)."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata: page, total result count, limit, next/previous page numbers, and booleans hasNext/hasPrevious."
+        },
+        "results": {
+          "type": "array",
+          "description": "List of federal account records with fields name, id, total_obligations, total_outlays, total_budgetary_resources."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Array of warning strings (empty in all observed cases)."
+        }
+      },
+      "required": [
+        "toptier_code",
+        "bureau_slug",
+        "fiscal_year",
+        "totals",
+        "page_metadata",
+        "results",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "073",
+            "bureau_slug": "small-business-administration",
+            "fiscal_year": 2026,
+            "totals": {
+              "total_obligations": 410511460.43,
+              "total_outlays": 402997689.92,
+              "total_budgetary_resources": 5864689299.41
+            },
+            "page_metadata": {
+              "page": 1,
+              "total": 14,
+              "limit": 10,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "name": "Salaries and Expenses, Small Business Administration",
+                "id": "073-0100",
+                "total_obligations": 261372382.99,
+                "total_outlays": 228076587.81,
+                "total_budgetary_resources": 1765967009.23
+              },
+              {
+                "name": "Disaster Loans Program Account, Small Business Administration",
+                "id": "073-1152",
+                "total_obligations": 68932868.95,
+                "total_outlays": 79227684.91,
+                "total_budgetary_resources": 950012157.54
+              }
+            ],
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+          "query": {
+            "sort": "name",
+            "order": "asc",
+            "limit": 5
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "073",
+            "bureau_slug": "small-business-administration",
+            "fiscal_year": 2026,
+            "page_metadata": {
+              "page": 1,
+              "total": 14,
+              "limit": 5,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "name": "Business Assistance Trust Fund, Small Business Administration",
+                "id": "073-8466",
+                "total_obligations": 90300.0,
+                "total_outlays": 0.0,
+                "total_budgetary_resources": 1483453.04
+              },
+              {
+                "name": "Business Loan and Investment Fund, Liquidating Account, Small Business Administration",
+                "id": "073-4154",
+                "total_obligations": 143979.15,
+                "total_outlays": 143184.07,
+                "total_budgetary_resources": 2500000.0
+              },
+              {
+                "name": "Business Loans Program Account, Small Business Administration",
+                "id": "073-1154",
+                "total_obligations": 54322004.01,
+                "total_outlays": 55876648.14,
+                "total_budgetary_resources": 2067057773.21
+              },
+              {
+                "name": "Disaster Loan Fund, Liquidating Account, Small Business Administration",
+                "id": "073-4153",
+                "total_obligations": 6400.27,
+                "total_outlays": 1321.64,
+                "total_budgetary_resources": 800000.0
+              },
+              {
+                "name": "Disaster Loans Program Account, Small Business Administration",
+                "id": "073-1152",
+                "total_obligations": 68932868.95,
+                "total_outlays": 79227684.91,
+                "total_budgetary_resources": 950012157.54
+              }
+            ],
+            "messages": []
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Unknown bureau_slug values return HTTP 200 with zero totals/results rather than 404.",
+      "Range violations use 422 responses while type errors use 400, each with a single detail string.",
+      "404 and 500 errors return HTML instead of JSON.",
+      "agency_type accepts an empty string and still falls back to the default awarding behavior.",
+      "page_metadata.total represents the total record count, not the number of pages.",
+      "Requests for fiscal years <=2014 consistently triggered 500 server errors instead of validation feedback."
+    ]
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":1,\"total\":14,\"limit\":10,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Salaries and Expenses, Small Business Administration\",\"id\":\"073-0100\",\"total_obligations\":261372382.99,\"total_outlays\":228076587.81,\"total_budgetary_resources\":1765967009.23},{\"name\":\"Disaster Loans Program Account, Small Business Administration\",\"id\":\"073-1152\",\"total...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: default call returns FY 2026 data sorted by total_budgetary_resources desc with 10 results."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "fiscal_year": 2025
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2025,\"totals\":{\"total_obligations\":12534817541.37,\"total_outlays\":12137905953.21,\"total_budgetary_resources\":17288617083.84},\"page_metadata\":{\"page\":1,\"total\":16,\"limit\":10,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Disaster Loans Program Account, Small Business Administration\",\"id\":\"073-1152\",\"total_obligations\":9919789006.52,\"total_outlays\":9501975418.39,\"total_budgetary_resources\":10490615964.06},{\"name\":\"Salaries and Expenses, Small Business Administration\",\"id\":\"073-0100...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: fiscal_year=2025 returns historical data and updates totals/page_metadata.total to 16."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "fiscal_year": 2022
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2022,\"totals\":{\"total_obligations\":35455067058.76,\"total_outlays\":36623890765.97,\"total_budgetary_resources\":44248171656.67},\"page_metadata\":{\"page\":1,\"total\":16,\"limit\":10,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Disaster Loans Program Account, Small Business Administration\",\"id\":\"073-1152\",\"total_obligations\":16807250297.17,\"total_outlays\":17137121784.67,\"total_budgetary_resources\":17560754046.47},{\"name\":\"Business Loans Program Account, Small Business Administration\",\"id...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: fiscal_year=2022 still responds 200 with populated results and messages empty."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "agency_type": "funding"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":1,\"total\":14,\"limit\":10,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Salaries and Expenses, Small Business Administration\",\"id\":\"073-0100\",\"total_obligations\":261372382.99,\"total_outlays\":228076587.81,\"total_budgetary_resources\":1765967009.23},{\"name\":\"Disaster Loans Program Account, Small Business Administration\",\"id\":\"073-1152\",\"total...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: agency_type=funding mirrors awarding data for this bureau."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "agency_type": "awarding"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":1,\"total\":14,\"limit\":10,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Salaries and Expenses, Small Business Administration\",\"id\":\"073-0100\",\"total_obligations\":261372382.99,\"total_outlays\":228076587.81,\"total_budgetary_resources\":1765967009.23},{\"name\":\"Disaster Loans Program Account, Small Business Administration\",\"id\":\"073-1152\",\"total...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: agency_type=awarding matches default response, confirming default."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "order": "asc"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":1,\"total\":14,\"limit\":10,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Surety Bond Guarantees Revolving Fund - Recovery Act, Small Business Administration\",\"id\":\"073-4268\",\"total_obligations\":0.0,\"total_outlays\":0.0,\"total_budgetary_resources\":14672294.23},{\"name\":\"Disaster Loan Fund, Liquidating Account, Small Business Administration\",\"i...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: order=asc without sort flips default total_budgetary_resources order."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "sort": "name",
+          "order": "asc",
+          "limit": 5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":1,\"total\":14,\"limit\":5,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Business Assistance Trust Fund, Small Business Administration\",\"id\":\"073-8466\",\"total_obligations\":90300.0,\"total_outlays\":0.0,\"total_budgetary_resources\":1483453.04},{\"name\":\"Business Loan and Investment Fund, Liquidating Account, Small Business Administration\",\"id\":\"0...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: sort=name&order=asc works and limits results to requested count."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "sort": "id",
+          "order": "desc",
+          "limit": 5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":1,\"total\":14,\"limit\":5,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Business Assistance Trust Fund, Small Business Administration\",\"id\":\"073-8466\",\"total_obligations\":90300.0,\"total_outlays\":0.0,\"total_budgetary_resources\":1483453.04},{\"name\":\"Surety Bond Guarantees Revolving Fund - Recovery Act, Small Business Administration\",\"id\":\"073...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: sort=id&order=desc orders accounts by descending id."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "sort": "total_obligations",
+          "order": "asc",
+          "limit": 5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":1,\"total\":14,\"limit\":5,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Surety Bond Guarantees Revolving Fund - Recovery Act, Small Business Administration\",\"id\":\"073-4268\",\"total_obligations\":0.0,\"total_outlays\":0.0,\"total_budgetary_resources\":14672294.23},{\"name\":\"Disaster Loan Fund, Liquidating Account, Small Business Administration\",\"id...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: sort=total_obligations&order=asc returns zero-obligation accounts first."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "page": 2,
+          "limit": 5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":2,\"total\":14,\"limit\":5,\"next\":3,\"previous\":1,\"hasNext\":true,\"hasPrevious\":true},\"results\":[{\"name\":\"Information Technology System Modernization and Working Capital Fund, Small Business Administration\",\"id\":\"073-1161\",\"total_obligations\":3000000.0,\"total_outlays\":4284398.01,\"total_budgetary_resources\":14829436.8},{\"name\":\"Office of Advocacy, Small Business Administration\",...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: page=2&limit=5 returns next slice with hasPrevious true and next=3."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "page": 999,
+          "limit": 5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":999,\"total\":14,\"limit\":5,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: requesting page beyond range returns 200 with empty results and hasNext false."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "limit": 1
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":1,\"total\":14,\"limit\":1,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Salaries and Expenses, Small Business Administration\",\"id\":\"073-0100\",\"total_obligations\":261372382.99,\"total_outlays\":228076587.81,\"total_budgetary_resources\":1765967009.23}],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: limit=1 trims results to a single account and sets next=2."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "limit": 100
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":1,\"total\":14,\"limit\":100,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[{\"name\":\"Salaries and Expenses, Small Business Administration\",\"id\":\"073-0100\",\"total_obligations\":261372382.99,\"total_outlays\":228076587.81,\"total_budgetary_resources\":1765967009.23},{\"name\":\"Disaster Loans Program Account, Small Business Administration\",\"id\":\"073-1152\",\"...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: limit=100 accepted and returns all 14 accounts in one page."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "limit": 1000
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '1000' is above max '100'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: limit above 100 rejected with 422 detail 'above max 100'."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "limit": 0
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: limit=0 rejected with 422 detail 'below min 1'."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "limit": -5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '-5' is below min '1'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: negative limit rejected with same 422 min message."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "limit": "abc"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. 'abc' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: non-numeric limit triggers 400 invalid type error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "agency_type": "invalid"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'agency_type' is outside valid values ['awarding', 'funding']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: agency_type outside ['awarding','funding'] returns 400 enumerating valid values."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "order": "invalid"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'order' is outside valid values ['asc', 'desc']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: order outside ['asc','desc'] returns 400."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "sort": "invalid"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'sort' is outside valid values ['name', 'id', 'total_obligations', 'total_outlays', 'total_budgetary_resources']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: unknown sort rejects with 400 listing accepted fields including total_outlays."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "fiscal_year": "abc"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'fiscal_year'. 'abc' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: fiscal_year as string causes 400 invalid type."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "fiscal_year": 2050
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2050' is above max '2026'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: fiscal_year above current (2026) rejected with 422 max message."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "fiscal_year": 2008
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: fiscal_year=2008 triggers HTML 500 server error instead of validation."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/013/sub_components/bureau_of_the_census/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1><p>The requested resource was not found on this server.</p>\n</body>\n</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: documented slug with underscores returns 404 HTML for Commerce."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/013/sub_components/bureau_of_the_census/",
+        "query": {
+          "agency_type": "funding"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1><p>The requested resource was not found on this server.</p>\n</body>\n</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: same underscored slug with agency_type=funding still 404 HTML."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/013/sub_components/bureau_of_the_census/",
+        "query": {
+          "sort": "name",
+          "order": "desc",
+          "limit": 5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1><p>The requested resource was not found on this server.</p>\n</body>\n</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: underscored slug with sorting still 404 HTML."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/ABC/sub_components/small-business-administration/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1><p>The requested resource was not found on this server.</p>\n</body>\n</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: non-numeric toptier path yields 404 HTML."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/07/sub_components/small-business-administration/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1><p>The requested resource was not found on this server.</p>\n</body>\n</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: two-digit toptier path yields 404 HTML."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/not-real-slug/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"not-real-slug\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":0,\"total_outlays\":0,\"total_budgetary_resources\":0},\"page_metadata\":{\"page\":1,\"total\":0,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: unknown slug returns 200 with zero totals and empty results."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "sort": "total_outlays",
+          "order": "desc",
+          "limit": 5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":1,\"total\":14,\"limit\":5,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Salaries and Expenses, Small Business Administration\",\"id\":\"073-0100\",\"total_obligations\":261372382.99,\"total_outlays\":228076587.81,\"total_budgetary_resources\":1765967009.23},{\"name\":\"Disaster Loans Program Account, Small Business Administration\",\"id\":\"073-1152\",\"total_...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: sort=total_outlays works, confirming undocumented sort option."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "page": 0,
+          "limit": 5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'page' value '0' is below min '1'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: page=0 rejected with 422 min 1 message."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "page": -1,
+          "limit": 5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'page' value '-1' is below min '1'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: negative page rejected with 422 min message."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "page": "abc"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'page'. 'abc' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: non-numeric page rejected with 400 invalid type."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "page": 1.5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'page'. '1.5' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: fractional page rejected with 400 invalid type."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "limit": 5.5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. '5.5' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: fractional limit rejected with 400 invalid type."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "order": "ASC"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'order' is outside valid values ['asc', 'desc']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: uppercase order value rejected, showing case sensitivity."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "sort": "NAME"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'sort' is outside valid values ['name', 'id', 'total_obligations', 'total_outlays', 'total_budgetary_resources']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: uppercase sort value rejected, showing case sensitivity."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "agency_type": ""
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":1,\"total\":14,\"limit\":10,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Salaries and Expenses, Small Business Administration\",\"id\":\"073-0100\",\"total_obligations\":261372382.99,\"total_outlays\":228076587.81,\"total_budgetary_resources\":1765967009.23},{\"name\":\"Disaster Loans Program Account, Small Business Administration\",\"id\":\"073-1152\",\"total...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: blank agency_type falls back to default awarding response."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "fiscal_year": 2010
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: fiscal_year=2010 triggers HTML 500 server error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "fiscal_year": 2014
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: fiscal_year=2014 triggers HTML 500 server error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "fiscal_year": 2013
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: fiscal_year=2013 triggers HTML 500 server error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "fiscal_year": 2009
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: fiscal_year=2009 triggers HTML 500 server error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "fiscal_year": 2027
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2027' is above max '2026'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: fiscal_year=2027 rejected with 422 max 2026 message."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/013/sub_components/bureau-of-the-census/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"013\",\"bureau_slug\":\"bureau-of-the-census\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":471830054.66,\"total_outlays\":508411960.23,\"total_budgetary_resources\":2420636184.81},\"page_metadata\":{\"page\":1,\"total\":3,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[{\"name\":\"Census Working Capital Fund, Bureau of the Census, Commerce\",\"id\":\"013-4512\",\"total_obligations\":235069307.38,\"total_outlays\":238256320.18,\"total_budgetary_resources\":1498814454.16},{\"name\":\"Periodic Censuses and Programs, Bureau of the Census, Commerce\",\"id\":\"013-0450\",\"tot...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: hyphenated slug returns Commerce Census accounts for FY 2026."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/013/sub_components/bureau-of-the-census/",
+        "query": {
+          "sort": "total_outlays",
+          "order": "desc",
+          "limit": 5
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"013\",\"bureau_slug\":\"bureau-of-the-census\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":471830054.66,\"total_outlays\":508411960.23,\"total_budgetary_resources\":2420636184.81},\"page_metadata\":{\"page\":1,\"total\":3,\"limit\":5,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[{\"name\":\"Census Working Capital Fund, Bureau of the Census, Commerce\",\"id\":\"013-4512\",\"total_obligations\":235069307.38,\"total_outlays\":238256320.18,\"total_budgetary_resources\":1498814454.16},{\"name\":\"Periodic Censuses and Programs, Bureau of the Census, Commerce\",\"id\":\"013-0450\",\"tota...",
+        "contentType": "application/json"
+      },
+      "notes": "pass: Commerce Census supports sort=total_outlays desc with full metadata."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/013/sub_components/bureau-of-the-census/",
+        "query": {
+          "page": 2,
+          "limit": 3
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"013\",\"bureau_slug\":\"bureau-of-the-census\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":471830054.66,\"total_outlays\":508411960.23,\"total_budgetary_resources\":2420636184.81},\"page_metadata\":{\"page\":2,\"total\":3,\"limit\":3,\"next\":null,\"previous\":1,\"hasNext\":false,\"hasPrevious\":true},\"results\":[],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: Commerce Census page=2 limit=3 returns empty page with hasPrevious true."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/013/sub_components/not-a-real-slug/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"013\",\"bureau_slug\":\"not-a-real-slug\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":0,\"total_outlays\":0,\"total_budgetary_resources\":0},\"page_metadata\":{\"page\":1,\"total\":0,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: Commerce invalid slug mirrors zero-result behavior (200, totals zero)."
+    }
+  ],
+  "mismatches": [
+    "Docs list sort members as name/id/total_obligations/total_budgetary_resources, but the API also accepts total_outlays (and reports it in errors).",
+    "Docs describe the FederalAccount object without total_outlays, yet every result includes total_outlays.",
+    "Doc example path uses bureau_of_the_census (underscores); production expects bureau-of-the-census and the documented path returns 404."
+  ],
+  "gaps": [
+    "Minimum supported fiscal_year is unclear; requests through FY 2014 caused 500 errors rather than validation guidance.",
+    "No scenario produced a non-empty messages array, so its possible values remain unknown.",
+    "award vs funding agency_type differences were not observed; unclear when data diverges."
+  ],
+  "risks": [
+    "Clients must handle HTML 404/500 responses despite expecting JSON.",
+    "Older fiscal years can trigger unexpected 500 errors, so integrations need retries or guards.",
+    "Typos in bureau_slug silently yield zeroed totals, which may mask mistakes.",
+    "The max fiscal_year constraint tracks the current year (422 when exceeded), so clients should derive year bounds dynamically."
+  ]
+}

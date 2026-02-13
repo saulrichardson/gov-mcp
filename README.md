@@ -86,6 +86,41 @@ make profile-all PARALLEL=2
 make verify
 ```
 
+## Prove Full Coverage (Background)
+
+Run a Codex preflight first (auth + model smoke), then start a detached full-contract job:
+
+```bash
+make codex-preflight
+make pipeline-run-bg PARALLEL=4 PIPELINE_VERSION=v2
+```
+
+The background command prints a `jobDir`. Use it to monitor progress:
+
+```bash
+make pipeline-status-watch JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>
+tail -f /absolute/path/to/runs/_jobs/<job-id>/runner.log
+```
+
+Stage output validation (schema + freshness) is enabled by default. To bypass it temporarily:
+
+```bash
+make pipeline-run-bg PARALLEL=4 PIPELINE_VERSION=v2 SKIP_OUTPUT_VALIDATION=1
+```
+
+At any point, compute proof-of-coverage:
+
+```bash
+make pipeline-coverage PIPELINE_VERSION=v2
+```
+
+Replay only failed slugs from a previous job and run an offline audit:
+
+```bash
+make pipeline-retry-failed FROM_JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>
+make pipeline-audit JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>
+```
+
 ## Documentation Map
 
 - Deep architecture and internals: `docs/architecture.md`
@@ -95,4 +130,3 @@ make verify
 
 - Staged v2 contracts in `staging/docs/v2/index.jsonl`: 172 contracts, 1 supporting doc.
 - Promoted profile fixtures in `profiles/manifest.json`: 6 slugs.
-

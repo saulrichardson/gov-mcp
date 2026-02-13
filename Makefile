@@ -2,8 +2,13 @@ REPO_ROOT := $(CURDIR)
 SLUG ?= v2__agency__awards__count
 BASE ?= main
 PARALLEL ?= 2
+PIPELINE_VERSION ?= v2
+JOB_DIR ?=
+STAGE_MAX_ATTEMPTS ?= 3
+SKIP_OUTPUT_VALIDATION ?= 0
+FROM_JOB_DIR ?=
 
-.PHONY: discover validate profile pipeline clean-worktrees discover-all validate-all profile-all pipeline-all gather-runs merge-agent-branches mcp-server
+.PHONY: discover validate profile pipeline clean-worktrees discover-all validate-all profile-all pipeline-all gather-runs merge-agent-branches mcp-server promote-profile verify codex-preflight pipeline-coverage pipeline-run-foreground pipeline-run-bg pipeline-retry-failed pipeline-audit pipeline-status pipeline-status-watch
 
 discover:
 	@$(REPO_ROOT)/scripts/codex/bin/run-agent.sh discover $(SLUG) $(BASE)
@@ -71,3 +76,55 @@ clean-worktrees:
 mcp-server:
 	@npm --prefix scripts/mcp install --silent
 	@$(REPO_ROOT)/scripts/mcp/bin/stdio-server
+
+# Promote one generated run artifact into profiles/ + manifest
+promote-profile:
+	@npm --prefix scripts/mcp install --silent
+	@$(REPO_ROOT)/scripts/mcp/bin/promote-profile --slug $(SLUG)
+
+# Production verification gate: typecheck + tests + fixture validation + startup smoke
+verify:
+	@npm --prefix scripts/codex install --silent
+	@npm --prefix scripts/mcp install --silent
+	@npm --prefix scripts/codex run typecheck
+	@npm --prefix scripts/mcp run typecheck
+	@npm --prefix scripts/codex run test
+	@npm --prefix scripts/mcp run test
+	@python -m pytest -q scripts/tests/test_full_pipeline.py
+	@$(REPO_ROOT)/scripts/mcp/bin/validate-profiles
+	@$(REPO_ROOT)/scripts/mcp/bin/smoke-server
+
+# Probe Codex auth + model config before launching bulk jobs.
+codex-preflight:
+	@npm --prefix scripts/codex install --silent
+	@npm --prefix scripts/codex run preflight
+
+# Coverage proof: staged contracts vs completed final artifacts vs promoted profiles.
+pipeline-coverage:
+	@python $(REPO_ROOT)/scripts/full_pipeline.py coverage --version $(PIPELINE_VERSION)
+
+# Foreground full run with resumable per-slug status outputs under runs/_jobs.
+pipeline-run-foreground:
+	@python $(REPO_ROOT)/scripts/full_pipeline.py run --version $(PIPELINE_VERSION) --base $(BASE) --parallel $(PARALLEL) --stage-max-attempts $(STAGE_MAX_ATTEMPTS) --job-dir $(REPO_ROOT)/runs/_jobs/$(PIPELINE_VERSION)-manual $(if $(filter 1,$(SKIP_OUTPUT_VALIDATION)),--skip-output-validation,)
+
+# Detached background full run. Prints jobDir + monitor/tail commands.
+pipeline-run-bg:
+	@python $(REPO_ROOT)/scripts/full_pipeline.py start-bg --version $(PIPELINE_VERSION) --base $(BASE) --parallel $(PARALLEL) --stage-max-attempts $(STAGE_MAX_ATTEMPTS) $(if $(filter 1,$(SKIP_OUTPUT_VALIDATION)),--skip-output-validation,)
+
+# Replay only failed slugs from a previous job status.
+pipeline-retry-failed:
+	@test -n "$(FROM_JOB_DIR)" || (echo "FROM_JOB_DIR is required, e.g. make pipeline-retry-failed FROM_JOB_DIR=/abs/path/to/runs/_jobs/<job>"; exit 1)
+	@python $(REPO_ROOT)/scripts/full_pipeline.py retry-failed --from-job-dir $(FROM_JOB_DIR) --stage-max-attempts $(STAGE_MAX_ATTEMPTS) --parallel $(PARALLEL) $(if $(filter 1,$(SKIP_OUTPUT_VALIDATION)),--skip-output-validation,)
+
+# Offline artifact audit for completed outputs in a job dir.
+pipeline-audit:
+	@test -n "$(JOB_DIR)" || (echo "JOB_DIR is required, e.g. make pipeline-audit JOB_DIR=/abs/path/to/runs/_jobs/<job>"; exit 1)
+	@python $(REPO_ROOT)/scripts/full_pipeline.py audit --job-dir $(JOB_DIR)
+
+pipeline-status:
+	@test -n "$(JOB_DIR)" || (echo "JOB_DIR is required, e.g. make pipeline-status JOB_DIR=/abs/path/to/runs/_jobs/<job>"; exit 1)
+	@python $(REPO_ROOT)/scripts/full_pipeline.py status --job-dir $(JOB_DIR)
+
+pipeline-status-watch:
+	@test -n "$(JOB_DIR)" || (echo "JOB_DIR is required, e.g. make pipeline-status-watch JOB_DIR=/abs/path/to/runs/_jobs/<job>"; exit 1)
+	@python $(REPO_ROOT)/scripts/full_pipeline.py status --job-dir $(JOB_DIR) --watch

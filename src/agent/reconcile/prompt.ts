@@ -84,6 +84,7 @@ You are given the following blobs. Treat these as your only sources of truth.
 >
 > \`\`\`json
 > {
+>   "schemaVersion": "1.0.0",
 >   "contract": { ... },
 >   "probes": [ ... ],
 >   "mismatches": [ ... ],
@@ -158,7 +159,7 @@ Your job is to turn all these into:
 
 Write exactly one JSON object with **these top-level keys only**:
 
-\`contract\`, \`probes\`, \`mismatches\`, \`gaps\`, \`risks\`.
+\`schemaVersion\`, \`contract\`, \`probes\`, \`mismatches\`, \`gaps\`, \`risks\`.
 
 ### 3.1 Contract object (strict)
 
@@ -184,6 +185,7 @@ are allowed except where noted.
 
 Rules:
 
+* Set \`schemaVersion\` = \`"1.0.0"\`.
 * Set \`contract.confidence\` = \`"confirmed"\` in this pass.
 * Set \`lastVerified\` to today (YYYY-MM-DD).
 * \`examples\` MUST be non-empty and based on real probes.
