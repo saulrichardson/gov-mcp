@@ -97,6 +97,57 @@ def read_staged_slugs(repo_root: Path, version: str) -> list[str]:
     return sorted(slugs)
 
 
+def parse_slugs_override(
+    repo_root: Path,
+    version: str,
+    slugs_csv: str | None,
+    slugs_file: str | None,
+) -> list[str] | None:
+    raw: list[str] = []
+
+    if slugs_csv:
+        for part in slugs_csv.split(","):
+            slug = part.strip()
+            if slug:
+                raw.append(slug)
+
+    if slugs_file:
+        path = Path(slugs_file)
+        if not path.is_absolute():
+            path = (repo_root / path).resolve()
+        if not path.exists():
+            raise RuntimeError(f"slugs file not found: {path}")
+        for line in path.read_text(encoding="utf-8").splitlines():
+            s = line.strip()
+            if not s or s.startswith("#"):
+                continue
+            raw.append(s)
+
+    if not raw:
+        return None
+
+    slugs = sorted(set(raw))
+    bad: list[str] = []
+    prefix = f"{version}__"
+    for slug in slugs:
+        if not isinstance(slug, str) or not slug:
+            bad.append(repr(slug))
+            continue
+        if "__" not in slug:
+            bad.append(slug)
+            continue
+        if not slug.startswith(prefix):
+            bad.append(slug)
+            continue
+    if bad:
+        raise RuntimeError(
+            "invalid slugs override; expected version-prefixed slugs like "
+            f"'{prefix}...'. bad={bad}"
+        )
+
+    return slugs
+
+
 def has_final_artifact(repo_root: Path, version: str, slug: str) -> bool:
     final_dir = repo_root / "runs" / version / slug / "final"
     return (final_dir / "profile.json").exists() and (final_dir / "prompt.md").exists()
@@ -651,6 +702,16 @@ def parse_args() -> argparse.Namespace:
     common.add_argument("--stage-max-attempts", type=int, default=DEFAULT_STAGE_MAX_ATTEMPTS)
     common.add_argument("--stage-timeout-seconds", type=float, default=DEFAULT_STAGE_TIMEOUT_SECONDS)
     common.add_argument("--stage-kill-grace-seconds", type=float, default=DEFAULT_STAGE_KILL_GRACE_SECONDS)
+    common.add_argument(
+        "--slugs",
+        default=None,
+        help="Comma-separated list of slugs to run (overrides staged index; must match --version prefix)",
+    )
+    common.add_argument(
+        "--slugs-file",
+        default=None,
+        help="Path to file with one slug per line (comments with # allowed; must match --version prefix)",
+    )
 
     p_cov = sub.add_parser("coverage", parents=[common], help="Report staged-vs-final-vs-promoted coverage")
     p_cov.add_argument("--json", action="store_true", help="Emit JSON")
@@ -718,6 +779,7 @@ def cmd_coverage(args: argparse.Namespace, repo_root: Path) -> int:
 
 
 def cmd_run(args: argparse.Namespace, repo_root: Path) -> int:
+    slugs_override = parse_slugs_override(repo_root, args.version, args.slugs, args.slugs_file)
     job = PipelineJob(
         repo_root=repo_root,
         job_dir=Path(args.job_dir).resolve(),
@@ -730,6 +792,7 @@ def cmd_run(args: argparse.Namespace, repo_root: Path) -> int:
         stage_timeout_seconds=max(1.0, float(args.stage_timeout_seconds)),
         stage_kill_grace_seconds=max(1.0, float(args.stage_kill_grace_seconds)),
         validate_outputs=not args.skip_output_validation,
+        slugs_override=slugs_override,
     )
     return job.run()
 
@@ -767,6 +830,10 @@ def cmd_start_bg(args: argparse.Namespace, repo_root: Path) -> int:
         run_cmd.append("--skip-preflight")
     if args.skip_output_validation:
         run_cmd.append("--skip-output-validation")
+    if args.slugs:
+        run_cmd.extend(["--slugs", str(args.slugs)])
+    if args.slugs_file:
+        run_cmd.extend(["--slugs-file", str(args.slugs_file)])
 
     log_path = job_dir / "runner.log"
     with log_path.open("w", encoding="utf-8") as fp:
@@ -788,6 +855,7 @@ def cmd_start_bg(args: argparse.Namespace, repo_root: Path) -> int:
         "pid": proc.pid,
         "stageTimeoutSeconds": max(1.0, float(args.stage_timeout_seconds)),
         "stageKillGraceSeconds": max(1.0, float(args.stage_kill_grace_seconds)),
+        "slugs": parse_slugs_override(repo_root, args.version, args.slugs, args.slugs_file) or None,
         "runnerLog": str(log_path),
         "statusPath": str(job_dir / "status.json"),
         "summaryPath": str(job_dir / "summary.json"),
