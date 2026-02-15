@@ -33,6 +33,7 @@ staging/
 node_modules/
 scripts/codex/node_modules/
 scripts/mcp/node_modules/
+scripts/codex/pass1_probes.json
 runs/
 .worktrees/
 npm-debug.log*
