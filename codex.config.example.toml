@@ -7,10 +7,10 @@ sandbox_mode = "danger-full-access"
 approval_policy = "never"
 
 # Model used by @openai/codex-sdk.
-model = "gpt-5-codex"
+model = "gpt-5.2"
 
-# Reasoning effort: minimal | low | medium | high
-model_reasoning_effort = "high"
+# Reasoning effort: minimal | low | medium | high | xhigh
+model_reasoning_effort = "xhigh"
 
 [sandbox_workspace_write]
 network_access = true
