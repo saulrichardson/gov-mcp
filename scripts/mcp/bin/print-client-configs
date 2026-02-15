@@ -52,5 +52,16 @@ Add this server (absolute path so it works from any cwd):
 Inspect:
 
   codex mcp get usaspending --json
-EOF
 
+---
+Codex Desktop (macOS)
+
+File: ~/.codex/config.toml
+
+Add:
+
+[mcp_servers.usaspending]
+command = "$stdio_server"
+args = []
+startup_timeout_sec = 120.0
+EOF

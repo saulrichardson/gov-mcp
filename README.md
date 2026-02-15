@@ -69,6 +69,19 @@ scripts/mcp/bin/validate-profiles
 scripts/mcp/bin/stdio-server
 ```
 
+### 8. Connect from MCP clients
+
+This repo ships preconfigured MCP client configs:
+
+- `.mcp.json` (Claude Code)
+- `.cursor/mcp.json` (Cursor)
+
+For a copy-paste config snippet for other clients (including Codex Desktop), run:
+
+```bash
+scripts/mcp/bin/print-client-configs
+```
+
 ## Daily Commands
 
 ```bash

@@ -35,6 +35,9 @@ scripts/codex/node_modules/
 scripts/mcp/node_modules/
 scripts/codex/pass1_probes.json
 scripts/codex/probes_output.json
+scripts/codex/pass1_seed_*.json
+scripts/codex/pass2_*_new_probes*.json
+scripts/codex/summary_minified*.json
 runs/
 .worktrees/
 npm-debug.log*

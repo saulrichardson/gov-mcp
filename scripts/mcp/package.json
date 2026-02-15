@@ -11,6 +11,7 @@
     "validate-profiles": "tsx src/validateProfiles.ts",
     "promote-profile": "tsx src/promoteProfile.ts",
     "smoke": "tsx src/smokeServer.ts",
+    "smoke-client": "tsx src/smokeClient.ts",
     "lint": "echo 'no lint configured'"
   },
   "dependencies": {
