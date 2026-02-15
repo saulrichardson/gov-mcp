@@ -1,0 +1,278 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/awards/new/count.md",
+    "description": "Returns the number of new awards for a specified toptier agency, optionally filtered by fiscal year, agency role, and validated award type code lists (including sentinel categories exposed by the API).",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/awards/new/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Numeric identifier for the toptier agency (CGAC or FREC).",
+          "constraints": "Required. 3-4 digit numeric string; leading zeros allowed. Non-numeric or wrong-length values return 404 HTML responses.",
+          "pattern": "^[0-9]{3,4}$"
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "string",
+          "description": "Appropriations fiscal year to evaluate when counting new awards.",
+          "constraints": "Optional. Accepts 4-digit years from 2008 through 2026. Non-numeric input returns 400; out-of-range years return 422. Defaults to the current fiscal year when omitted.",
+          "pattern": "^[0-9]{4}$"
+        },
+        "agency_type": {
+          "location": "query",
+          "type": "string",
+          "description": "Selects whether the agency is considered in an awarding or funding role.",
+          "constraints": "Optional enum. Allowed values: 'awarding' (default) or 'funding'. Case-sensitive; other values, including uppercase variants, return 400."
+        },
+        "award_type_codes": {
+          "location": "query",
+          "type": "string",
+          "description": "Comma-separated list of uppercase award type codes to include. Sentinels '-1' and 'no intersection' are also accepted.",
+          "constraints": "Optional. Tokens must come from ['-1','02','03','04','05','06','07','08','09','10','11','A','B','C','D','IDV_A','IDV_B','IDV_B_A','IDV_B_B','IDV_B_C','IDV_C','IDV_D','IDV_E','no intersection'] and be comma-separated with no embedded spaces. Mixed valid/invalid tokens or lowercase entries return 400."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echo of the requested toptier agency code."
+        },
+        "fiscal_year": {
+          "type": "number",
+          "description": "Fiscal year covered by the returned count. Defaults to the current fiscal year when not specified."
+        },
+        "agency_type": {
+          "type": "string",
+          "description": "Indicates whether the count reflects an awarding or funding role."
+        },
+        "award_type_codes": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "Null when no award_type_codes filter is provided; otherwise echoes the validated tokens in request order."
+        },
+        "new_award_count": {
+          "type": "number",
+          "description": "Total number of new awards that satisfy the supplied filters (integer count)."
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "agency_type",
+        "award_type_codes",
+        "new_award_count"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/awards/new/count/",
+          "query": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2026,
+            "agency_type": "awarding",
+            "award_type_codes": null,
+            "new_award_count": 198993
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/awards/new/count/",
+          "query": {
+            "award_type_codes": "A,-1"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2026,
+            "agency_type": "awarding",
+            "award_type_codes": [
+              "A",
+              "-1"
+            ],
+            "new_award_count": 3
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/awards/new/count/",
+          "query": {
+            "agency_type": "FUNDING"
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Field 'agency_type' is outside valid values ['awarding', 'funding']"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Requests without the trailing slash receive a 301 redirect to the slash-suffixed path.",
+      "When award_type_codes is omitted the response still includes the field but its value is null.",
+      "award_type_codes parsing is strict: tokens must be uppercase without spaces, and sentinel codes '-1' and 'no intersection' can be combined with standard codes.",
+      "Invalid fiscal_year values outside 2008-2026 return 422 errors rather than 400.",
+      "404 responses for unknown agency codes return HTML instead of JSON."
+    ],
+    "risks": [
+      "Clients expecting JSON errors may break because 404 responses come back as HTML pages.",
+      "Trailing-slash dependent routing could cause double requests if callers do not follow redirects.",
+      "Default fiscal year advances annually, so cached expectations of the baseline year may drift.",
+      "Strict award_type_codes formatting (uppercase, no spaces) makes user-entered lists prone to 400 validation errors."
+    ],
+    "gaps": [
+      "Meaning of the sentinel award_type_codes values '-1' and 'no intersection' remains undocumented despite being accepted."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/awards/new/count",
+        "query": {}
+      },
+      "response": {
+        "status": 301,
+        "bodyExcerpt": "",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Missing trailing slash triggers redirect to the slash-suffixed path."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/awards/new/count/",
+        "query": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2026,\"agency_type\":\"awarding\",\"award_type_codes\":null,\"new_award_count\":198993}",
+        "contentType": "application/json"
+      },
+      "notes": "Baseline defaults to fiscal_year 2026, agency_type awarding, and null award_type_codes."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/awards/new/count/",
+        "query": {
+          "fiscal_year": "2024"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2024,\"agency_type\":\"awarding\",\"award_type_codes\":null,\"new_award_count\":907574}",
+        "contentType": "application/json"
+      },
+      "notes": "fiscal_year overrides the default when set within the accepted range."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/awards/new/count/",
+        "query": {
+          "award_type_codes": "A,-1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\": \"086\", \"fiscal_year\": 2026, \"agency_type\": \"awarding\", \"award_type_codes\": [\"A\", \"-1\"], \"new_award_count\": 3}",
+        "contentType": "application/json"
+      },
+      "notes": "Mixed sentinel and standard award_type_codes succeed and increase the count."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/awards/new/count/",
+        "query": {
+          "agency_type": "FUNDING"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\": \"Field 'agency_type' is outside valid values ['awarding', 'funding']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Parameter is case-sensitive; uppercase value rejected."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/awards/new/count/",
+        "query": {
+          "fiscal_year": "1999"
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '1999' is below min '2008'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Years below 2008 produce a 422 validation error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/awards/new/count/",
+        "query": {
+          "award_type_codes": "A, B"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'award_type_codes' is outside valid values ['-1', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', 'A', 'B', 'C', 'D', 'IDV_A', 'IDV_B', 'IDV_B_A', 'IDV_B_B', 'IDV_B_C', 'IDV_C', 'IDV_D', 'IDV_E', 'no intersection']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Embedded spaces in award_type_codes trigger 400 validation errors."
+    }
+  ],
+  "mismatches": [
+    "Docs claim award_type_codes always returns an array, but live responses return null when no filter is supplied.",
+    "Documentation example uses 'award_count' while the API returns 'new_award_count'.",
+    "Docs omit sentinel award_type_codes '-1' and 'no intersection', yet the API validates against them."
+  ],
+  "gaps": [
+    "Meaning of the sentinel award_type_codes values '-1' and 'no intersection' remains undocumented despite being accepted."
+  ],
+  "risks": [
+    "Clients expecting JSON errors may break because 404 responses come back as HTML pages.",
+    "Trailing-slash dependent routing could cause double requests if callers do not follow redirects.",
+    "Default fiscal year advances annually, so cached expectations of the baseline year may drift.",
+    "Strict award_type_codes formatting (uppercase, no spaces) makes user-entered lists prone to 400 validation errors."
+  ]
+}

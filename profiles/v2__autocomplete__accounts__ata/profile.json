@@ -1,0 +1,344 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/accounts/ata.md",
+    "description": "Returns Allocation Transfer Agency (ATA) suggestions for Treasury account autocomplete in advanced search.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/accounts/ata/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [],
+      "properties": {
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Optional object containing treasury account component filters; only recognized keys are applied.",
+          "properties": {
+            "ata": {
+              "type": ["string", "null"],
+              "description": "ATA prefix to match. Provide a non-empty string to prefix-match three-digit ATA codes or null to include accounts missing an ATA.",
+              "constraints": "Strings must contain at least one character; numeric values are rejected with a 400 error."
+            },
+            "aid": {
+              "type": ["string", "null"],
+              "description": "Agency Identifier exact match or null to include accounts missing an AID.",
+              "constraints": "Strings must be non-empty; empty strings trigger a 422 validation error."
+            },
+            "bpoa": {
+              "type": ["string", "null"],
+              "description": "Beginning Period of Availability exact match when provided.",
+              "constraints": "Behavior when matching data is unverified."
+            },
+            "epoa": {
+              "type": ["string", "null"],
+              "description": "Ending Period of Availability exact match when provided.",
+              "constraints": "Behavior when matching data is unverified."
+            },
+            "a": {
+              "type": ["string", "null"],
+              "description": "Availability Type Code exact match when provided.",
+              "constraints": "Behavior when matching data is unverified."
+            },
+            "main": {
+              "type": ["string", "null"],
+              "description": "Main Account Code exact match when provided.",
+              "constraints": "Behavior when matching data is unverified."
+            },
+            "sub": {
+              "type": ["string", "null"],
+              "description": "Sub Account Code exact match when provided.",
+              "constraints": "Behavior when matching data is unverified."
+            }
+          },
+          "constraints": "Missing, null, string, or array values for 'filters' fall back to default suggestions. Unknown keys are ignored."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of suggestions to return.",
+          "constraints": "Optional. Defaults to 10. Accepts integers from 0 to 500 inclusive; digit strings are coerced to integers. Values above 500 return 422, negative integers return an HTML 500 error, and non-integer types (floats, alphabetic strings, null) return 400."
+        }
+      }
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Sorted list of ATA matches. May include a trailing placeholder row with null fields when filters allow missing ATAs.",
+          "items": {
+            "type": "object",
+            "required": ["ata", "agency_name", "agency_abbreviation"],
+            "properties": {
+              "ata": {
+                "type": ["string", "null"],
+                "description": "Three-digit ATA code when present; null in placeholder rows."
+              },
+              "agency_name": {
+                "type": ["string", "null"],
+                "description": "Full agency name for the ATA; null in placeholder rows."
+              },
+              "agency_abbreviation": {
+                "type": ["string", "null"],
+                "description": "Agency abbreviation; null in placeholder rows."
+              }
+            }
+          }
+        }
+      },
+      "required": ["results"]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/ata/",
+          "query": {},
+          "body": {
+            "filters": {
+              "ata": "02"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "ata": "020",
+                "agency_name": "Department of the Treasury",
+                "agency_abbreviation": "TREAS"
+              },
+              {
+                "ata": "024",
+                "agency_name": "Office of Personnel Management",
+                "agency_abbreviation": "OPM"
+              },
+              {
+                "ata": "028",
+                "agency_name": "Social Security Administration",
+                "agency_abbreviation": "SSA"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/ata/",
+          "query": {},
+          "body": {
+            "filters": {
+              "aid": "011"
+            },
+            "limit": 500
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "ata": "013",
+                "agency_name": "Department of Commerce",
+                "agency_abbreviation": "DOC"
+              },
+              {
+                "ata": "015",
+                "agency_name": "Department of Justice",
+                "agency_abbreviation": "DOJ"
+              },
+              {
+                "ata": "019",
+                "agency_name": "Department of State",
+                "agency_abbreviation": "DOS"
+              },
+              {
+                "ata": "075",
+                "agency_name": "Department of Health and Human Services",
+                "agency_abbreviation": "HHS"
+              },
+              {
+                "ata": "097",
+                "agency_name": "Department of Defense",
+                "agency_abbreviation": "DOD"
+              },
+              {
+                "ata": null,
+                "agency_name": null,
+                "agency_abbreviation": null
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/ata/",
+          "query": {},
+          "body": {
+            "filters": {
+              "ata": "0"
+            },
+            "limit": "abc"
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Invalid value in 'limit'. 'abc' is not a valid type (integer)"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Missing, null, array, or string values for 'filters' fall back to default suggestions, and unknown keys are silently ignored.",
+      "Digit strings for 'limit' are coerced to integers, but floats and nulls return 400 errors while negative integers trigger an HTML 500 response.",
+      "Results are sorted ascending by ATA and can include a placeholder row where all fields are null when filters allow accounts without an ATA."
+    ],
+    "risks": [
+      "Negative 'limit' values return an HTML 500 response instead of JSON validation feedback.",
+      "Non-object filter payloads or typos silently fall back to default suggestions, masking invalid filter usage.",
+      "Placeholder rows with null fields may appear when filters include accounts missing an ATA, requiring client-side null handling."
+    ],
+    "gaps": [
+      "Behavior of bpoa, epoa, a, main, and sub filters when matching records is unverified.",
+      "Real responses with non-placeholder null agency_abbreviation values have not been observed."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/ata/",
+        "query": {},
+        "body": {
+          "filters": {
+            "ata": "02"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"ata\":\"020\",\"agency_name\":\"Department of the Treasury\",\"agency_abbreviation\":\"TREAS\"},{\"ata\":\"024\",\"agency_name\":\"Office of Personnel Management\",\"agency_abbreviation\":\"OPM\"},{\"ata\":\"028\",\"agency_name\":\"Social Security Administration\",\"agency_abbreviation\":\"SSA\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Prefix '02' returns three ATA matches sorted by code."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/ata/",
+        "query": {},
+        "body": {
+          "filters": {
+            "ata": "0"
+          },
+          "limit": 100
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"ata\":\"011\",\"agency_name\":\"Executive Office of the President\",\"agency_abbreviation\":\"EOP\"},{\"ata\":\"012\",\"agency_name\":\"Department of Agriculture\",\"agency_abbreviation\":\"USDA\"},{\"ata\":\"013\",\"agency_name\":\"Department of Commerce\",\"agency_abbreviation\":\"DOC\"},...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Limit 100 is accepted; only 19 matching ATAs are returned."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/ata/",
+        "query": {},
+        "body": {
+          "filters": {
+            "aid": "011"
+          },
+          "limit": 500
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"ata\":\"013\",\"agency_name\":\"Department of Commerce\",\"agency_abbreviation\":\"DOC\"},{\"ata\":\"015\",\"agency_name\":\"Department of Justice\",\"agency_abbreviation\":\"DOJ\"},{\"ata\":\"019\",\"agency_name\":\"Department of State\",\"agency_abbreviation\":\"DOS\"},...,{\"ata\":null,\"agency_name\":null,\"agency_abbreviation\":null}]}",
+        "contentType": "application/json"
+      },
+      "notes": "AID filter returns multiple ATAs plus a null placeholder row."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/ata/",
+        "query": {},
+        "body": {
+          "filters": {
+            "ata": "0"
+          },
+          "limit": -5
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>\n",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Negative limit values surface an HTML 500 error instead of JSON validation feedback."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/ata/",
+        "query": {},
+        "body": {
+          "filters": {
+            "ata": "0"
+          },
+          "limit": "abc"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. 'abc' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Non-numeric string limits fail validation with a 400 error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/ata/",
+        "query": {},
+        "body": {
+          "filters": null
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"ata\":\"011\",\"agency_name\":\"Executive Office of the President\",\"agency_abbreviation\":\"EOP\"},{\"ata\":\"012\",\"agency_name\":\"Department of Agriculture\",\"agency_abbreviation\":\"USDA\"},...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Null filters are treated as missing filters and return the default suggestion list."
+    }
+  ],
+  "mismatches": [
+    "Docs state that 'filters' is required, but the API accepts missing, null, string, or array filters and returns default suggestions.",
+    "Docs describe 'limit' as a generic number, but the API enforces an integer-only range of 0-500 and rejects floats."
+  ],
+  "gaps": [
+    "Behavior of bpoa, epoa, a, main, and sub filters when matching records is unverified.",
+    "Real responses with non-placeholder null agency_abbreviation values have not been observed."
+  ],
+  "risks": [
+    "Negative 'limit' values return an HTML 500 response instead of JSON validation feedback.",
+    "Non-object filter payloads or typos silently fall back to default suggestions, masking invalid filter usage.",
+    "Placeholder rows with null fields may appear when filters include accounts missing an ATA, requiring client-side null handling."
+  ]
+}

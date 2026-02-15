@@ -1,0 +1,393 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/awards.md",
+    "description": "Aggregates award transaction counts and obligations for a single toptier agency and fiscal year, with optional funding/awarding perspective and award-type filters.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/awards/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "CGAC or FREC toptier agency code identifying the aggregation target.",
+          "constraints": "Required. Numeric string identifying the agency; observed requests succeed for 3-digit CGACs like '020' and 4-digit FRECs like '9553'. Unknown codes return 404."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Fiscal year to aggregate; omitted requests use the API's current fiscal year (2026 as of last verification).",
+          "constraints": "Optional. Integer between 2008 and 2026 inclusive. Non-integer values return 400; values outside the range return 422."
+        },
+        "agency_type": {
+          "location": "query",
+          "type": "string",
+          "description": "Selects whether aggregation is computed from the awarding or funding agency perspective.",
+          "constraints": "Optional. Case-sensitive enum ['awarding','funding']. Empty values behave like omission and default to 'awarding'; any other value returns 400."
+        },
+        "award_type_codes": {
+          "location": "query",
+          "type": "string",
+          "description": "Comma-separated list (no spaces) of award type codes to include.",
+          "constraints": "Optional. Accepts '-1','no intersection','02','03','04','05','06','07','08','09','10','11','A','B','C','D','IDV_A','IDV_B','IDV_B_A','IDV_B_B','IDV_B_C','IDV_C','IDV_D','IDV_E'. Provide multiple codes as a single comma-delimited token without spaces; repeated parameters keep only the final value. Sentinels '-1' and 'no intersection' only zero the result set when supplied alone. Blank or invalid values return 400."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echoes the requested toptier agency code."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Fiscal year represented in the aggregation."
+        },
+        "latest_action_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ISO 8601 timestamp for the latest action in scope, or null when no transactions matched."
+        },
+        "transaction_count": {
+          "type": "integer",
+          "description": "Total number of transactions matching the applied filters."
+        },
+        "obligations": {
+          "type": "number",
+          "description": "Total obligated dollar amount for the filtered transactions."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Warning or informational messages returned with the aggregation; fiscal years 2008-2016 include a DATA Act availability warning while 2017+ responses omit it.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "latest_action_date",
+        "transaction_count",
+        "obligations",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/020/awards/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "fiscal_year": 2026,
+            "latest_action_date": "2026-02-11T00:00:00",
+            "toptier_code": "020",
+            "transaction_count": 5475,
+            "obligations": 1643695644.46,
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/020/awards/",
+          "query": {
+            "agency_type": "funding",
+            "fiscal_year": "2023"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "fiscal_year": 2023,
+            "latest_action_date": "2023-09-30T00:00:00",
+            "toptier_code": "020",
+            "transaction_count": 23461,
+            "obligations": 23404493696.83,
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/020/awards/",
+          "query": {
+            "fiscal_year": "2008"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "fiscal_year": 2008,
+            "latest_action_date": "2008-09-30T00:00:00",
+            "toptier_code": "020",
+            "transaction_count": 41240,
+            "obligations": 4643101404.1,
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/020/awards/",
+          "query": {
+            "fiscal_year": "2027"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'fiscal_year' value '2027' is above max '2026'"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Query arrays are implemented as comma-separated strings; repeating award_type_codes only retains the final value.",
+      "award_type_codes accepts undocumented sentinels '-1' and 'no intersection'; they only zero the result set when supplied alone.",
+      "Supplying an empty agency_type query value defaults to 'awarding'.",
+      "Fiscal years 2008-2016 return a DATA Act warning message even when numeric totals are present; 2017+ responses omit the warning.",
+      "latest_action_date becomes null whenever the filters return zero transactions."
+    ],
+    "risks": [
+      "IPv6 connections returned empty replies during probing; clients may need to force IPv4 or retry on failure.",
+      "Strict formatting for comma-delimited award_type_codes means introducing spaces or lowercase values produces 400 errors.",
+      "latest_action_date can be null when filters isolate zero transactions, which may break parsers expecting a timestamp."
+    ],
+    "gaps": [],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/awards/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":2026,\"latest_action_date\":\"2026-02-11T00:00:00\",\"toptier_code\":\"020\",\"transaction_count\":5475,\"obligations\":1643695644.46,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - default response uses current FY 2026 awarding totals"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/awards/",
+        "query": {
+          "fiscal_year": "2023"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":2023,\"latest_action_date\":\"2023-09-30T00:00:00\",\"toptier_code\":\"020\",\"transaction_count\":24582,\"obligations\":13083959557.44,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - fiscal_year filter changes aggregation and latest_action_date"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/awards/",
+        "query": {
+          "agency_type": "funding"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":2026,\"latest_action_date\":\"2026-02-11T00:00:00\",\"toptier_code\":\"020\",\"transaction_count\":5132,\"obligations\":1921983666.43,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - funding agency_type adjusts totals while default FY stays 2026"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/awards/",
+        "query": {
+          "fiscal_year": "2008"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\": 2008, \"latest_action_date\": \"2008-09-30T00:00:00\", \"toptier_code\": \"020\", \"transaction_count\": 41240, \"obligations\": 4643101404.1, \"messages\": [\"Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - lower fiscal_year bound 2008 is accepted and returns DATA Act warning"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/awards/",
+        "query": {
+          "fiscal_year": "2017"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\": 2017, \"latest_action_date\": \"2017-09-30T00:00:00\", \"toptier_code\": \"020\", \"transaction_count\": 24637, \"obligations\": 5993050215.3, \"messages\": []}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - fiscal_year 2017 clears the DATA Act warning"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/awards/",
+        "query": {
+          "award_type_codes": "A,B"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":2026,\"latest_action_date\":\"2026-02-11T00:00:00\",\"toptier_code\":\"020\",\"transaction_count\":1658,\"obligations\":292691086.11,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - multiple codes must be comma-separated without spaces"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/awards/",
+        "query": {
+          "award_type_codes": [
+            "A",
+            "B"
+          ]
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":2026,\"latest_action_date\":\"2026-02-11T00:00:00\",\"toptier_code\":\"020\",\"transaction_count\":1295,\"obligations\":41445616.92,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - repeating award_type_codes only honors the final value ('B')"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/awards/",
+        "query": {
+          "award_type_codes": "no intersection"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":2026,\"latest_action_date\":null,\"toptier_code\":\"020\",\"transaction_count\":0,\"obligations\":0.0,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - sentinel 'no intersection' returns zero totals with null latest_action_date"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/awards/",
+        "query": {
+          "award_type_codes": "-1,03"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\": 2026, \"latest_action_date\": \"2026-02-03T00:00:00\", \"toptier_code\": \"020\", \"transaction_count\": 24, \"obligations\": 6888215.06, \"messages\": []}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - mixing '-1' with real award codes still returns the real codes' data"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/awards/",
+        "query": {
+          "agency_type": ""
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\": 2026, \"latest_action_date\": \"2026-02-11T00:00:00\", \"toptier_code\": \"020\", \"transaction_count\": 5475, \"obligations\": 1643695644.46, \"messages\": []}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - blank agency_type parameter is accepted and treated as awarding default"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/awards/",
+        "query": {
+          "award_type_codes": "A, B"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'award_type_codes' is outside valid values ['-1', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', 'A', 'B', 'C', 'D', 'IDV_A', 'IDV_B', 'IDV_B_A', 'IDV_B_B', 'IDV_B_C', 'IDV_C', 'IDV_D', 'IDV_E', 'no intersection']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - spaces in comma-separated award_type_codes trigger 400"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/awards/",
+        "query": {
+          "fiscal_year": "2027"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\": \"Field 'fiscal_year' value '2027' is above max '2026'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - fiscal_year 2027 exceeds the allowed maximum"
+    }
+  ],
+  "mismatches": [
+    "Doc says award_type_codes is an array, but the live API expects a comma-delimited string without spaces and ignores all but the last repeated parameter.",
+    "Documented AwardTypes list omits sentinels '-1' and 'no intersection' that the API validates and accepts.",
+    "Docs do not mention the enforced fiscal_year range (2008-2026); values outside that range return 422."
+  ],
+  "gaps": [],
+  "risks": [
+    "IPv6 connections returned empty replies during probing; clients may need to force IPv4 or retry on failure.",
+    "Strict formatting for comma-delimited award_type_codes means introducing spaces or lowercase values produces 400 errors.",
+    "latest_action_date can be null when filters isolate zero transactions, which may break parsers expecting a timestamp."
+  ]
+}

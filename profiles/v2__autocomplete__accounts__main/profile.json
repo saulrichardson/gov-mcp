@@ -1,0 +1,325 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/accounts/main.md",
+    "description": "Autocomplete search for Treasury main account codes using Treasury Account Symbol component filters.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/accounts/main/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Treasury account component filters controlling which main account codes are returned.",
+          "constraints": "Optional. Recognized keys: ata, aid, bpoa, epoa, a, main, sub. Each accepts either null or a non-empty string; leading and trailing whitespace is trimmed before matching. 'main' performs prefix matching; other keys require exact matches. Empty strings raise 422 validation errors and non-string types raise 400 errors. If 'filters' is omitted, null, or any non-object value, the server ignores it and returns unfiltered results. Unknown keys are ignored without error."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of autocomplete suggestions to return.",
+          "constraints": "Optional with default 10. Must be an integer between 0 and 500 inclusive. Numeric strings (including whitespace-padded values) are coerced to integers. Values above 500 return a 422 error. Zero returns an empty list. Negative integers trigger an HTML 500. Floats, booleans, null, arrays, and other non-integer types return 400 validation errors.",
+          "default": 10
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of main account code strings sorted ascending. Empty array when no matches."
+        }
+      },
+      "required": [
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/main/",
+          "query": {},
+          "body": {
+            "filters": {
+              "main": "30"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              "3010",
+              "3011",
+              "3020",
+              "3021",
+              "3022",
+              "3080"
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/main/",
+          "query": {},
+          "body": {
+            "filters": {
+              "aid": "097",
+              "bpoa": "2019",
+              "sub": "000"
+            },
+            "limit": 10
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              "0100",
+              "0104",
+              "0107",
+              "0111",
+              "0130",
+              "0134",
+              "0300",
+              "0350",
+              "0390",
+              "0400"
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/main/",
+          "query": {},
+          "body": {
+            "filters": {},
+            "limit": 1000
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'limit' value '1000' is above max '500'"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "'filters' can be omitted or provided as null, scalars, arrays, or strings; the server ignores malformed values and returns unfiltered results.",
+      "Component filter values are trimmed for whitespace, and unknown component keys are silently ignored, so typos often result in unfiltered or empty responses without errors.",
+      "'limit' accepts numeric strings (including with leading whitespace) but still enforces a hard ceiling of 500; negatives surface as HTML 500 errors instead of JSON."
+    ],
+    "risks": [
+      "Negative 'limit' values trigger HTML 500 responses, so callers must validate limits client-side to avoid unexpected error formats.",
+      "Silently ignored or trimmed component keys make it easy to ship queries that return unfiltered or empty result sets without signaling a problem.",
+      "Large limits up to 500 return sizable payloads and repeated probing showed occasional dropped connections, so callers should implement retries."
+    ],
+    "gaps": [
+      "Effectiveness of null filters for components other than 'a' remains unclear; observed responses were either empty or indistinguishable from baseline results.",
+      "Response ordering appears ascending but the service returns no metadata confirming ordering or total counts."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/main/",
+        "query": {},
+        "body": {
+          "filters": {
+            "main": "30"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"3010\",\"3011\",\"3020\",\"3021\",\"3022\",\"3080\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Prefix search returns codes starting with 30."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/main/",
+        "query": {},
+        "body": {
+          "filters": {}
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"0013\",\"0014\",\"0015\",\"0017\",\"0035\",\"0036\",\"0038\",\"0040\",\"0041\",\"0048\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Explicit empty filters object returns default top 10."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/main/",
+        "query": {},
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"0013\",\"0014\",\"0015\",\"0017\",\"0035\",\"0036\",\"0038\",\"0040\",\"0041\",\"0048\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Null body is interpreted as no filters."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/main/",
+        "query": {},
+        "body": {
+          "filters": {
+            "aid": " 097"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"0100\",\"0104\",\"0107\",\"0111\",\"0130\",\"0134\",\"0300\",\"0350\",\"0360\",\"0361\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Leading whitespace in component values is trimmed before filtering."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/main/",
+        "query": {},
+        "body": {
+          "filters": {
+            "aid": ""
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'filters|aid' value '' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Empty strings for component filters raise 422 validation errors."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/main/",
+        "query": {},
+        "body": {
+          "filters": {
+            "main": 30
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'filters|main'. '30' is not a valid type (text)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Non-string component values fail with 400 type errors."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/main/",
+        "query": {},
+        "body": {
+          "filters": {},
+          "limit": 500
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"0013\",\"0014\",\"0015\",\"0017\",\"0035\",\"0036\",\"0038\",\"0040\",\"0041\",\"0048\",...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Limit 500 succeeds (observed ceiling)."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/main/",
+        "query": {},
+        "body": {
+          "filters": {},
+          "limit": 1000
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '1000' is above max '500'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Values above 500 return 422 errors."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/main/",
+        "query": {},
+        "body": {
+          "filters": {},
+          "limit": -5
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>...<title>Server Error (500)</title>...",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Negative limits trigger HTML 500 responses."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/main/",
+        "query": {},
+        "body": {
+          "limit": " 5"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"0013\",\"0014\",\"0015\",\"0017\",\"0035\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Whitespace-padded numeric strings are coerced for limit validation."
+    }
+  ],
+  "mismatches": [
+    "Docs mark 'filters' as required object, but the API accepts omitted or non-object filters and still returns results.",
+    "Docs only describe 'limit' as optional number; live API enforces a 0-500 integer range with a hard 422 above the ceiling and 500 errors for negatives."
+  ],
+  "gaps": [
+    "Effectiveness of null filters for components other than 'a' remains unclear; observed responses were either empty or indistinguishable from baseline results.",
+    "Response ordering appears ascending but the service returns no metadata confirming ordering or total counts."
+  ],
+  "risks": [
+    "Negative 'limit' values trigger HTML 500 responses, so callers must validate limits client-side to avoid unexpected error formats.",
+    "Silently ignored or trimmed component keys make it easy to ship queries that return unfiltered or empty result sets without signaling a problem.",
+    "Large limits up to 500 return sizable payloads and repeated probing showed occasional dropped connections, so callers should implement retries."
+  ]
+}

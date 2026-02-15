@@ -1,0 +1,295 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/budgetary_resources.md",
+    "description": "Returns annual budgetary resources, obligations, outlays, and period breakdowns for the specified toptier agency.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/budgetary_resources/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "CGAC or FREC numeric identifier for the agency whose budgetary resources should be returned.",
+          "constraints": "Must be a numeric string of length 3 or 4. Unknown numeric codes return a JSON 404 body, non-numeric or wrongly sized segments fall through to an HTML 404, and omitting the trailing slash triggers a 301 redirect to the canonical path."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echo of the requested toptier agency code."
+        },
+        "agency_data_by_year": {
+          "type": "array",
+          "description": "Descending fiscal-year entries for the requested agency; observed coverage is FY 2026 back through FY 2017.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fiscal_year": {
+                "type": "integer",
+                "description": "Fiscal year for this entry; responses currently include ten years in descending order."
+              },
+              "agency_budgetary_resources": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Agency-level budgetary resources for the year; null when the agency has not reported figures."
+              },
+              "agency_total_obligated": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Cumulative obligations for the agency through the latest reported period; null when unavailable."
+              },
+              "agency_total_outlayed": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Cumulative outlays for the agency; null when the agency has not reported."
+              },
+              "total_budgetary_resources": {
+                "type": "number",
+                "description": "Government-wide total budgetary resources for that fiscal year; identical across agencies for the same year."
+              },
+              "agency_obligation_by_period": {
+                "type": "array",
+                "description": "Cumulative obligations by fiscal period (1-12). The array is ascending by period, may be empty when agency totals are null, and the final entry matches `agency_total_obligated` when data exists.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "period": {
+                      "type": "integer",
+                      "description": "Fiscal period number (1-12)."
+                    },
+                    "obligated": {
+                      "type": "number",
+                      "description": "Cumulative obligations reported through this period."
+                    }
+                  },
+                  "required": [
+                    "period",
+                    "obligated"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "fiscal_year",
+              "agency_budgetary_resources",
+              "agency_total_obligated",
+              "agency_total_outlayed",
+              "total_budgetary_resources",
+              "agency_obligation_by_period"
+            ]
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Warning or informational strings; observed empty across sampled agencies.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "toptier_code",
+        "agency_data_by_year",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/247/budgetary_resources/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "247",
+            "agency_data_by_year": [
+              {
+                "fiscal_year": 2026,
+                "agency_budgetary_resources": null,
+                "agency_total_obligated": null,
+                "agency_total_outlayed": null,
+                "total_budgetary_resources": 11789916426964.1,
+                "agency_obligation_by_period": []
+              },
+              {
+                "fiscal_year": 2021,
+                "agency_budgetary_resources": 3730332.71,
+                "agency_total_obligated": 759997.0,
+                "agency_total_outlayed": 499631.33,
+                "total_budgetary_resources": 12219096866505.09,
+                "agency_obligation_by_period": [
+                  {
+                    "period": 9,
+                    "obligated": 686556.9
+                  },
+                  {
+                    "period": 12,
+                    "obligated": 759997.0
+                  }
+                ]
+              }
+            ],
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/999/budgetary_resources/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 404,
+          "body": {
+            "detail": "Agency with a toptier code of '999' does not exist"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Docs label the response array as `agency_by_year`, but production responses return `agency_data_by_year` ordered newest to oldest.",
+      "Contract example shows numbers with comma separators, while the live service returns JSON numbers without formatting.",
+      "Additional query parameters such as `fiscal_year` are ignored; responses always include the full year set.",
+      "Non-numeric or wrongly sized path segments fall through to an HTML 404 page instead of the JSON 404 used for missing agency codes.",
+      "Some agencies report null agency totals and empty obligation arrays for years without submissions, so null must be distinguished from zero.",
+      "The cumulative obligation array's largest period matches `agency_total_obligated` when data exists.",
+      "Requests without the trailing slash are 301-redirected to the canonical slash form."
+    ],
+    "risks": [
+      "Clients expecting JSON errors must handle HTML 404 responses when the path segment is not a numeric 3-4 digit code.",
+      "Agency-level budget/resources/outlay fields are frequently null and obligation arrays empty for some agencies, so consumers must handle null values distinctly from zero.",
+      "Current fiscal year data can be incomplete, with `agency_obligation_by_period` containing only early periods while totals continue to evolve.",
+      "Responses always include multiple fiscal years and could grow large; consumers should be ready to handle sizable payloads."
+    ],
+    "gaps": [
+      "Never observed non-empty `messages`; triggers and possible contents remain unknown.",
+      "Only production data (FY 2026-2017) was observed; unclear whether the service ever returns a different fiscal range or more than ten years."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/075/budgetary_resources/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"075\",\"agency_data_by_year\":[{\"fiscal_year\":2026,\"agency_budgetary_resources\":2583134115181.89,\"agency_total_obligated\":700039633788.1,\"agency_total_outlayed\":697622904759.35,\"total_budgetary_resources\":11789916426964.1}],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – baseline; fiscal years run 2026-2017 with partial period coverage for the current year."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/247/budgetary_resources/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"247\",\"agency_data_by_year\":[{\"fiscal_year\":2026,\"agency_budgetary_resources\":null,\"agency_total_obligated\":null,\"agency_obligation_by_period\":[]},{\"fiscal_year\":2021,\"agency_total_obligated\":759997.0,\"agency_obligation_by_period\":[{\"period\":9,\"obligated\":686556.9},{\"period\":12,\"obligated\":759997.0}]}],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – shows null totals and empty obligations for years without submissions alongside populated years."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/9553/budgetary_resources/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"9553\",\"agency_data_by_year\":[{\"fiscal_year\":2026,\"agency_total_obligated\":54137351.76,\"agency_obligation_by_period\":[{\"period\":2,\"obligated\":32898201.44},{\"period\":3,\"obligated\":54137351.76}]}],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – demonstrates a four-digit FREC code and cumulative obligation periods matching the annual total."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/999/budgetary_resources/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "{\"detail\":\"Agency with a toptier code of '999' does not exist\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail – nonexistent numeric code returns JSON 404 detail."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/075a/budgetary_resources/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<html><head><title>Not Found</title></head><body><h1>Not Found</h1><p>The requested resource was not found on this server.</p></body></html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail – alpha characters in the path miss the route and return an HTML 404 page."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/075/budgetary_resources",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 301,
+        "bodyExcerpt": "",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "redirect – missing trailing slash triggers 301 to /api/v2/agency/075/budgetary_resources/."
+    }
+  ],
+  "mismatches": [
+    "Specification sample uses `agency_by_year`, but the production API returns `agency_data_by_year`."
+  ],
+  "gaps": [
+    "Never observed non-empty `messages`; triggers and possible contents remain unknown.",
+    "Only production data (FY 2026-2017) was observed; unclear whether the service ever returns a different fiscal range or more than ten years."
+  ],
+  "risks": [
+    "Clients expecting JSON errors must handle HTML 404 responses when the path segment is not a numeric 3-4 digit code.",
+    "Agency-level budget/resources/outlay fields are frequently null and obligation arrays empty for some agencies, so consumers must handle null values distinctly from zero.",
+    "Current fiscal year data can be incomplete, with `agency_obligation_by_period` containing only early periods while totals continue to evolve.",
+    "Responses always include multiple fiscal years and could grow large; consumers should be ready to handle sizable payloads."
+  ]
+}

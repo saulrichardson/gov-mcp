@@ -15,6 +15,36 @@
       "promptPath": "profiles/v2__agency__toptier_code/prompt.md"
     },
     {
+      "slug": "v2__agency__toptier_code__awards",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__awards/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__awards/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__awards__new__count",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__awards__new__count/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__awards__new__count/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__budgetary_resources",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__budgetary_resources/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__budgetary_resources/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__accounts__ata",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__accounts__ata/profile.json",
+      "promptPath": "profiles/v2__autocomplete__accounts__ata/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__accounts__main",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__accounts__main/profile.json",
+      "promptPath": "profiles/v2__autocomplete__accounts__main/prompt.md"
+    },
+    {
       "slug": "v2__awards__last_updated",
       "lastVerified": "2026-02-06",
       "profilePath": "profiles/v2__awards__last_updated/profile.json",
