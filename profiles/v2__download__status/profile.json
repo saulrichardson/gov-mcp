@@ -1,0 +1,284 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/download/status.md",
+    "description": "Retrieves the status of a USAspending CSV download job identified by its file_name.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/download/status"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "file_name": {
+          "location": "query",
+          "type": "string",
+          "description": "Exact download job filename returned by a download initiation endpoint.",
+          "constraints": "Required query parameter. Blank values are rejected as missing (400 detail). Unknown names return 404 detail. Parameter name is case-sensitive, and if repeated the endpoint uses the last occurrence."
+        }
+      },
+      "required": [
+        "file_name"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Download job state reported by the server; observed values: running, finished."
+        },
+        "message": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Nullable human-readable message describing failures. Observed as null while jobs are running or finished."
+        },
+        "file_name": {
+          "type": "string",
+          "description": "Filename of the generated ZIP archive."
+        },
+        "file_url": {
+          "type": "string",
+          "description": "Absolute HTTPS URL for the generated archive."
+        },
+        "total_size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Estimated file size in kilobytes. Null while running; populated upon completion."
+        },
+        "total_columns": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Number of columns in generated CSVs. May report interim counts while status is running."
+        },
+        "total_rows": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Number of rows in generated CSVs. May report interim counts while status is running."
+        },
+        "seconds_elapsed": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Elapsed processing time in seconds, encoded as a string."
+        },
+        "detail": {
+          "type": "string",
+          "description": "Error detail string returned for invalid or unknown file_name requests (400/404 responses)."
+        }
+      },
+      "required": []
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/download/status",
+          "query": {
+            "file_name": "CONT_N0002404C2105_2026-02-15_H03M36S33610999.zip"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "status": "running",
+            "message": null,
+            "file_name": "CONT_N0002404C2105_2026-02-15_H03M36S33610999.zip",
+            "file_url": "https://files.usaspending.gov/generated_downloads/CONT_N0002404C2105_2026-02-15_H03M36S33610999.zip",
+            "total_size": null,
+            "total_columns": 89,
+            "total_rows": 1,
+            "seconds_elapsed": "3.70822"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/download/status",
+          "query": {
+            "file_name": "CONT_N0002404C2105_2026-02-15_H03M36S33610999.zip"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "status": "finished",
+            "message": null,
+            "file_name": "CONT_N0002404C2105_2026-02-15_H03M36S33610999.zip",
+            "file_url": "https://files.usaspending.gov/generated_downloads/CONT_N0002404C2105_2026-02-15_H03M36S33610999.zip",
+            "total_size": 118.731,
+            "total_columns": 504,
+            "total_rows": 70,
+            "seconds_elapsed": "8.373618"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/download/status",
+          "query": {
+            "file_name": "foo"
+          }
+        },
+        "response": {
+          "status": 404,
+          "body": {
+            "detail": "Download job with filename foo does not exist."
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/download/status",
+          "query": {}
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Missing one or more required query parameters: file_name"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Error responses return only a detail string and omit the status payload.",
+      "Query parameter names are case-sensitive; misspellings such as file_Name are treated as missing.",
+      "When file_name appears multiple times the endpoint uses the last value in the query string.",
+      "file_url values are absolute HTTPS links despite documentation showing relative paths.",
+      "total_rows and total_columns can update between running polls, so interim totals are not final."
+    ],
+    "risks": [
+      "Download job filenames may expire or be unknown, leading to frequent 404 detail responses.",
+      "Clients must handle error responses that only contain a detail string rather than the documented status payload.",
+      "Partial metrics in running responses can change; treating them as final can produce inconsistent reporting."
+    ],
+    "gaps": [
+      "Failed and ready statuses were not observed; error payloads and message content for those states are unknown."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-14"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/download/status",
+        "query": {
+          "file_name": "CONT_N0002404C2105_2026-02-15_H03M36S33610999.zip"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "status": "running",
+          "message": null,
+          "file_name": "CONT_N0002404C2105_2026-02-15_H03M36S33610999.zip",
+          "file_url": "https://files.usaspending.gov/generated_downloads/CONT_N0002404C2105_2026-02-15_H03M36S33610999.zip",
+          "total_size": null,
+          "total_columns": 89,
+          "total_rows": 1,
+          "seconds_elapsed": "3.70822"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/download/status",
+        "query": {
+          "file_name": "CONT_N0002404C2105_2026-02-15_H03M36S33610999.zip"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "status": "finished",
+          "message": null,
+          "file_name": "CONT_N0002404C2105_2026-02-15_H03M36S33610999.zip",
+          "file_url": "https://files.usaspending.gov/generated_downloads/CONT_N0002404C2105_2026-02-15_H03M36S33610999.zip",
+          "total_size": 118.731,
+          "total_columns": 504,
+          "total_rows": 70,
+          "seconds_elapsed": "8.373618"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/download/status",
+        "query": {
+          "file_name": "foo"
+        }
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "detail": "Download job with filename foo does not exist."
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/download/status",
+        "query": {}
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "detail": "Missing one or more required query parameters: file_name"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/download/status",
+        "query": {
+          "file_Name": "foo"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "detail": "Missing one or more required query parameters: file_name"
+        }
+      }
+    }
+  ],
+  "mismatches": [
+    "Docs describe only a 200 response with job metadata, but the live API returns 404 with a detail string when the filename does not exist.",
+    "Docs show file_url as a relative path, while production responses return absolute HTTPS URLs.",
+    "Docs state total_rows and total_columns remain null until completion, yet running responses contained numeric values."
+  ],
+  "gaps": [
+    "Failed and ready statuses were not observed; their payload structure and message usage remain undocumented."
+  ],
+  "risks": [
+    "Download job filenames may expire or be unknown, leading to frequent 404 detail responses.",
+    "Clients must handle error responses that only contain a detail string rather than the documented status payload.",
+    "Partial metrics in running responses can change; treating them as final can produce inconsistent reporting."
+  ]
+}

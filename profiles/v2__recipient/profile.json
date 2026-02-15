@@ -1,0 +1,529 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/recipient.md",
+    "description": "Lists recipients with aggregated trailing twelve-month federal spending totals, supporting pagination, sorting, keyword search, and coarse award-type filtering.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/recipient/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "order": {
+          "location": "body",
+          "type": "string",
+          "description": "Sort direction for the chosen field.",
+          "constraints": "enum: ['asc','desc']; default: 'desc'; values are case-sensitive"
+        },
+        "sort": {
+          "location": "body",
+          "type": "string",
+          "description": "Field to sort results by (amount totals or recipient identifiers).",
+          "constraints": "enum: ['amount','name','duns','uei']; default: 'amount'"
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Number of records per page.",
+          "constraints": "range 1-1000; default: 50; accepts numeric strings convertible to integers; non-integers return 400; out-of-range returns 422"
+        },
+        "page": {
+          "location": "body",
+          "type": "integer",
+          "description": "1-indexed page number to retrieve.",
+          "constraints": "minimum 1; default: 1; accepts numeric strings convertible to integers; non-integers return 400; values <1 return 422"
+        },
+        "keyword": {
+          "location": "body",
+          "type": "string",
+          "description": "Full-text search on recipient name, UEI, or DUNS.",
+          "constraints": "optional; trims surrounding whitespace; case-insensitive; empty string returns 422; null returns 400; whitespace-only is effectively treated as omitted and yields unfiltered results"
+        },
+        "award_type": {
+          "location": "body",
+          "type": "string",
+          "description": "High-level award category filter.",
+          "constraints": "enum: ['all','contracts','grants','loans','direct_payments','other_financial_assistance']; default: 'all'; values are lowercase only"
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata for the result set.",
+          "required": [
+            "page",
+            "total",
+            "limit",
+            "next",
+            "previous",
+            "hasNext",
+            "hasPrevious"
+          ],
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "Current page number (1-indexed)."
+            },
+            "total": {
+              "type": "integer",
+              "description": "Total number of matching recipients across all pages."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Effective page size after validation."
+            },
+            "next": {
+              "type": ["integer", "null"],
+              "description": "Next page number when additional results exist; null otherwise."
+            },
+            "previous": {
+              "type": ["integer", "null"],
+              "description": "Previous page number when a prior page exists; null when unavailable."
+            },
+            "hasNext": {
+              "type": "boolean",
+              "description": "True when another page is available."
+            },
+            "hasPrevious": {
+              "type": "boolean",
+              "description": "True when a previous page is available."
+            }
+          }
+        },
+        "results": {
+          "type": "array",
+          "description": "Recipient aggregates for the requested slice.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "duns",
+              "uei",
+              "name",
+              "recipient_level",
+              "amount"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique identifier for the recipient at the reported level."
+              },
+              "duns": {
+                "type": ["string", "null"],
+                "description": "DUNS identifier when available; null otherwise."
+              },
+              "uei": {
+                "type": ["string", "null"],
+                "description": "UEI identifier when available; null otherwise."
+              },
+              "name": {
+                "type": ["string", "null"],
+                "description": "Display name, which may be null or an empty string when unavailable."
+              },
+              "recipient_level": {
+                "type": "string",
+                "enum": ["R", "P", "C"],
+                "description": "Recipient level code: 'R' (recipient), 'P' (parent), or 'C' (child)."
+              },
+              "amount": {
+                "type": "number",
+                "description": "Aggregated trailing twelve-month spending total; may be zero or negative."
+              }
+            }
+          }
+        }
+      },
+      "required": ["page_metadata", "results"]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/recipient/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "page_metadata": {
+              "page": 1,
+              "total": 18261880,
+              "limit": 50,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "id": "7fe0d08f-685f-a9cc-f9f6-f9e6c6c20e22-R",
+                "duns": "796528263",
+                "uei": "JE73CDQUAPA7",
+                "name": "HEALTH CARE SERVICES, CALIFORNIA DEPARTMENT OF",
+                "recipient_level": "R",
+                "amount": 111334061799.83
+              },
+              {
+                "id": "78e2168c-91dc-4ee3-f4cb-fb8e0cff6ea8-R",
+                "duns": "806781340",
+                "uei": "F863WQVMZSK7",
+                "name": "NYS DEPARTMENT OF HEALTH",
+                "recipient_level": "R",
+                "amount": 74048722587.85
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/recipient/",
+          "query": {},
+          "body": {
+            "keyword": "071549000",
+            "limit": 3
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "page_metadata": {
+              "page": 1,
+              "total": 6,
+              "limit": 3,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "id": "d047bb61-ac01-216b-370c-641916393ee9-P",
+                "duns": "071549000",
+                "uei": "U2H7U6AVDAM8",
+                "name": null,
+                "recipient_level": "P",
+                "amount": 19717969606.04
+              },
+              {
+                "id": "d72f2697-14e4-271c-3132-166b47a58d0d-P",
+                "duns": "071549000",
+                "uei": "GRWSL6KEUZP1",
+                "name": null,
+                "recipient_level": "P",
+                "amount": 169359572.2
+              },
+              {
+                "id": "da982ab8-2fe3-d3a7-d02d-86a20a5e0337-P",
+                "duns": "071549000",
+                "uei": "G4DEPJBFG9A3",
+                "name": "STATE OF CALIFORNIA",
+                "recipient_level": "P",
+                "amount": 11011056.3
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Responses include pagination fields 'next', 'previous', 'hasNext', and 'hasPrevious' that are not documented but always present.",
+      "Numeric strings for 'page' and 'limit' are coerced to integers instead of being rejected.",
+      "Sending an empty request body string (no JSON) is treated the same as providing an empty JSON object.",
+      "Keyword search is case-insensitive and trims surrounding whitespace; uppercase or padded queries match their lowercase, trimmed equivalents.",
+      "Whitespace-only keyword inputs behave like unfiltered searches despite being accepted.",
+      "Amounts in the results can be zero or negative, so consumers must handle both signs.",
+      "Combining 'keyword' with 'award_type' applies both filters (logical AND)."
+    ],
+    "risks": [
+      "The dataset is extremely large (~18M recipients); high limits or deep pagination can yield large payloads and slower responses.",
+      "Enum fields such as 'award_type' and 'order' are case-sensitive, so clients must normalize to lowercase to avoid 400 errors.",
+      "Whitespace keywords behave like broad searches, so sanitize user input to prevent unexpectedly wide result sets.",
+      "Amounts may be negative or zero, which can break consumers that assume positive summaries.",
+      "Recipient names may be null or empty strings; clients should fall back to other identifiers when displaying results."
+    ],
+    "gaps": [
+      "Keyword matching nuances beyond trimming and case-insensitive comparison (e.g., multi-term tokenization, partial-word rules) remain unverified.",
+      "The claimed trailing twelve-month aggregation window is assumed from documentation but not independently validated."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-14"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":1,\"total\":18261880,\"limit\":50,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"id\":\"7fe0d08f...\"}]}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/",
+        "query": {},
+        "body": {
+          "limit": 1500
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": "Field 'limit' value '1500' is above max '1000'"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/",
+        "query": {},
+        "body": {
+          "limit": "10"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":1,\"total\":18261880,\"limit\":10,...}}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/",
+        "query": {},
+        "body": {
+          "keyword": "CALIFORNIA",
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "page_metadata": {
+            "page": 1,
+            "total": 15581,
+            "limit": 1,
+            "next": 2,
+            "previous": null,
+            "hasNext": true,
+            "hasPrevious": false
+          },
+          "results": [
+            {
+              "id": "7fe0d08f-685f-a9cc-f9f6-f9e6c6c20e22-R",
+              "duns": "796528263",
+              "uei": "JE73CDQUAPA7",
+              "name": "HEALTH CARE SERVICES, CALIFORNIA DEPARTMENT OF",
+              "recipient_level": "R",
+              "amount": 111334061799.83
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/",
+        "query": {},
+        "body": {
+          "keyword": "california   ",
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "page_metadata": {
+            "page": 1,
+            "total": 15581,
+            "limit": 1,
+            "next": 2,
+            "previous": null,
+            "hasNext": true,
+            "hasPrevious": false
+          },
+          "results": [
+            {
+              "id": "7fe0d08f-685f-a9cc-f9f6-f9e6c6c20e22-R",
+              "duns": "796528263",
+              "uei": "JE73CDQUAPA7",
+              "name": "HEALTH CARE SERVICES, CALIFORNIA DEPARTMENT OF",
+              "recipient_level": "R",
+              "amount": 111334061799.83
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/",
+        "query": {},
+        "body": {
+          "keyword": "california",
+          "award_type": "contracts",
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "page_metadata": {
+            "page": 1,
+            "total": 374,
+            "limit": 1,
+            "next": 2,
+            "previous": null,
+            "hasNext": true,
+            "hasPrevious": false
+          },
+          "results": [
+            {
+              "id": "6e76fa33-2d96-c636-941c-bca1997db076-C",
+              "duns": "095633152",
+              "uei": "YC1YP79BFD19",
+              "name": "CALIFORNIA INSTITUTE OF TECHNOLOGY",
+              "recipient_level": "C",
+              "amount": 1892821204.24
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/",
+        "query": {},
+        "body": {
+          "keyword": " ",
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":1,\"total\":18261879,...}}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/",
+        "query": {},
+        "body": {
+          "keyword": "",
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": "Field 'keyword' value '' is below min '1' items"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/",
+        "query": {},
+        "body": {
+          "award_type": "CONTRACTS",
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "detail": "Field 'award_type' is outside valid values ['contracts', 'grants', 'direct_payments', 'loans', 'other_financial_assistance', 'all']"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/",
+        "query": {},
+        "body": ""
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":1,\"total\":18261880,...}}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/",
+        "query": {},
+        "body": "{"
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "detail": "JSON parse error - Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/recipient/",
+        "query": {},
+        "body": {
+          "page": 20000000,
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "page_metadata": {
+            "page": 20000000,
+            "total": 18261880,
+            "limit": 1,
+            "next": null,
+            "previous": null,
+            "hasNext": false,
+            "hasPrevious": false
+          },
+          "results": []
+        }
+      }
+    }
+  ],
+  "mismatches": [
+    "Docs list sorting options as name/duns/amount, but the API also accepts 'uei' and includes it in validation feedback.",
+    "Docs describe page metadata as page/limit/total only, whereas live responses always include next, previous, hasNext, and hasPrevious."
+  ],
+  "gaps": [
+    "Keyword matching nuances beyond trimming and case-insensitive comparison (e.g., multi-term tokenization, partial-word rules) remain unverified.",
+    "The claimed trailing twelve-month aggregation window is assumed from documentation but not independently validated."
+  ],
+  "risks": [
+    "The dataset is extremely large (~18M recipients); high limits or deep pagination can yield large payloads and slower responses.",
+    "Enum fields such as 'award_type' and 'order' are case-sensitive, so clients must normalize to lowercase to avoid 400 errors.",
+    "Whitespace keywords behave like broad searches, so sanitize user input to prevent unexpectedly wide result sets.",
+    "Amounts may be negative or zero, which can break consumers that assume positive summaries.",
+    "Recipient names may be null or empty strings; clients should fall back to other identifiers when displaying results."
+  ]
+}

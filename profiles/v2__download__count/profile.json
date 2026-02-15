@@ -1,0 +1,503 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/download/count.md",
+    "description": "Counts awards, transactions, or subawards that match advanced download filters and reports whether limits are exceeded.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/download/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Container for advanced search filters; empty object counts the full dataset.",
+          "constraints": "Required. Must be a JSON object; missing, null, or non-object values trigger a 500 HTML error."
+        },
+        "filters.keywords": {
+          "location": "body",
+          "type": "array",
+          "description": "Array of keyword strings searched across keyword-enabled fields.",
+          "constraints": "Must be an array of strings. Sending a string instead returns 400."
+        },
+        "filters.time_period": {
+          "location": "body",
+          "type": "array",
+          "description": "List of date range objects constraining the dataset.",
+          "constraints": "Each object requires start_date and end_date in YYYY-MM-DD. start_date before 2007-10-01 returns 422; invalid dates return 400."
+        },
+        "filters.recipient_search_text": {
+          "location": "body",
+          "type": "array",
+          "description": "Recipient names, DUNS, or UEI strings to match.",
+          "constraints": "Must contain at least one string. Empty array returns 422; multiple entries are accepted."
+        },
+        "filters.recipient_locations": {
+          "location": "body",
+          "type": "array",
+          "description": "Recipient location filters using standard location objects (country, state, city, etc.).",
+          "constraints": "Entries OR together. Observed forms included state-only and city-only shapes."
+        },
+        "filters.recipient_type_names": {
+          "location": "body",
+          "type": "array",
+          "description": "Recipient or business type codes to OR together.",
+          "constraints": "Array of strings such as small_business or individuals."
+        },
+        "filters.psc_codes": {
+          "location": "body",
+          "type": [
+            "array",
+            "object"
+          ],
+          "description": "Product Service Code filter.",
+          "constraints": "Accepts either an array of PSC strings or an object with require/exclude arrays of string arrays. Both styles returned valid counts."
+        },
+        "filters.award_amounts": {
+          "location": "body",
+          "type": "array",
+          "description": "Award amount ranges to OR together.",
+          "constraints": "Each item is an object with optional lower_bound and upper_bound numbers. Inclusivity of bounds remains unverified."
+        },
+        "filters.naics_codes": {
+          "location": "body",
+          "type": "object",
+          "description": "NAICS code prefix filter.",
+          "constraints": "Optional require and exclude arrays of string prefixes; longer prefixes take precedence when overlapping."
+        },
+        "filters.tas_codes": {
+          "location": "body",
+          "type": "object",
+          "description": "Treasury Account Symbol hierarchy filter.",
+          "constraints": "Optional require/exclude arrays of string arrays representing TAS paths."
+        },
+        "filters.treasury_account_components": {
+          "location": "body",
+          "type": "array",
+          "description": "Treasury account component objects (aid, main, optional ata/bpoa/epoa/a/sub).",
+          "constraints": "Observed objects included aid and main; additional optional fields may be supplied per docs."
+        },
+        "filters.award_type_codes": {
+          "location": "body",
+          "type": "array",
+          "description": "Award type codes to limit the population.",
+          "constraints": "Array of strings; observed values included contract and IDV codes."
+        },
+        "filters.contract_pricing_type_codes": {
+          "location": "body",
+          "type": "array",
+          "description": "Contract pricing type codes.",
+          "constraints": "Array of strings such as 'J'."
+        },
+        "filters.set_aside_type_codes": {
+          "location": "body",
+          "type": "array",
+          "description": "Set-aside type codes.",
+          "constraints": "Array of strings such as 'NONE'."
+        },
+        "filters.extent_competed_type_codes": {
+          "location": "body",
+          "type": "array",
+          "description": "Extent competed codes.",
+          "constraints": "Array of strings such as 'A'."
+        },
+        "spending_level": {
+          "location": "body",
+          "type": "string",
+          "description": "Controls whether counts reflect awards, transactions (default), or subawards.",
+          "constraints": "Enum: awards, transactions, subawards. Missing field defaults to transactions; invalid value returns 400."
+        }
+      },
+      "required": [
+        "filters"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "calculated_transaction_count": {
+          "type": "number",
+          "description": "Total transactions matching the filters; present for every spending level."
+        },
+        "maximum_transaction_limit": {
+          "type": "number",
+          "description": "Current row cap for transaction-based downloads (observed 500000)."
+        },
+        "transaction_rows_gt_limit": {
+          "type": "boolean",
+          "description": "True when calculated_transaction_count exceeds maximum_transaction_limit."
+        },
+        "calculated_count": {
+          "type": "number",
+          "description": "Primary count aligned with the effective spending_level."
+        },
+        "spending_level": {
+          "type": "string",
+          "description": "Echo of the resolved spending_level ('transactions' when omitted)."
+        },
+        "maximum_limit": {
+          "type": "number",
+          "description": "Row cap corresponding to calculated_count (observed 500000)."
+        },
+        "rows_gt_limit": {
+          "type": "boolean",
+          "description": "True when calculated_count exceeds maximum_limit."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Warning strings; all observed successes returned the same trio covering time period limits, subaward guidance, and upcoming transaction_* renames.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "calculated_transaction_count",
+        "maximum_transaction_limit",
+        "transaction_rows_gt_limit",
+        "calculated_count",
+        "spending_level",
+        "maximum_limit",
+        "rows_gt_limit",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/count/",
+          "query": {},
+          "body": {
+            "filters": {
+              "time_period": [
+                {
+                  "start_date": "2023-10-01",
+                  "end_date": "2023-12-31"
+                }
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "calculated_transaction_count": 3331810,
+            "maximum_transaction_limit": 500000,
+            "transaction_rows_gt_limit": true,
+            "calculated_count": 3331810,
+            "spending_level": "transactions",
+            "maximum_limit": 500000,
+            "rows_gt_limit": true,
+            "messages": [
+              "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+              "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+              "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/count/",
+          "query": {},
+          "body": {
+            "filters": {
+              "time_period": [
+                {
+                  "start_date": "2022-10-01",
+                  "end_date": "2023-09-30"
+                }
+              ]
+            },
+            "spending_level": "invalid"
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Field 'spending_level' is outside valid values ['awards', 'transactions', 'subawards']"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/count/",
+          "query": {},
+          "body": {
+            "filters": {
+              "keywords": [
+                "zzzzzzzzzzzzzerounique"
+              ],
+              "time_period": [
+                {
+                  "start_date": "2023-10-01",
+                  "end_date": "2023-10-31"
+                }
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "calculated_transaction_count": 0,
+            "maximum_transaction_limit": 500000,
+            "transaction_rows_gt_limit": false,
+            "calculated_count": 0,
+            "spending_level": "transactions",
+            "maximum_limit": 500000,
+            "rows_gt_limit": false,
+            "messages": [
+              "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+              "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+              "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "IPv6 requests completed TLS and returned an empty reply; IPv4 succeeded.",
+      "Missing, null, or non-object filters payloads yield generic 500 HTML pages instead of structured validation errors.",
+      "Every success response included transaction_* fields plus three warning messages regardless of spending_level or result size.",
+      "Counts often exceed the 500000 row limits, flipping *_rows_gt_limit flags to true while still returning totals."
+    ],
+    "risks": [
+      "IPv6-only clients may see empty replies; fall back to IPv4 or retry over dual-stack.",
+      "Client-side validation is critical because schema violations (missing filters, wrong container type, empty recipient_search_text) produce 500/422 errors.",
+      "Downloads will fail if *_rows_gt_limit is true; callers must narrow filters or switch to bulk endpoints.",
+      "messages warn that transaction_* fields will be renamed; integrations must watch for schema changes."
+    ],
+    "gaps": [
+      "Inclusivity of award_amount lower_bound and upper_bound thresholds remains unverified.",
+      "Filters documented for agencies, award_ids, program_numbers, and other fields lack live verification in probes.",
+      "Require/exclude precedence rules for PSC and TAS beyond the tested cases were not exhaustively validated."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-15"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<html><head><title>Server Error (500)</title></head><body><h1>Server Error (500)</h1></body></html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "filters key omitted"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/count/",
+        "query": {},
+        "body": {
+          "filters": {}
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"calculated_transaction_count\": 213811611, \"maximum_transaction_limit\": 500000, ...}",
+        "contentType": "application/json"
+      },
+      "notes": "empty filters object counts entire dataset"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/count/",
+        "query": {},
+        "body": {
+          "filters": {
+            "time_period": [
+              {
+                "start_date": "2023-10-01",
+                "end_date": "2023-12-31"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"calculated_transaction_count\": 3331810, \"maximum_transaction_limit\": 500000, ...}",
+        "contentType": "application/json"
+      },
+      "notes": "baseline transaction count"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/count/",
+        "query": {},
+        "body": {
+          "filters": {
+            "time_period": [
+              {
+                "start_date": "2022-10-01",
+                "end_date": "2023-09-30"
+              }
+            ]
+          },
+          "spending_level": "invalid"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\": \"Field 'spending_level' is outside valid values ['awards', 'transactions', 'subawards']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "invalid spending_level validation"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/count/",
+        "query": {},
+        "body": {
+          "filters": {
+            "time_period": [
+              {
+                "start_date": "2006-10-01",
+                "end_date": "2007-09-30"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\": \"start_date falls before the earliest available search date of 2007-10-01...\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pre-2007 start_date rejected"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/count/",
+        "query": {},
+        "body": {
+          "filters": {
+            "keywords": "covid",
+            "time_period": [
+              {
+                "start_date": "2020-03-01",
+                "end_date": "2020-06-30"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'filters|keywords'. 'covid' is not a valid type (array)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "keywords must be array"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/count/",
+        "query": {},
+        "body": {
+          "filters": {
+            "keywords": [
+              "zzzzzzzzzzzzzerounique"
+            ],
+            "time_period": [
+              {
+                "start_date": "2023-10-01",
+                "end_date": "2023-10-31"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"calculated_transaction_count\": 0, \"maximum_transaction_limit\": 500000, ...}",
+        "contentType": "application/json"
+      },
+      "notes": "zero-count response"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/count/",
+        "query": {},
+        "body": {
+          "filters": {
+            "recipient_search_text": [],
+            "time_period": [
+              {
+                "start_date": "2023-10-01",
+                "end_date": "2023-12-31"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\": \"Field 'filters|recipient_search_text' value '[]' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "recipient_search_text requires at least one entry"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/count/",
+        "query": {},
+        "body": {
+          "filters": {
+            "time_period": [
+              {
+                "start_date": "2023-10-01",
+                "end_date": "2023-12-31"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 0,
+        "bodyExcerpt": "curl: (52) Empty reply from server (IPv6)",
+        "contentType": ""
+      },
+      "notes": "forced IPv6 request"
+    }
+  ],
+  "mismatches": [
+    "Docs mark filters as required but the API returns an unhelpful 500 HTML page when it is missing or not an object instead of structured validation.",
+    "Docs limit recipient_search_text to one value, yet the API accepts multiple entries and instead rejects empty arrays.",
+    "Docs say messages are optional, but every observed success included the same warning trio."
+  ],
+  "gaps": [
+    "Inclusivity of award_amount lower_bound and upper_bound thresholds remains unverified.",
+    "Filters documented for agencies, award_ids, program_numbers, and other fields lack live verification in probes.",
+    "Require/exclude precedence rules for PSC and TAS beyond the tested cases were not exhaustively validated."
+  ],
+  "risks": [
+    "IPv6-only clients may see empty replies; fall back to IPv4 or retry over dual-stack.",
+    "Client-side validation is critical because schema violations (missing filters, wrong container type, empty recipient_search_text) produce 500/422 errors.",
+    "Downloads will fail if *_rows_gt_limit is true; callers must narrow filters or switch to bulk endpoints.",
+    "messages warn that transaction_* fields will be renamed; integrations must watch for schema changes."
+  ]
+}

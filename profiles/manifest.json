@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "generatedAt": "2026-02-07",
+  "generatedAt": "2026-02-15",
   "profiles": [
     {
       "slug": "v2__agency__awards__count",
@@ -19,6 +19,30 @@
       "lastVerified": "2026-02-06",
       "profilePath": "profiles/v2__awards__last_updated/profile.json",
       "promptPath": "profiles/v2__awards__last_updated/prompt.md"
+    },
+    {
+      "slug": "v2__download__count",
+      "lastVerified": "2026-02-15",
+      "profilePath": "profiles/v2__download__count/profile.json",
+      "promptPath": "profiles/v2__download__count/prompt.md"
+    },
+    {
+      "slug": "v2__download__status",
+      "lastVerified": "2026-02-14",
+      "profilePath": "profiles/v2__download__status/profile.json",
+      "promptPath": "profiles/v2__download__status/prompt.md"
+    },
+    {
+      "slug": "v2__financial_balances__agencies",
+      "lastVerified": "2026-02-14",
+      "profilePath": "profiles/v2__financial_balances__agencies/profile.json",
+      "promptPath": "profiles/v2__financial_balances__agencies/prompt.md"
+    },
+    {
+      "slug": "v2__recipient",
+      "lastVerified": "2026-02-14",
+      "profilePath": "profiles/v2__recipient/profile.json",
+      "promptPath": "profiles/v2__recipient/prompt.md"
     },
     {
       "slug": "v2__recipient__count",

@@ -1,0 +1,291 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/financial_balances/agencies.md",
+    "description": "Returns aggregated budget authority, obligations, and outlays for a specified funding agency and fiscal year. Responses always include pagination metadata even though only a single balance record has been observed.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/financial_balances/agencies/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "fiscal_year": {
+          "location": "query",
+          "type": "string",
+          "description": "Fiscal year to summarize balances for the funding agency.",
+          "constraints": "Required. Must be digits representing a fiscal year; missing yields HTTP 400. Non-numeric or decimal strings trigger 500 HTML errors. Negative or far-future years are accepted but return empty results."
+        },
+        "funding_agency_id": {
+          "location": "query",
+          "type": "string",
+          "description": "USAspending funding agency identifier (agency_id from the toptier reference list).",
+          "constraints": "Required. Must be digits representing a funding agency ID; blank values are treated as missing (400). Non-numeric or decimal strings trigger 500 HTML errors. Zero or negative IDs are accepted but return empty results."
+        },
+        "limit": {
+          "location": "query",
+          "type": "string",
+          "description": "Page size for the response (responses currently contain at most one record).",
+          "constraints": "Optional. Defaults to 100. Values less than 1 are coerced to 1, values above 500 are capped at 500 with no warning. Non-numeric or decimal strings trigger 500 HTML errors."
+        },
+        "page": {
+          "location": "query",
+          "type": "string",
+          "description": "Page number for paginated responses.",
+          "constraints": "Optional. Defaults to 1. Values less than 1 are normalized to 1. Large page values return empty results while count remains unchanged. Non-numeric or decimal strings trigger 500 HTML errors."
+        }
+      },
+      "required": [
+        "fiscal_year",
+        "funding_agency_id"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata including count (integer), page (integer), has_next_page (boolean), has_previous_page (boolean), next/current/previous (URL strings or null). Requests for page numbers beyond available data preserve the requested page and may set has_previous_page true even when count is 0."
+        },
+        "results": {
+          "type": "array",
+          "description": "Array containing zero or one FinancialBalance object. Each FinancialBalance has string fields budget_authority_amount, obligated_amount, and outlay_amount representing aggregated totals for the requested agency and fiscal year."
+        }
+      },
+      "required": [
+        "page_metadata",
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/financial_balances/agencies/",
+          "query": {
+            "fiscal_year": "2023",
+            "funding_agency_id": "12"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "page_metadata": {
+              "count": 1,
+              "page": 1,
+              "has_next_page": false,
+              "has_previous_page": false,
+              "next": null,
+              "current": "https://api.usaspending.gov/api/v2/financial_balances/agencies/?fiscal_year=2023&funding_agency_id=12&limit=100&page=1",
+              "previous": null
+            },
+            "results": [
+              {
+                "budget_authority_amount": "1041891000.30",
+                "obligated_amount": "839611011.42",
+                "outlay_amount": "827175340.82"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/financial_balances/agencies/",
+          "query": {
+            "funding_agency_id": "456"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Missing one or more required query parameters: fiscal_year, funding_agency_id"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Responses always include page_metadata with pagination URLs even though the public docs only mention results.",
+      "Endpoint supports page and limit query parameters; limit defaults to 100, coerces values below 1 to 1, and silently caps values above 500.",
+      "Invalid numeric formats (alphabetic, decimal, or blank strings) trigger 500 responses with HTML bodies instead of JSON validation errors.",
+      "Unknown, zero, or negative funding_agency_id values return 200 with empty results, making typos easy to miss.",
+      "page_metadata.current echoes any unexpected query parameters exactly as submitted.",
+      "Observed responses contain at most one FinancialBalance entry; additional pages return empty arrays while count stays 0 or 1.",
+      "Requesting page numbers greater than available results may set has_previous_page true even when the dataset is empty."
+    ],
+    "risks": [
+      "Clients must handle 500 HTML error pages for malformed query input instead of structured JSON errors.",
+      "Silent coercion of page and limit parameters can hide integration mistakes and unexpectedly alter pagination.",
+      "200 responses with empty results for invalid funding_agency_id values may mask typos or outdated identifiers.",
+      "Pagination metadata may indicate has_previous_page true even when count is 0, so navigation logic must account for misleading flags."
+    ],
+    "gaps": [
+      "Valid funding_agency_id values were not enumerated; use the references endpoint to confirm identifiers."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-14"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/financial_balances/agencies/",
+        "query": {
+          "fiscal_year": "2017",
+          "funding_agency_id": "456"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"count\":1,\"page\":1,\"has_next_page\":false,\"has_previous_page\":false,\"next\":null,\"current\":\"https://api.usaspending.gov/api/v2/financial_balances/agencies/?fiscal_year=2017&funding_agency_id=456&limit=100&page=1\",\"previous\":null},\"results\":[{\"budget_authority_amount\":\"1311923245157.46\",\"obligated_amount\":\"945941843810.26\",\"outlay_amount\":\"949768285246.56\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - baseline call confirming successful response and pagination metadata"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/financial_balances/agencies/",
+        "query": {
+          "fiscal_year": "2023",
+          "funding_agency_id": "12"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"count\":1,\"page\":1,\"has_next_page\":false,\"has_previous_page\":false,\"next\":null,\"current\":\"https://api.usaspending.gov/api/v2/financial_balances/agencies/?fiscal_year=2023&funding_agency_id=12&limit=100&page=1\",\"previous\":null},\"results\":[{\"budget_authority_amount\":\"1041891000.30\",\"obligated_amount\":\"839611011.42\",\"outlay_amount\":\"827175340.82\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - example fiscal year showing non-empty balances"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/financial_balances/agencies/",
+        "query": {
+          "funding_agency_id": "456"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Missing one or more required query parameters: fiscal_year, funding_agency_id\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - omitting fiscal_year yields 400 with error detail"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/financial_balances/agencies/",
+        "query": {
+          "fiscal_year": "abc",
+          "funding_agency_id": "456"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head><title>Server Error (500)</title></head><body><h1>Server Error (500)</h1><p></p></body></html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail - non-numeric fiscal_year causes 500 HTML response"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/financial_balances/agencies/",
+        "query": {
+          "fiscal_year": "2017",
+          "funding_agency_id": "456",
+          "limit": "0"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"count\":1,\"page\":1,\"has_next_page\":false,\"has_previous_page\":false,\"next\":null,\"current\":\"https://api.usaspending.gov/api/v2/financial_balances/agencies/?fiscal_year=2017&funding_agency_id=456&limit=1&page=1\",\"previous\":null},\"results\":[{\"budget_authority_amount\":\"1311923245157.46\",\"obligated_amount\":\"945941843810.26\",\"outlay_amount\":\"949768285246.56\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - limit=0 is silently coerced to 1 in the response"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/financial_balances/agencies/",
+        "query": {
+          "fiscal_year": "2017",
+          "funding_agency_id": "456",
+          "page": "2"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"count\":1,\"page\":2,\"has_next_page\":false,\"has_previous_page\":true,\"next\":null,\"current\":\"https://api.usaspending.gov/api/v2/financial_balances/agencies/?fiscal_year=2017&funding_agency_id=456&limit=100&page=2\",\"previous\":\"https://api.usaspending.gov/api/v2/financial_balances/agencies/?fiscal_year=2017&funding_agency_id=456&limit=100&page=1\"},\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - requesting page 2 returns empty results while count stays 1 and has_previous_page is true"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/financial_balances/agencies/",
+        "query": {
+          "fiscal_year": "2017",
+          "funding_agency_id": "0"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"count\":0,\"page\":1,\"has_next_page\":false,\"has_previous_page\":false,\"next\":null,\"current\":\"https://api.usaspending.gov/api/v2/financial_balances/agencies/?fiscal_year=2017&funding_agency_id=0&limit=100&page=1\",\"previous\":null},\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - zero funding_agency_id returns 200 with empty dataset"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/financial_balances/agencies/",
+        "query": {
+          "fiscal_year": "2017",
+          "funding_agency_id": "999999",
+          "page": "2"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"count\":0,\"page\":2,\"has_next_page\":false,\"has_previous_page\":true,\"next\":null,\"current\":\"https://api.usaspending.gov/api/v2/financial_balances/agencies/?fiscal_year=2017&funding_agency_id=999999&limit=100&page=2\",\"previous\":\"https://api.usaspending.gov/api/v2/financial_balances/agencies/?fiscal_year=2017&funding_agency_id=999999&limit=100&page=1\"},\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - page metadata shows has_previous_page true even though count is 0",
+      "meta": {
+        "newFromPass2": true
+      }
+    }
+  ],
+  "mismatches": [
+    "Documentation omits pagination metadata, but the endpoint always returns page_metadata and supports page/limit controls.",
+    "Documentation implies type validation for required numerics, yet malformed numeric inputs produce 500 HTML responses instead of JSON validation errors."
+  ],
+  "gaps": [
+    "Valid funding_agency_id values were not enumerated; use the references endpoint to confirm identifiers."
+  ],
+  "risks": [
+    "Clients must handle 500 HTML error pages for malformed query input instead of structured JSON errors.",
+    "Silent coercion of page and limit parameters can hide integration mistakes and unexpectedly alter pagination.",
+    "200 responses with empty results for invalid funding_agency_id values may mask typos or outdated identifiers.",
+    "Pagination metadata may indicate has_previous_page true even when count is 0, so navigation logic must account for misleading flags."
+  ]
+}
