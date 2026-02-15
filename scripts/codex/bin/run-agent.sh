@@ -60,12 +60,102 @@ lock_dir="$repo_root/runs/$version/$slug"
 lock_file="$lock_dir/.lock"
 
 mkdir -p "$lock_dir"
-if [ -e "$lock_file" ]; then
-  echo "lock present: $lock_file (another run in progress?)" >&2
-  exit 1
+
+# Stale lock handling:
+# - The lock is per-slug and should only exist while a single pass is running.
+# - If the process died (or we killed it on timeout), we want reruns to proceed automatically.
+# - We only auto-clear when we're confident it's stale (pid not running, pid reused, or age > threshold).
+LOCK_STALE_SECONDS="${LOCK_STALE_SECONDS:-21600}" # 6h default (very generous)
+LOCK_NO_PID_STALE_SECONDS="${LOCK_NO_PID_STALE_SECONDS:-300}" # 5m: tolerate partial writes, clear obvious stale locks
+
+stat_mtime_epoch() {
+  local path="${1:?path required}"
+  if stat -f %m "$path" >/dev/null 2>&1; then
+    stat -f %m "$path"
+    return 0
+  fi
+  stat -c %Y "$path"
+}
+
+acquire_lock() {
+  local now_epoch
+  now_epoch="$(date +%s)"
+  (
+    set -o noclobber
+    printf 'pid=%s\npass=%s\nslug=%s\nstarted_at=%s\n' "$$" "$pass" "$slug" "$now_epoch" > "$lock_file"
+  ) 2>/dev/null
+}
+
+lock_is_stale() {
+  [ -f "$lock_file" ] || return 1
+
+  local lock_pid=""
+  local lock_started_at=""
+  while IFS='=' read -r k v; do
+    case "$k" in
+      pid) lock_pid="$v" ;;
+      started_at) lock_started_at="$v" ;;
+    esac
+  done < "$lock_file" || true
+
+  local now_epoch age_epoch age_seconds
+  now_epoch="$(date +%s)"
+  age_epoch="$lock_started_at"
+  if [ -z "$age_epoch" ]; then
+    age_epoch="$(stat_mtime_epoch "$lock_file" 2>/dev/null || true)"
+  fi
+
+  if [[ "$age_epoch" =~ ^[0-9]+$ ]]; then
+    age_seconds="$(( now_epoch - age_epoch ))"
+    if ! [[ "$lock_pid" =~ ^[0-9]+$ ]] && [ "$age_seconds" -ge "$LOCK_NO_PID_STALE_SECONDS" ]; then
+      echo "[run-agent] stale lock (missing pid after ${age_seconds}s): $lock_file" >&2
+      return 0
+    fi
+    if [ "$age_seconds" -ge "$LOCK_STALE_SECONDS" ]; then
+      echo "[run-agent] stale lock (age ${age_seconds}s >= ${LOCK_STALE_SECONDS}s): $lock_file" >&2
+      return 0
+    fi
+  fi
+
+  if [[ "$lock_pid" =~ ^[0-9]+$ ]]; then
+    if kill -0 "$lock_pid" 2>/dev/null; then
+      # PID exists; protect against PID reuse by checking the command line.
+      local cmdline=""
+      cmdline="$(ps -p "$lock_pid" -o command= 2>/dev/null || true)"
+      if echo "$cmdline" | grep -Fq "run-agent.sh" && echo "$cmdline" | grep -Fq "$slug"; then
+        return 1
+      fi
+      echo "[run-agent] stale lock (pid $lock_pid reused or unexpected command): $lock_file" >&2
+      return 0
+    fi
+    echo "[run-agent] stale lock (pid $lock_pid not running): $lock_file" >&2
+    return 0
+  fi
+
+  return 1
+}
+
+if acquire_lock; then
+  trap 'rm -f "$lock_file"' EXIT
+else
+  if lock_is_stale; then
+    echo "[run-agent] removing stale lock: $lock_file" >&2
+    rm -f "$lock_file"
+    if acquire_lock; then
+      trap 'rm -f "$lock_file"' EXIT
+    else
+      echo "lock present: $lock_file (unable to acquire after stale lock removal)" >&2
+      exit 1
+    fi
+  else
+    echo "lock present: $lock_file (another run in progress?)" >&2
+    if [ -f "$lock_file" ]; then
+      echo "[run-agent] lock contents:" >&2
+      sed -n '1,20p' "$lock_file" >&2 || true
+    fi
+    exit 1
+  fi
 fi
-trap 'rm -f "$lock_file"' EXIT
-touch "$lock_file"
 
 if [ "${USE_WORKTREE:-}" = "1" ]; then
   # Worktree runs do not automatically include local-only staging artifacts (staging/ is gitignored).

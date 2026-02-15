@@ -61,6 +61,13 @@ make pipeline-run-bg PARALLEL=4 PIPELINE_VERSION=v2
 # command prints jobDir and tail/monitor commands
 ```
 
+Tune generous per-stage timeouts (prevents indefinite hangs while avoiding false positives):
+
+```bash
+# Defaults: STAGE_TIMEOUT_SECONDS=3600, STAGE_KILL_GRACE_SECONDS=20
+make pipeline-run-bg PARALLEL=4 PIPELINE_VERSION=v2 STAGE_TIMEOUT_SECONDS=5400 STAGE_KILL_GRACE_SECONDS=30
+```
+
 Detached run without post-stage artifact validation (debug only):
 
 ```bash
@@ -148,6 +155,7 @@ flowchart TD
     G -->|"INVALID_SCHEMA"| I["Inspect JSON against src/agent/core/profileSchema.ts"]
     G -->|"PROMPT_MISSING"| J["Ensure final pass emitted prompt.md"]
     G -->|"THREAD_FAILURE"| K["Check API key/network; rerun stage"]
+    G -->|"STAGE_TIMEOUT"| P["Stage exceeded timeout; rerun (or increase STAGE_TIMEOUT_SECONDS)"]
 
     D --> L["Rerun make promote-profile SLUG=<slug>"]
     E --> M["Fix manifest/profile parity or missing files"]
@@ -225,6 +233,18 @@ Actions:
 1. Verify `CODEX_API_KEY` is present.
 2. Verify outbound network availability.
 3. Re-run stage.
+
+### `STAGE_TIMEOUT`
+
+Meaning:
+
+- A stage attempt exceeded the configured wall-clock timeout and was terminated.
+
+Actions:
+
+1. Inspect the per-slug job log under `runs/_jobs/<job-id>/logs/<slug>.log`.
+2. Re-run the slug (timeouts are retryable up to `STAGE_MAX_ATTEMPTS`).
+3. If the stage is legitimately slow, increase `STAGE_TIMEOUT_SECONDS` (default 3600).
 
 ## Guardrails You Should Not Bypass
 

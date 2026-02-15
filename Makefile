@@ -5,6 +5,8 @@ PARALLEL ?= 2
 PIPELINE_VERSION ?= v2
 JOB_DIR ?=
 STAGE_MAX_ATTEMPTS ?= 3
+STAGE_TIMEOUT_SECONDS ?= 3600
+STAGE_KILL_GRACE_SECONDS ?= 20
 SKIP_OUTPUT_VALIDATION ?= 0
 FROM_JOB_DIR ?=
 
@@ -105,16 +107,16 @@ pipeline-coverage:
 
 # Foreground full run with resumable per-slug status outputs under runs/_jobs.
 pipeline-run-foreground:
-	@python $(REPO_ROOT)/scripts/full_pipeline.py run --version $(PIPELINE_VERSION) --base $(BASE) --parallel $(PARALLEL) --stage-max-attempts $(STAGE_MAX_ATTEMPTS) --job-dir $(REPO_ROOT)/runs/_jobs/$(PIPELINE_VERSION)-manual $(if $(filter 1,$(SKIP_OUTPUT_VALIDATION)),--skip-output-validation,)
+	@python $(REPO_ROOT)/scripts/full_pipeline.py run --version $(PIPELINE_VERSION) --base $(BASE) --parallel $(PARALLEL) --stage-max-attempts $(STAGE_MAX_ATTEMPTS) --stage-timeout-seconds $(STAGE_TIMEOUT_SECONDS) --stage-kill-grace-seconds $(STAGE_KILL_GRACE_SECONDS) --job-dir $(REPO_ROOT)/runs/_jobs/$(PIPELINE_VERSION)-manual $(if $(filter 1,$(SKIP_OUTPUT_VALIDATION)),--skip-output-validation,)
 
 # Detached background full run. Prints jobDir + monitor/tail commands.
 pipeline-run-bg:
-	@python $(REPO_ROOT)/scripts/full_pipeline.py start-bg --version $(PIPELINE_VERSION) --base $(BASE) --parallel $(PARALLEL) --stage-max-attempts $(STAGE_MAX_ATTEMPTS) $(if $(filter 1,$(SKIP_OUTPUT_VALIDATION)),--skip-output-validation,)
+	@python $(REPO_ROOT)/scripts/full_pipeline.py start-bg --version $(PIPELINE_VERSION) --base $(BASE) --parallel $(PARALLEL) --stage-max-attempts $(STAGE_MAX_ATTEMPTS) --stage-timeout-seconds $(STAGE_TIMEOUT_SECONDS) --stage-kill-grace-seconds $(STAGE_KILL_GRACE_SECONDS) $(if $(filter 1,$(SKIP_OUTPUT_VALIDATION)),--skip-output-validation,)
 
 # Replay only failed slugs from a previous job status.
 pipeline-retry-failed:
 	@test -n "$(FROM_JOB_DIR)" || (echo "FROM_JOB_DIR is required, e.g. make pipeline-retry-failed FROM_JOB_DIR=/abs/path/to/runs/_jobs/<job>"; exit 1)
-	@python $(REPO_ROOT)/scripts/full_pipeline.py retry-failed --from-job-dir $(FROM_JOB_DIR) --stage-max-attempts $(STAGE_MAX_ATTEMPTS) --parallel $(PARALLEL) $(if $(filter 1,$(SKIP_OUTPUT_VALIDATION)),--skip-output-validation,)
+	@python $(REPO_ROOT)/scripts/full_pipeline.py retry-failed --from-job-dir $(FROM_JOB_DIR) --stage-max-attempts $(STAGE_MAX_ATTEMPTS) --stage-timeout-seconds $(STAGE_TIMEOUT_SECONDS) --stage-kill-grace-seconds $(STAGE_KILL_GRACE_SECONDS) --parallel $(PARALLEL) $(if $(filter 1,$(SKIP_OUTPUT_VALIDATION)),--skip-output-validation,)
 
 # Offline artifact audit for completed outputs in a job dir.
 pipeline-audit:

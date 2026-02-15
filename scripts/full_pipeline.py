@@ -15,6 +15,7 @@ import concurrent.futures
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import threading
@@ -25,12 +26,15 @@ from typing import Any
 
 STAGES = ("discover", "validate", "profile")
 DEFAULT_STAGE_MAX_ATTEMPTS = 3
+DEFAULT_STAGE_TIMEOUT_SECONDS = 60 * 60  # 1 hour per stage attempt (very generous)
+DEFAULT_STAGE_KILL_GRACE_SECONDS = 20.0
 SCHEMA_VERSION = "1.0.0"
 OUTPUT_FRESHNESS_GRACE_SECONDS = 2.0
 RETRYABLE_FAILURE_MARKERS = (
     "[missing_output_file]",
     "[thread_failure]",
     "[invalid_schema]",
+    "[stage_timeout]",
     "[prompt_missing]",
     "[stale_output_file]",
     "[output_validation_failed]",
@@ -293,6 +297,8 @@ class PipelineJob:
         resume: bool,
         skip_preflight: bool,
         stage_max_attempts: int,
+        stage_timeout_seconds: float,
+        stage_kill_grace_seconds: float,
         validate_outputs: bool,
         slugs_override: list[str] | None = None,
     ) -> None:
@@ -304,6 +310,8 @@ class PipelineJob:
         self.resume = resume
         self.skip_preflight = skip_preflight
         self.stage_max_attempts = stage_max_attempts
+        self.stage_timeout_seconds = stage_timeout_seconds
+        self.stage_kill_grace_seconds = stage_kill_grace_seconds
         self.validate_outputs = validate_outputs
         self.slugs_override = sorted(set(slugs_override or []))
 
@@ -349,6 +357,8 @@ class PipelineJob:
             "resume": self.resume,
             "skipPreflight": self.skip_preflight,
             "stageMaxAttempts": self.stage_max_attempts,
+            "stageTimeoutSeconds": self.stage_timeout_seconds,
+            "stageKillGraceSeconds": self.stage_kill_grace_seconds,
             "validateOutputs": self.validate_outputs,
             "startedAt": now_iso(),
             "updatedAt": now_iso(),
@@ -359,6 +369,8 @@ class PipelineJob:
                     "stage": "pending",
                     "startedAt": None,
                     "finishedAt": None,
+                    "stageStartedAt": None,
+                    "stagePid": None,
                     "logPath": str((self.logs_dir / f"{slug}.log").relative_to(self.repo_root)),
                     "error": None,
                 }
@@ -403,8 +415,8 @@ class PipelineJob:
         cmd = [str(self.repo_root / "scripts" / "codex" / "bin" / "run-agent.sh"), stage, slug, self.base]
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
-        last_line = ""
         stage_started_at = time.time()
+        last_line_holder: dict[str, str] = {"value": ""}
         with log_path.open("a", encoding="utf-8") as fp:
             fp.write(f"\n[{now_iso()}] $ {' '.join(cmd)}\n")
             fp.flush()
@@ -416,19 +428,69 @@ class PipelineJob:
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
+                # On POSIX: start a new session so we can terminate the whole stage subtree via os.killpg.
+                # On Windows: start_new_session isn't supported, so we fall back to proc.terminate/kill.
+                start_new_session=(os.name != "nt"),
             )
+            self._update_slug(slug, stagePid=proc.pid, stageStartedAt=now_iso())
 
-            assert proc.stdout is not None
-            for line in proc.stdout:
-                fp.write(line)
-                stripped = line.strip()
-                if stripped:
-                    last_line = stripped
-            rc = proc.wait()
+            def _drain_output() -> None:
+                assert proc.stdout is not None
+                for line in proc.stdout:
+                    fp.write(line)
+                    stripped = line.strip()
+                    if stripped:
+                        last_line_holder["value"] = stripped
+                fp.flush()
+
+            reader = threading.Thread(target=_drain_output, daemon=True)
+            reader.start()
+
+            timed_out = False
+            timeout_msg = ""
+            try:
+                rc = proc.wait(timeout=self.stage_timeout_seconds)
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                timeout_msg = (
+                    f"[STAGE_TIMEOUT] stage={stage} slug={slug} "
+                    f"exceeded {self.stage_timeout_seconds:.0f}s"
+                )
+                fp.write(f"[{now_iso()}] {timeout_msg}; sending SIGTERM\n")
+                fp.flush()
+                try:
+                    os.killpg(proc.pid, signal.SIGTERM)
+                except Exception:
+                    try:
+                        proc.terminate()
+                    except Exception:
+                        pass
+                try:
+                    rc = proc.wait(timeout=self.stage_kill_grace_seconds)
+                except subprocess.TimeoutExpired:
+                    fp.write(
+                        f"[{now_iso()}] {timeout_msg}; still running after "
+                        f"{self.stage_kill_grace_seconds:.0f}s; sending SIGKILL\n"
+                    )
+                    fp.flush()
+                    try:
+                        os.killpg(proc.pid, signal.SIGKILL)
+                    except Exception:
+                        try:
+                            proc.kill()
+                        except Exception:
+                            pass
+                    rc = proc.wait()
+
+            # Ensure reader stops before closing the file handle.
+            reader.join(timeout=5.0)
+            if timed_out:
+                last_line_holder["value"] = timeout_msg
+
             fp.write(f"[{now_iso()}] stage={stage} exit={rc}\n")
             fp.flush()
 
-        return rc, last_line, stage_started_at
+        return rc, last_line_holder["value"], stage_started_at
 
     def _append_log(self, log_path: Path, text: str) -> None:
         with log_path.open("a", encoding="utf-8") as fp:
@@ -587,6 +649,8 @@ def parse_args() -> argparse.Namespace:
     common.add_argument("--base", default="main")
     common.add_argument("--parallel", type=int, default=2)
     common.add_argument("--stage-max-attempts", type=int, default=DEFAULT_STAGE_MAX_ATTEMPTS)
+    common.add_argument("--stage-timeout-seconds", type=float, default=DEFAULT_STAGE_TIMEOUT_SECONDS)
+    common.add_argument("--stage-kill-grace-seconds", type=float, default=DEFAULT_STAGE_KILL_GRACE_SECONDS)
 
     p_cov = sub.add_parser("coverage", parents=[common], help="Report staged-vs-final-vs-promoted coverage")
     p_cov.add_argument("--json", action="store_true", help="Emit JSON")
@@ -611,6 +675,8 @@ def parse_args() -> argparse.Namespace:
     p_retry.add_argument("--base", default=None, help="Override base branch from source job")
     p_retry.add_argument("--parallel", type=int, default=None, help="Override parallelism from source job")
     p_retry.add_argument("--stage-max-attempts", type=int, default=DEFAULT_STAGE_MAX_ATTEMPTS)
+    p_retry.add_argument("--stage-timeout-seconds", type=float, default=DEFAULT_STAGE_TIMEOUT_SECONDS)
+    p_retry.add_argument("--stage-kill-grace-seconds", type=float, default=DEFAULT_STAGE_KILL_GRACE_SECONDS)
     p_retry.add_argument("--skip-preflight", action="store_true", help="Skip Codex auth/model preflight")
     p_retry.add_argument("--skip-output-validation", action="store_true", help="Skip post-stage offline artifact checks")
     p_retry.add_argument("--dry-run", action="store_true", help="Print planned retry payload without launching a run")
@@ -661,6 +727,8 @@ def cmd_run(args: argparse.Namespace, repo_root: Path) -> int:
         resume=not args.no_resume,
         skip_preflight=args.skip_preflight,
         stage_max_attempts=max(1, args.stage_max_attempts),
+        stage_timeout_seconds=max(1.0, float(args.stage_timeout_seconds)),
+        stage_kill_grace_seconds=max(1.0, float(args.stage_kill_grace_seconds)),
         validate_outputs=not args.skip_output_validation,
     )
     return job.run()
@@ -686,6 +754,10 @@ def cmd_start_bg(args: argparse.Namespace, repo_root: Path) -> int:
         str(args.parallel),
         "--stage-max-attempts",
         str(max(1, args.stage_max_attempts)),
+        "--stage-timeout-seconds",
+        str(max(1.0, float(args.stage_timeout_seconds))),
+        "--stage-kill-grace-seconds",
+        str(max(1.0, float(args.stage_kill_grace_seconds))),
         "--job-dir",
         str(job_dir),
     ]
@@ -714,6 +786,8 @@ def cmd_start_bg(args: argparse.Namespace, repo_root: Path) -> int:
         "event": "pipeline_job_started",
         "jobDir": str(job_dir),
         "pid": proc.pid,
+        "stageTimeoutSeconds": max(1.0, float(args.stage_timeout_seconds)),
+        "stageKillGraceSeconds": max(1.0, float(args.stage_kill_grace_seconds)),
         "runnerLog": str(log_path),
         "statusPath": str(job_dir / "status.json"),
         "summaryPath": str(job_dir / "summary.json"),
@@ -764,6 +838,8 @@ def cmd_retry_failed(args: argparse.Namespace, repo_root: Path) -> int:
                     "base": base,
                     "parallel": max(1, int(parallel)),
                     "stageMaxAttempts": max(1, args.stage_max_attempts),
+                    "stageTimeoutSeconds": max(1.0, float(args.stage_timeout_seconds)),
+                    "stageKillGraceSeconds": max(1.0, float(args.stage_kill_grace_seconds)),
                     "skipPreflight": bool(args.skip_preflight),
                     "skipOutputValidation": bool(args.skip_output_validation),
                 },
@@ -781,6 +857,8 @@ def cmd_retry_failed(args: argparse.Namespace, repo_root: Path) -> int:
         resume=False,
         skip_preflight=args.skip_preflight,
         stage_max_attempts=max(1, args.stage_max_attempts),
+        stage_timeout_seconds=max(1.0, float(args.stage_timeout_seconds)),
+        stage_kill_grace_seconds=max(1.0, float(args.stage_kill_grace_seconds)),
         validate_outputs=not args.skip_output_validation,
         slugs_override=source_failed_slugs,
     )
@@ -858,6 +936,20 @@ def _status_snapshot(status: dict[str, Any]) -> dict[str, Any]:
     running = sorted(
         [slug for slug, info in status.get("slugs", {}).items() if info.get("state") == "running"]
     )
+    running_details = []
+    for slug, info in status.get("slugs", {}).items():
+        if info.get("state") != "running":
+            continue
+        running_details.append(
+            {
+                "slug": slug,
+                "stage": info.get("stage"),
+                "stageAttempt": info.get("stageAttempt"),
+                "stageStartedAt": info.get("stageStartedAt"),
+                "stagePid": info.get("stagePid"),
+            }
+        )
+    running_details = sorted(running_details, key=lambda r: str(r.get("slug") or ""))
     return {
         "jobDir": status.get("jobDir"),
         "version": status.get("version"),
@@ -869,6 +961,7 @@ def _status_snapshot(status: dict[str, Any]) -> dict[str, Any]:
         "fatalError": status.get("fatalError"),
         "counts": counts,
         "runningSlugs": running,
+        "runningDetails": running_details,
         "failedSlugs": failed,
     }
 
@@ -888,8 +981,23 @@ def _print_status_human(snapshot: dict[str, Any]) -> None:
     )
     if snapshot.get("runningSlugs"):
         print("running:")
+        details = snapshot.get("runningDetails") or []
+        detail_by_slug = {d.get("slug"): d for d in details if isinstance(d, dict)}
         for slug in snapshot["runningSlugs"][:10]:
-            print(f"  - {slug}")
+            info = detail_by_slug.get(slug) or {}
+            stage = info.get("stage") or "?"
+            attempt = info.get("stageAttempt") or "?"
+            pid = info.get("stagePid") or "?"
+            started_at = info.get("stageStartedAt")
+            elapsed = "?"
+            if isinstance(started_at, str) and started_at:
+                try:
+                    dt = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+                    elapsed_sec = int((datetime.now(timezone.utc) - dt).total_seconds())
+                    elapsed = f"{elapsed_sec}s"
+                except Exception:
+                    elapsed = "?"
+            print(f"  - {slug} stage={stage} attempt={attempt} pid={pid} elapsed={elapsed}")
     if snapshot.get("failedSlugs"):
         print("failed:")
         for slug in snapshot["failedSlugs"][:20]:
