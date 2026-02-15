@@ -32,8 +32,33 @@ function assert(condition: unknown, message: string) {
   if (!condition) throw new Error(message);
 }
 
+function sleepMs(ms: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function waitForManifestLockToClear(lockPath: string, timeoutMs = 30_000) {
+  const start = Date.now();
+  while (existsSync(lockPath)) {
+    if (Date.now() - start > timeoutMs) {
+      const detail = (() => {
+        try {
+          return readFileSync(lockPath, "utf-8").slice(0, 400);
+        } catch {
+          return "<unreadable>";
+        }
+      })();
+      throw new Error(
+        `[PROFILE_MANIFEST_INVALID] manifest lock still held after ${timeoutMs}ms: ${lockPath} lock=${detail}`
+      );
+    }
+    sleepMs(50);
+  }
+}
+
 function main() {
   const manifestPath = join(repoRoot, "profiles", "manifest.json");
+  const lockPath = join(repoRoot, "profiles", "manifest.json.lock");
+  waitForManifestLockToClear(lockPath);
   if (!existsSync(manifestPath)) {
     throw new Error(`[PROFILE_MANIFEST_INVALID] missing manifest at ${manifestPath}`);
   }

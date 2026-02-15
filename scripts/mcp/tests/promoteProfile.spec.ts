@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { spawn } from "child_process";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { describe, expect, it } from "vitest";
@@ -173,4 +174,60 @@ describe("promoteProfile", () => {
 
     expect(() => promoteProfile({ slug, repoRoot: root })).toThrow(/missing source prompt/i);
   });
+
+  it("waits for an existing manifest lock before promoting (CLI)", async () => {
+    const root = join(tmpdir(), `mcp-promote-${Date.now()}-lock`);
+    const slug = "v2__awards__last_updated";
+    writeRunFinal(root, slug);
+
+    const tsxBin = join(__dirname, "..", "node_modules", ".bin", "tsx");
+    const script = join(__dirname, "..", "src", "promoteProfile.ts");
+    const lockPath = join(root, "profiles", "manifest.json.lock");
+    const profilesDir = join(root, "profiles");
+
+    // Create an active lock that should not be considered stale by the CLI.
+    mkdirSync(profilesDir, { recursive: true });
+    writeFileSync(
+      lockPath,
+      JSON.stringify(
+        {
+          pid: process.pid,
+          createdAt: new Date().toISOString(),
+        },
+        null,
+        2
+      ),
+      "utf-8"
+    );
+
+    const proc = spawn(
+      tsxBin,
+      [script, "--slug", slug, "--repo-root", root, "--generated-at", "2026-02-07"],
+      { stdio: "ignore" }
+    );
+
+    const exitPromise = new Promise<void>((resolve, reject) => {
+      proc.once("exit", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`promoteProfile CLI exited with code ${code}`));
+      });
+      proc.once("error", reject);
+    });
+
+    // Give the process a moment to start and attempt to acquire the lock.
+    // With an active lock in place, it should still be running.
+    await new Promise((r) => setTimeout(r, 250));
+    expect(proc.exitCode).toBe(null);
+
+    // Release the lock so promotion can proceed.
+    unlinkSync(lockPath);
+
+    await exitPromise;
+
+    expect(existsSync(lockPath)).toBe(false);
+
+    const manifestPath = join(root, "profiles", "manifest.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+    expect(manifest.profiles.some((p: { slug: string }) => p.slug === slug)).toBe(true);
+  }, 20_000);
 });

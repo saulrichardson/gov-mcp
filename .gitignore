@@ -34,8 +34,12 @@ node_modules/
 scripts/codex/node_modules/
 scripts/mcp/node_modules/
 scripts/codex/pass1_probes.json
+scripts/codex/probes_output.json
 runs/
 .worktrees/
 npm-debug.log*
 codex.config.json
 scratch/
+
+# Promotion locks / temp artifacts
+profiles/manifest.json.lock
