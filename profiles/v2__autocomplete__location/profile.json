@@ -1,0 +1,398 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/location.md",
+    "description": "Returns case-insensitive autocomplete suggestions for locations grouped by category based on the provided search text.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/location/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "search_text": {
+          "location": "body",
+          "type": "string",
+          "description": "Text prefix used to match location records; comparison is case-insensitive.",
+          "constraints": "Required. Must be a string with length >= 1. Leading/trailing whitespace is ignored for matching, but whitespace-only strings still pass validation and return broad results. Non-string values (numbers, null, booleans) are rejected with 400 errors."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of matches returned per populated category.",
+          "constraints": "Optional. Default 5. Accepts integers 1-20 inclusive; digit-only strings (with optional surrounding whitespace) are coerced. Floats, non-numeric strings, null, and booleans return 400. Values above 20 return 422. Values less than 1 (including zero and negatives) trigger a 503 with no JSON body."
+        }
+      },
+      "required": [
+        "search_text"
+      ],
+      "additionalProperties": true
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "Sum of all suggestion counts across the arrays present in results. Always provided on success and zero when no matches exist."
+        },
+        "results": {
+          "type": "object",
+          "description": "Container for per-category suggestion arrays. Categories are omitted when empty.",
+          "properties": {
+            "countries": {
+              "type": "array",
+              "description": "Each entry includes country_name (uppercase)."
+            },
+            "states": {
+              "type": "array",
+              "description": "Each entry includes state_name and country_name; state abbreviations are not returned."
+            },
+            "cities": {
+              "type": "array",
+              "description": "Each entry includes city_name and country_name. U.S. cities include state_name, while foreign cities omit the property entirely."
+            },
+            "counties": {
+              "type": "array",
+              "description": "Each entry includes county_fips, county_name, state_name, and country_name."
+            },
+            "zip_codes": {
+              "type": "array",
+              "description": "Each entry includes zip_code (string, preserving leading zeros), state_name, and country_name."
+            },
+            "districts_original": {
+              "type": "array",
+              "description": "Each entry includes original_cd, state_name, and country_name for historical congressional districts."
+            },
+            "districts_current": {
+              "type": "array",
+              "description": "Each entry includes current_cd, state_name, and country_name for current congressional districts."
+            }
+          },
+          "additionalProperties": true
+        },
+        "messages": {
+          "type": "array",
+          "description": "Array of informational strings. Observed responses return a single empty string (\"\")."
+        }
+      },
+      "required": [
+        "count",
+        "results",
+        "messages"
+      ],
+      "additionalProperties": true
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/location/",
+          "query": {},
+          "body": {
+            "search_text": "Den"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 10,
+            "results": {
+              "countries": [
+                {
+                  "country_name": "DENMARK"
+                }
+              ],
+              "cities": [
+                {
+                  "city_name": "DENA",
+                  "country_name": "HAITI"
+                },
+                {
+                  "city_name": "DENA",
+                  "country_name": "SPAIN"
+                },
+                {
+                  "city_name": "DENA",
+                  "country_name": "CHINA"
+                },
+                {
+                  "city_name": "DENA",
+                  "country_name": "MALI"
+                },
+                {
+                  "city_name": "DENJ",
+                  "country_name": "IRAN"
+                }
+              ],
+              "counties": [
+                {
+                  "county_name": "DENTON",
+                  "county_fips": "48121",
+                  "state_name": "TEXAS",
+                  "country_name": "UNITED STATES"
+                },
+                {
+                  "county_name": "DENT",
+                  "county_fips": "29065",
+                  "state_name": "MISSOURI",
+                  "country_name": "UNITED STATES"
+                },
+                {
+                  "county_name": "DENALI",
+                  "county_fips": "02068",
+                  "state_name": "ALASKA",
+                  "country_name": "UNITED STATES"
+                },
+                {
+                  "county_name": "DENVER",
+                  "county_fips": "08031",
+                  "state_name": "COLORADO",
+                  "country_name": "UNITED STATES"
+                }
+              ]
+            },
+            "messages": [
+              ""
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/location/",
+          "query": {},
+          "body": {
+            "search_text": "005"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 2,
+            "results": {
+              "zip_codes": [
+                {
+                  "zip_code": "00501",
+                  "state_name": "NEW YORK",
+                  "country_name": "UNITED STATES"
+                },
+                {
+                  "zip_code": "00544",
+                  "state_name": "NEW YORK",
+                  "country_name": "UNITED STATES"
+                }
+              ]
+            },
+            "messages": [
+              ""
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/location/",
+          "query": {},
+          "body": {
+            "search_text": "AL-01"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 2,
+            "results": {
+              "districts_original": [
+                {
+                  "original_cd": "AL-01",
+                  "state_name": "ALABAMA",
+                  "country_name": "UNITED STATES"
+                }
+              ],
+              "districts_current": [
+                {
+                  "current_cd": "AL-01",
+                  "state_name": "ALABAMA",
+                  "country_name": "UNITED STATES"
+                }
+              ]
+            },
+            "messages": [
+              ""
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "limit must resolve to an integer between 1 and 20; invalid types return 400, values above 20 return 422, and values below 1 yield a bare 503 response.",
+      "count is always present on success and equals the total number of returned suggestions across all categories.",
+      "messages has only been observed as [''] even when categories are empty or truncated.",
+      "Result categories are omitted when empty and string values are uppercased in responses.",
+      "Foreign city results omit state_name entirely, while U.S. cities include it.",
+      "ZIP code matches return zip_code as a string to preserve leading zeros.",
+      "Leading and trailing whitespace in search_text is ignored for matching, but whitespace-only inputs still succeed and return broad results."
+    ],
+    "risks": [
+      "Requests with limit <=0 return HTTP 503 without a JSON payload, so callers must validate limit before sending.",
+      "Error responses vary: 400/422 payloads include only a detail string, while 503 responses have no body, requiring defensive handling.",
+      "Foreign city records omit state_name and whitespace-only search terms broaden results, so clients should normalize input and handle missing fields."
+    ],
+    "gaps": [
+      "No observed scenario produced non-empty guidance in messages; downstream meaning of populated messages remains unknown."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-15"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/location/",
+        "query": {},
+        "body": {
+          "search_text": "Den"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":10,\"results\":{\"countries\":[{\"country_name\":\"DENMARK\"}],\"cities\":[{\"city_name\":\"DENJ\"}...],\"counties\":[{\"county_name\":\"DENTON\"}...]},\"messages\":[\"\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Baseline success with default limit populating multiple categories."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/location/",
+        "query": {},
+        "body": {
+          "search_text": "Den",
+          "limit": "2"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":5,\"results\":{\"countries\":[{\"country_name\":\"DENMARK\"}],\"cities\":[{\"city_name\":\"DENJ\"},{\"city_name\":\"DENA\"}],\"counties\":[{\"county_name\":\"DENTON\"},{\"county_name\":\"DENT\"}]},\"messages\":[\"\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Digit-only string limit coerced to integer and applied per category."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/location/",
+        "query": {},
+        "body": {
+          "search_text": "Den",
+          "limit": 21
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '21' is above max '20'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Validation rejects limits greater than 20 with a 422 detail message."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/location/",
+        "query": {},
+        "body": {
+          "search_text": "Den",
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 503,
+        "bodyExcerpt": "",
+        "contentType": ""
+      },
+      "notes": "Limit values below 1 trigger 503 without a JSON payload."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/location/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Missing value: 'search_text' is a required field\"}",
+        "contentType": "application/json"
+      },
+      "notes": "search_text is required when omitted entirely."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/location/",
+        "query": {},
+        "body": {
+          "search_text": " "
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":6,\"results\":{\"cities\":[{\"city_name\":\"-\u0100F\u012a\"}],\"zip_codes\":[{\"zip_code\":\"01950\"}...]},\"messages\":[\"\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Whitespace-only search_text passes validation and returns broad results."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/location/",
+        "query": {},
+        "body": {
+          "search_text": "Den",
+          "limit": 2.5
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. '2.5' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Non-integer numeric values are rejected with a 400 detail message."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/location/",
+        "query": {},
+        "body": {
+          "search_text": "AL-01"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":2,\"results\":{\"districts_original\":[{\"original_cd\":\"AL-01\"}],\"districts_current\":[{\"current_cd\":\"AL-01\"}]},\"messages\":[\"\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "District-formatted queries populate both districts_original and districts_current arrays."
+    }
+  ],
+  "mismatches": [
+    "Docs define ZipCodeMatch.zip_code as numeric, but production responses return strings such as '20500'.",
+    "Docs require CityMatch.state_name (nullable), yet foreign city results omit the property entirely.",
+    "Docs omit the top-level count field that is present on every successful response."
+  ],
+  "gaps": [
+    "No observed scenario produced non-empty guidance in messages; downstream meaning of populated messages remains unknown."
+  ],
+  "risks": [
+    "Requests with limit <=0 return HTTP 503 without a JSON payload, so callers must validate limit before sending.",
+    "Error responses vary: 400/422 payloads include only a detail string, while 503 responses have no body, requiring defensive handling.",
+    "Foreign city records omit state_name and whitespace-only search terms broaden results, so clients should normalize input and handle missing fields."
+  ]
+}

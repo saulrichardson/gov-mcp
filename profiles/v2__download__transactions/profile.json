@@ -1,0 +1,508 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/download/transactions.md",
+    "description": "Starts an asynchronous download job that produces a .zip archive for prime transactions and subawards. A successful request returns a status_url for polling job state and a file_url for downloading the archive once ready.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/download/transactions/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Search filter object. Must be a non-empty object, but unknown keys are silently ignored and award_type_codes are injected when omitted.",
+          "constraints": "Required. Missing/null/non-object -> 400. Empty object {} -> 400 ('At least one filter is required.').",
+          "properties": {
+            "keywords": {
+              "type": "array",
+              "description": "Keyword search terms.",
+              "constraints": "If provided, must be an array of non-null strings; each string must have length >= 3."
+            },
+            "keyword": {
+              "type": "string",
+              "description": "Deprecated singular keyword search term; accepted by the API and normalized to keywords.",
+              "constraints": "If provided, must be a string with length >= 3 (enforced after normalization to keywords)."
+            },
+            "time_period": {
+              "type": "array",
+              "description": "Date window filter.",
+              "constraints": "If provided, must be a non-empty array (empty -> 422; null -> 400). Objects with only start_date or only end_date were accepted; invalid date strings -> 400.",
+              "properties": {
+                "start_date": {
+                  "type": "string",
+                  "description": "Start of the date range (YYYY-MM-DD)."
+                },
+                "end_date": {
+                  "type": "string",
+                  "description": "End of the date range (YYYY-MM-DD)."
+                },
+                "date_type": {
+                  "type": "string",
+                  "description": "Date field selector; 'new_awards_only' was accepted in probes."
+                }
+              }
+            },
+            "recipient_search_text": {
+              "type": "array",
+              "description": "Recipient search inputs (names/identifiers).",
+              "constraints": "If provided, must be an array of strings (string input -> 400). Probes showed multiple entries are accepted."
+            },
+            "award_type_codes": {
+              "type": "array",
+              "description": "Award/transaction type codes.",
+              "constraints": "Optional; if omitted the backend injects a default list into download_request.filters.award_type_codes."
+            },
+            "agencies": {
+              "type": "array",
+              "description": "Agency filters (awarding/funding).",
+              "constraints": "If provided, must be an array of objects. Omitting required keys (e.g., tier) can trigger 422 validation errors."
+            },
+            "place_of_performance_locations": {
+              "type": "array",
+              "description": "Place of performance location filters.",
+              "constraints": "If provided, must be an array of location objects; missing required location fields (e.g., country) can trigger 422 validation errors."
+            },
+            "recipient_locations": {
+              "type": "array",
+              "description": "Recipient location filters.",
+              "constraints": "If provided, must be an array of location objects; probes showed objects with country + zip are accepted."
+            },
+            "recipient_scope": {
+              "type": "string",
+              "description": "Recipient location scope (e.g., domestic/foreign).",
+              "constraints": "Optional; 'domestic' was accepted in probes."
+            },
+            "naics_codes": {
+              "type": "object",
+              "description": "NAICS include/exclude prefixes.",
+              "constraints": "Optional object; probes showed require/exclude arrays are accepted."
+            },
+            "psc_codes": {
+              "type": "object",
+              "description": "PSC include/exclude hierarchy selector.",
+              "constraints": "Optional object; probes showed hierarchical 'require' arrays are accepted."
+            },
+            "tas_codes": {
+              "type": "object",
+              "description": "TAS include/exclude hierarchy selector.",
+              "constraints": "Optional object; probes showed hierarchical 'require' arrays are accepted."
+            },
+            "treasury_account_components": {
+              "type": "array",
+              "description": "Treasury account component filters.",
+              "constraints": "Optional array of objects; probes showed objects with aid/main are accepted."
+            }
+          }
+        },
+        "columns": {
+          "location": "body",
+          "type": "array",
+          "description": "Requested output columns.",
+          "constraints": "Optional array. Not validated at POST time; some column lists can later cause the async job to fail (status_url returns status='failed' with a message containing 'Unknown columns')."
+        },
+        "file_format": {
+          "location": "body",
+          "type": "string",
+          "description": "File format for generated files inside the ZIP archive.",
+          "constraints": "Optional enum ['csv','tsv','pstxt']. If omitted, download_request.file_format was 'csv' in probes. Invalid values -> 400."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Row limit for the download job.",
+          "constraints": "Optional. If omitted, download_request.limit was 500000 in probes. Values above 500000 -> 422. Probes showed 0 and negative values are accepted at POST time (job completion behavior not verified)."
+        }
+      },
+      "required": [
+        "filters"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "status_url": {
+          "type": "string",
+          "description": "URL to poll download job status (GET). Observed as https://api.usaspending.gov/api/v2/download/status?file_name=... ."
+        },
+        "file_name": {
+          "type": "string",
+          "description": "Name of the .zip archive (also used as the status endpoint's file_name query parameter)."
+        },
+        "file_url": {
+          "type": "string",
+          "description": "Fully-qualified download URL for the generated .zip archive (observed host: files.usaspending.gov)."
+        },
+        "download_request": {
+          "type": "object",
+          "description": "Echo/normalization of the request used by the backend (may include injected defaults).",
+          "properties": {
+            "download_types": {
+              "type": "array",
+              "description": "Observed values for this endpoint: ['elasticsearch_sub_awards','elasticsearch_transactions']."
+            },
+            "file_format": {
+              "type": "string",
+              "description": "Effective file_format used by the backend."
+            },
+            "filters": {
+              "type": "object",
+              "description": "Effective filters after backend normalization (e.g., default award_type_codes injected)."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Effective limit after backend normalization."
+            },
+            "request_type": {
+              "type": "string",
+              "description": "Observed constant 'award'."
+            },
+            "columns": {
+              "type": "array",
+              "description": "Echoed columns list when provided."
+            }
+          }
+        }
+      },
+      "required": [
+        "status_url",
+        "file_name",
+        "file_url",
+        "download_request"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/transactions/",
+          "query": {},
+          "body": {
+            "filters": {
+              "keywords": [
+                "defense"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "status_url": "https://api.usaspending.gov/api/v2/download/status?file_name=SubawardsAndPrimeTransactions_2026-02-15_H04M40S29868538.zip",
+            "file_name": "SubawardsAndPrimeTransactions_2026-02-15_H04M40S29868538.zip",
+            "file_url": "https://files.usaspending.gov/generated_downloads/SubawardsAndPrimeTransactions_2026-02-15_H04M40S29868538.zip",
+            "download_request": {
+              "download_types": [
+                "elasticsearch_sub_awards",
+                "elasticsearch_transactions"
+              ],
+              "file_format": "csv",
+              "filters": {
+                "award_type_codes": [
+                  "-1",
+                  "02",
+                  "03",
+                  "04",
+                  "05",
+                  "06",
+                  "07",
+                  "08",
+                  "09",
+                  "10",
+                  "11",
+                  "A",
+                  "B",
+                  "C",
+                  "D",
+                  "IDV_A",
+                  "IDV_B",
+                  "IDV_B_A",
+                  "IDV_B_B",
+                  "IDV_B_C",
+                  "IDV_C",
+                  "IDV_D",
+                  "IDV_E"
+                ],
+                "keywords": [
+                  "defense"
+                ]
+              },
+              "limit": 500000,
+              "request_type": "award"
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/transactions/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Filters parameter not provided as a dict"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "filters must be a non-empty object, but unknown filter keys are silently ignored and can still yield a 200 response (bypassing the empty-filter guard).",
+      "filters.keyword (singular) is accepted and validated like filters.keywords (min length >= 3 after normalization).",
+      "If filters.award_type_codes is omitted, the backend injects a default award_type_codes list into download_request.filters.",
+      "columns values are accepted at POST time without strict validation; some column lists later fail asynchronously (status_url shows status='failed' with an 'Unknown columns' message).",
+      "download_request.download_types values differ from the endpoint documentation: observed ['elasticsearch_sub_awards','elasticsearch_transactions']."
+    ],
+    "risks": [
+      "The default limit is 500000; omitting limit can create large downloads and slower async jobs.",
+      "Unknown filter keys are silently ignored, which can hide typos and produce broader-than-expected datasets; unknown keys can also bypass the empty-filter guard.",
+      "Unknown/unsupported columns are not rejected at POST time and can cause downstream async job failure; callers must poll status_url and handle failures."
+    ],
+    "gaps": [
+      "Successful async completion was not observed via the status endpoint; only status='failed' (Unknown columns) and 404 (job not found) were probed.",
+      "The full set of valid column identifiers for this endpoint was not enumerated; POST accepts arbitrary strings but some values fail during job processing.",
+      "The effects of limit <= 0 on generated output were not verified beyond POST-time acceptance (200)."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-15"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/transactions/",
+        "query": {},
+        "body": {
+          "filters": {
+            "keywords": [
+              "defense"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"status_url\":\"https://api.usaspending.gov/api/v2/download/status?file_name=SubawardsAndPrimeTransactions_2026-02-15_H04M40S29868538.zip\",\"file_name\":\"SubawardsAndPrimeTransactions_2026-02-15_H04M40S29868538.zip\",\"file_url\":\"https://files.usaspending.gov/generated_downloads/SubawardsAndPrimeTransactions_2026-02-15_H04M40S29868538.zip\",\"download_request\":{\"download_types\":[\"elasticsearch_sub_awards\",\"elasticsearch_transactions\"],\"file_format\":\"csv\",\"filters\":{\"award_type_codes\":[\"-1\",\"02\",\"03\",\"04\",\"05\",\"06\",\"07\",\"08\",\"09\",\"10\",\"11\",\"A\",\"B\",\"C\",\"D\",\"IDV_A\",\"IDV_B\",\"IDV_B_A\",\"IDV_B_B\",\"IDV_B_..."
+      },
+      "notes": "pass - minimal keywords accepted; default award_type_codes added and limit defaults to 500000"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/transactions/",
+        "query": {},
+        "body": {
+          "filters": {}
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"At least one filter is required.\"}"
+      },
+      "notes": "fail - filters must include at least one criterion"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/transactions/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Filters parameter not provided as a dict\"}"
+      },
+      "notes": "fail - filters field required and must be dict"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/transactions/",
+        "query": {},
+        "body": {
+          "filters": {
+            "keywords": [
+              "ab"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'filters|keywords' value 'ab' is below min '3' items\"}"
+      },
+      "notes": "fail - keyword strings shorter than 3 chars rejected"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/transactions/",
+        "query": {},
+        "body": {
+          "filters": {
+            "keyword": "defense"
+          },
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"status_url\":\"https://api.usaspending.gov/api/v2/download/status?file_name=SubawardsAndPrimeTransactions_2026-02-15_H04M49S54546343.zip\",\"file_name\":\"SubawardsAndPrimeTransactions..."
+      },
+      "notes": "pass - deprecated filter: 'keyword' singular string is accepted"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/transactions/",
+        "query": {},
+        "body": {
+          "filters": {
+            "keywords": [
+              "education"
+            ]
+          },
+          "file_format": "pdf"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'file_format' is outside valid values ['csv', 'tsv', 'pstxt']\"}"
+      },
+      "notes": "fail - invalid file_format rejected"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/transactions/",
+        "query": {},
+        "body": {
+          "filters": {
+            "keywords": [
+              "energy"
+            ]
+          },
+          "limit": 800000
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '800000' is above max '500000'\"}"
+      },
+      "notes": "fail - limit above 500000 rejected"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/transactions/",
+        "query": {},
+        "body": {
+          "filters": {
+            "unknown_filter": [
+              "foo"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"status_url\":\"https://api.usaspending.gov/api/v2/download/status?file_name=SubawardsAndPrimeTransactions_2026-02-15_H04M40S40104795.zip\",\"file_name\":\"SubawardsAndPrimeTransactions_2026-02-15_H04M40S40104795.zip\",\"file_url\":\"https://files.usaspending.gov/generated_downloads/SubawardsAndPrimeTransactions_2026-02-15_H04M40S40104795.zip\",\"download_request\":{\"download_types\":[\"elasticsearch_sub_awards\",\"elasticsearch_transactions\"],\"file_format\":\"csv\",\"filters\":{\"award_type_codes\":[\"-1\",\"02\",\"03\",\"04\",\"05\",\"06\",\"07\",\"08\",\"09\",\"10\",\"11\",\"A\",\"B\",\"C\",\"D\",\"IDV_A\",\"IDV_B\",\"IDV_B_A\",\"IDV_B_B\",\"IDV_B_..."
+      },
+      "notes": "pass - unknown filters ignored and defaults returned"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/transactions/",
+        "query": {},
+        "body": {
+          "filters": {
+            "time_period": [
+              {
+                "start_date": "2024-01-01",
+                "end_date": "2024-01-02"
+              }
+            ]
+          },
+          "limit": 1,
+          "columns": [
+            "transaction_obligated_amount",
+            "fain",
+            "modification_number"
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"status_url\":\"https://api.usaspending.gov/api/v2/download/status?file_name=SubawardsAndPrimeTransactions_2026-02-15_H05M08S40433552.zip\",\"file_name\":\"SubawardsAndPrimeTransactions..."
+      },
+      "notes": "pass - POST accepts columns list (job later failed with Unknown columns)"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/download/status",
+        "query": {
+          "file_name": "SubawardsAndPrimeTransactions_2026-02-15_H05M08S40433552.zip"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"status\":\"failed\",\"message\":\"InvalidParameterException was raised while attempting to process the DownloadJob:\\nTraceback (most recent call last):\\n  File \\\"/data-act/backend/usas..."
+      },
+      "notes": "pass - status endpoint shows status='failed' and a message containing 'Unknown columns' for this job"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/download/status",
+        "query": {
+          "file_name": "DefinitelyNotARealFile_1900-01-01_H00M00S00000000.zip"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Download job with filename DefinitelyNotARealFile_1900-01-01_H00M00S00000000.zip does not exist.\"}"
+      },
+      "notes": "fail - status endpoint returns 404 for unknown file_name"
+    }
+  ],
+  "mismatches": [
+    "Docs describe download_request.download_types as ['sub_awards','transactions'], but live responses return ['elasticsearch_sub_awards','elasticsearch_transactions'].",
+    "Docs show status_url as localhost and file_url as a relative /csv_downloads path, but live responses return fully-qualified HTTPS URLs (file_url on files.usaspending.gov).",
+    "Docs show download_request includes an 'agency' field (e.g., 'all'), but live responses observed in probes omitted 'agency'.",
+    "Endpoint docs define filters.recipient_search_text as a string, but live API requires an array (string input returns 400).",
+    "Shared filters docs state recipient_search_text must not exceed a length of 1 item, but probes showed arrays with multiple items are accepted."
+  ],
+  "gaps": [
+    "Successful async completion was not observed via the status endpoint; only status='failed' (Unknown columns) and 404 (job not found) were probed.",
+    "The full set of valid column identifiers for this endpoint was not enumerated; POST accepts arbitrary strings but some values fail during job processing.",
+    "The effects of limit <= 0 on generated output were not verified beyond POST-time acceptance (200)."
+  ],
+  "risks": [
+    "The default limit is 500000; omitting limit can create large downloads and slower async jobs.",
+    "Unknown filter keys are silently ignored, which can hide typos and produce broader-than-expected datasets; unknown keys can also bypass the empty-filter guard.",
+    "Unknown/unsupported columns are not rejected at POST time and can cause downstream async job failure; callers must poll status_url and handle failures."
+  ]
+}

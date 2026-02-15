@@ -1,0 +1,392 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/references/glossary.md",
+    "description": "Returns USAspending glossary entries (terms + definitions/resources) used to power glossary components; supports pagination via query parameters.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/references/glossary/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "page": {
+          "location": "query",
+          "type": "integer",
+          "description": "1-based page number to return.",
+          "minimum": 1,
+          "default": 1,
+          "constraints": "Optional. Accepts integer strings (including leading zeros). Non-integer strings (e.g., '1.5' or '') return 400 with JSON {detail}. Values < 1 return 422 with JSON {detail}. Pages beyond the available range return 200 with empty results."
+        },
+        "limit": {
+          "location": "query",
+          "type": "integer",
+          "description": "Maximum number of glossary entries per page.",
+          "minimum": 1,
+          "maximum": 500,
+          "constraints": "Optional. Accepts integer strings (including leading zeros). Non-integer strings (e.g., '1.0' or '') return 400 with JSON {detail}. Values outside 1..500 return 422 with JSON {detail}. When omitted, the API currently returns all entries on page 1 (page_metadata.count=149 at last verification), so clients should set limit explicitly to control payload size."
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [
+        "page_metadata",
+        "results"
+      ],
+      "properties": {
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata. count is the total number of glossary entries; next/previous are page numbers or null. Note: if you request page > last_page+1, the API sets previous=null and hasPrevious=false even though earlier pages exist.",
+          "required": [
+            "page",
+            "count",
+            "next",
+            "previous",
+            "hasNext",
+            "hasPrevious"
+          ],
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "Current page number (echoes the request)."
+            },
+            "count": {
+              "type": "integer",
+              "description": "Total number of glossary entries."
+            },
+            "next": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Next page number when available; otherwise null."
+            },
+            "previous": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Previous page number when available; otherwise null."
+            },
+            "hasNext": {
+              "type": "boolean",
+              "description": "True when a next page exists."
+            },
+            "hasPrevious": {
+              "type": "boolean",
+              "description": "True when a previous page exists."
+            }
+          }
+        },
+        "results": {
+          "type": "array",
+          "description": "Glossary entries for the requested page (may be empty for out-of-range pages).",
+          "items": {
+            "type": "object",
+            "required": [
+              "term",
+              "slug",
+              "data_act_term",
+              "plain",
+              "official",
+              "resources"
+            ],
+            "properties": {
+              "term": {
+                "type": "string",
+                "description": "Human-readable glossary term."
+              },
+              "slug": {
+                "type": "string",
+                "description": "URL-friendly identifier for the term."
+              },
+              "data_act_term": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "DATA Act term text when available; null for some entries."
+              },
+              "plain": {
+                "type": "string",
+                "description": "Plain-language description (may contain newlines/Markdown)."
+              },
+              "official": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Official definition text when available; null for some entries."
+              },
+              "resources": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Additional resources/links (Markdown) or null."
+              }
+            }
+          }
+        }
+      }
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/references/glossary/",
+          "query": {
+            "limit": "2",
+            "page": "1"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "bodyExcerpt": "{\"page_metadata\":{\"page\":1,\"count\":149,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"term\":\"Account Balance (File A)\",\"slug\":\"account-balance-file-a\",\"data_act_term\":\"Account Balance (File A)\",\"plain\":\"After the end of every month (or in some…(len=300)\",\"official\":\"Account Balance data is reported in File…(len=738)\",\"resources\":\"See also:\\n\\n- [Account Breakdown by Progr…(len=421)\"},{\"term\":\"Account Breakdown by Award (File C)\",\"slug\":\"account-breakdown-by-award-file-c\",\"data_act_term\":null,\"plain\":\"Account Breakdown by Award (File C) is o…(len=602)\",\"official\":null,\"resources\":\"See also:\\n\\n- [Account Balance (File A)](…(len=399)\"}]}",
+          "contentType": "application/json"
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/references/glossary/",
+          "query": {
+            "limit": "0",
+            "page": "1"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 422,
+          "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}",
+          "contentType": "application/json"
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/references/glossary",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 301,
+          "bodyExcerpt": "",
+          "contentType": "text/html"
+        }
+      }
+    ],
+    "quirks": [
+      "Use the trailing-slash path: requesting '/api/v2/references/glossary' returns a 301 redirect with an empty text/html body.",
+      "Type validation errors return 400; range validation errors return 422; both return JSON objects shaped like {\"detail\": \"...\"}.",
+      "Observed constraints: page >= 1; limit in [1, 500] inclusive.",
+      "Omitting limit currently returns all entries on page 1 (page_metadata.count=149 at last verification); requesting page > 1 with omitted limit returns empty results.",
+      "Requesting pages beyond the last page returns 200 with results: [] (no 4xx).",
+      "For page > last_page+1, page_metadata.previous becomes null and hasPrevious=false even though earlier pages exist.",
+      "Unknown query parameters are ignored (no validation error).",
+      "When query parameters repeat (e.g., page=1&page=2), the last value wins.",
+      "Glossary entry fields data_act_term, official, and resources are nullable in practice; keys are still present."
+    ],
+    "risks": [
+      "Clients should treat data_act_term and official as nullable despite docs (and resources may be null as documented).",
+      "Clients should always set limit explicitly to avoid unexpectedly large payloads if the glossary grows.",
+      "Clients should use the trailing-slash URL; otherwise some HTTP clients will see a 301 + empty body (text/html).",
+      "Do not rely on hasPrevious/previous when accidentally requesting pages far beyond the end; page > last_page+1 yields hasPrevious=false even though earlier pages exist.",
+      "Do not rely on the server to reject typoed query parameters; unknown query params are ignored."
+    ],
+    "gaps": [
+      "Default numeric limit value is not observable from probes because omitting limit returns all results on one page (count=149 at last verification).",
+      "Result ordering is undocumented; ordering was stable across repeated calls during pass-2 but may change across deployments."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-15"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/references/glossary/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":1,\"count\":149,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[{\"term\":\"Account Balance (File A)\",\"slug\":\"account-balance-file-a\",\"data_act_term\":\"Account Balance (File A)\",\"plain\":\"After the end of every month (or in some select cases every quarter), agencies report the …(len=300)\",\"official\":\"Account Balance data is reported in File A, one of the three files that each agency publis…(len=738)\",\"resources\":\"See also:\\n\\n- [Account Breakdown by Program Activity & Object Class (File B)](?glossary=acc…(len=421)\"},{\"term\":\"Account Breakdown by Award (File C)\",\"slug\":\"account-breakdown-by-award-file-c\",\"data_act_term\":null,\"plain\":\"Account Breakdown by Award (File C) is one of the three files that each agency publishes t…(len=602)\",\"official\":null,\"resources\":\"See also:\\n\\n- [Account Balance (File A)](?glossary=account-balance-file-a)\\n- [Account Break…(len=399)\"},\"…(147 more)\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "baseline shape + nullability audit: page_metadata+results only; results_len=149; keys never missing=True; null_counts={'data_act_term': 62, 'official': 53, 'resources': 87}."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/references/glossary/",
+        "query": {
+          "limit": "2",
+          "page": "1"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":1,\"count\":149,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"term\":\"Account Balance (File A)\",\"slug\":\"account-balance-file-a\",\"data_act_term\":\"Account Balance (File A)\",\"plain\":\"After the end of every month (or in some…(len=300)\",\"official\":\"Account Balance data is reported in File…(len=738)\",\"resources\":\"See also:\\n\\n- [Account Breakdown by Progr…(len=421)\"},{\"term\":\"Account Breakdown by Award (File C)\",\"slug\":\"account-breakdown-by-award-file-c\",\"data_act_term\":null,\"plain\":\"Account Breakdown by Award (File C) is o…(len=602)\",\"official\":null,\"resources\":\"See also:\\n\\n- [Account Balance (File A)](…(len=399)\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "valid: status=200 results_len=2"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/references/glossary/",
+        "query": {
+          "limit": "1",
+          "page": "2"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":2,\"count\":149,\"next\":3,\"previous\":1,\"hasNext\":true,\"hasPrevious\":true},\"results\":[{\"term\":\"Account Breakdown by Award (File C)\",\"slug\":\"account-breakdown-by-award-file-c\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "valid: status=200 results_len=1"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/references/glossary/",
+        "query": {
+          "limit": "149",
+          "page": "2"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":2,\"count\":149,\"next\":null,\"previous\":1,\"hasNext\":false,\"hasPrevious\":true},\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pagination beyond last page: returns 200 + empty results; previous/hasPrevious remain set only through page=last_page+1."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/references/glossary/",
+        "query": {
+          "limit": "149",
+          "page": "3"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":3,\"count\":149,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pagination far beyond last page: previous becomes null and hasPrevious=false."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/references/glossary/",
+        "query": {
+          "page": "0"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'page' value '0' is below min '1'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "invalid: page below minimum"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/references/glossary/",
+        "query": {
+          "limit": "0",
+          "page": "1"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "invalid: limit below minimum"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/references/glossary/",
+        "query": {
+          "page": "1.5",
+          "limit": "1"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'page'. '1.5' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "invalid: non-integer page"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/references/glossary",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 301,
+        "bodyExcerpt": "",
+        "contentType": "text/html"
+      },
+      "notes": "missing trailing slash returns 301 redirect to '/api/v2/references/glossary/'."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/references/glossary/",
+        "query": {
+          "limit": "1",
+          "page": "1",
+          "foo": "bar"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":1,\"count\":149,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"term\":\"Account Balance (File A)\",\"slug\":\"account-balance-file-a\",\"data_act_term\":\"Account Balance (File A)\",\"plain\":\"After the end of every month (or in some select cases every quarter), agencies report the …(len=300)\",\"official\":\"Account Balance data is reported in File A, one of the three files that each agency publis…(len=738)\",\"resources\":\"See also:\\n\\n- [Account Breakdown by Program Activity & Object Class (File B)](?glossary=acc…(len=421)\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "unknown query parameters are ignored"
+    }
+  ],
+  "mismatches": [
+    "Docs mark data_act_term as a required string, but live responses include null values.",
+    "Docs mark official as a required string, but live responses include null values."
+  ],
+  "gaps": [
+    "Default numeric limit value is not observable from probes because omitting limit returns all results on one page (count=149 at last verification).",
+    "Result ordering is undocumented; ordering was stable across repeated calls during pass-2 but may change across deployments."
+  ],
+  "risks": [
+    "Clients should treat data_act_term and official as nullable despite docs (and resources may be null as documented).",
+    "Clients should always set limit explicitly to avoid unexpectedly large payloads if the glossary grows.",
+    "Clients should use the trailing-slash URL; otherwise some HTTP clients will see a 301 + empty body (text/html).",
+    "Do not rely on hasPrevious/previous when accidentally requesting pages far beyond the end; page > last_page+1 yields hasPrevious=false even though earlier pages exist.",
+    "Do not rely on the server to reject typoed query parameters; unknown query params are ignored."
+  ]
+}

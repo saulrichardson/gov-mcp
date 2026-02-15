@@ -45,10 +45,22 @@
       "promptPath": "profiles/v2__autocomplete__accounts__main/prompt.md"
     },
     {
+      "slug": "v2__autocomplete__location",
+      "lastVerified": "2026-02-15",
+      "profilePath": "profiles/v2__autocomplete__location/profile.json",
+      "promptPath": "profiles/v2__autocomplete__location/prompt.md"
+    },
+    {
       "slug": "v2__awards__last_updated",
       "lastVerified": "2026-02-06",
       "profilePath": "profiles/v2__awards__last_updated/profile.json",
       "promptPath": "profiles/v2__awards__last_updated/prompt.md"
+    },
+    {
+      "slug": "v2__download__accounts",
+      "lastVerified": "2026-02-15",
+      "profilePath": "profiles/v2__download__accounts/profile.json",
+      "promptPath": "profiles/v2__download__accounts/prompt.md"
     },
     {
       "slug": "v2__download__count",
@@ -61,6 +73,12 @@
       "lastVerified": "2026-02-14",
       "profilePath": "profiles/v2__download__status/profile.json",
       "promptPath": "profiles/v2__download__status/prompt.md"
+    },
+    {
+      "slug": "v2__download__transactions",
+      "lastVerified": "2026-02-15",
+      "profilePath": "profiles/v2__download__transactions/profile.json",
+      "promptPath": "profiles/v2__download__transactions/prompt.md"
     },
     {
       "slug": "v2__financial_balances__agencies",
@@ -85,6 +103,12 @@
       "lastVerified": "2026-02-07",
       "profilePath": "profiles/v2__references__award_types/profile.json",
       "promptPath": "profiles/v2__references__award_types/prompt.md"
+    },
+    {
+      "slug": "v2__references__glossary",
+      "lastVerified": "2026-02-15",
+      "profilePath": "profiles/v2__references__glossary/profile.json",
+      "promptPath": "profiles/v2__references__glossary/prompt.md"
     },
     {
       "slug": "v2__search__spending_by_award",

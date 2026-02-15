@@ -1,0 +1,367 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/download/accounts.md",
+    "description": "Generate custom account download packages and return metadata for retrieving the generated zip.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/download/accounts/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "account_level": {
+          "location": "body",
+          "type": "string",
+          "description": "Choose the aggregation level for the download (federal_account or treasury_account).",
+          "constraints": "Required. Must be one of ['federal_account','treasury_account']; invalid values trigger a WAF 500 block." 
+        },
+        "file_format": {
+          "location": "body",
+          "type": "string",
+          "description": "Optional override for the file format inside the generated archive.",
+          "constraints": "Optional. Accepts ['csv','tsv','pstxt']; defaults to 'csv'. Other values (e.g., 'xlsx') return 400."
+        },
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Advanced filters controlling fiscal scope and dataset selection for the download job.",
+          "constraints": "Required. Must include 'fy' (string YYYY) and exactly one of 'quarter' or 'period' (strings). Provide at least one dataset via 'submission_types' array (preferred) or legacy 'submission_type'. Supplying both quarter and period causes a WAF 500 block. Omitting both period and quarter yields 400. Numeric period values (not strings) can drop the connection.",
+          "properties": {
+            "fy": {
+              "location": "body.filters",
+              "type": "string",
+              "description": "Fiscal year (YYYY).",
+              "constraints": "Required. Server normalizes this to an integer in the response."
+            },
+            "quarter": {
+              "location": "body.filters",
+              "type": "string",
+              "description": "Fiscal quarter selector.",
+              "constraints": "Optional. Must be one of ['1','2','3','4']; mutually exclusive with period. Values above '4' return 422."
+            },
+            "period": {
+              "location": "body.filters",
+              "type": "string",
+              "description": "Fiscal accounting period selector for monthly submissions.",
+              "constraints": "Optional. Must be one of ['2','3','4','5','6','7','8','9','10','11','12']; mutually exclusive with quarter. Providing '1' returns 422. Value must be a string; numeric input closes the connection."
+            },
+            "submission_types": {
+              "location": "body.filters",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "account_balances",
+                  "object_class_program_activity",
+                  "award_financial"
+                ]
+              },
+              "description": "Preferred list of dataset categories to download.",
+              "constraints": "Optional but recommended. When supplied, must contain at least one value; empty arrays return 422."
+            },
+            "submission_type": {
+              "location": "body.filters",
+              "type": "string",
+              "description": "Legacy singular alias for submission_types.",
+              "constraints": "Optional. Accepted and normalized to submission_types in the response, but repeated use can trigger WAF 500 blocks; prefer submission_types."
+            },
+            "def_codes": {
+              "location": "body.filters",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Disaster Emergency Fund Codes to include.",
+              "constraints": "Optional. Each value must be one of ['1','2','3','4','5','6','7','8','9','A','AAA','AAB','AAC','AAD','AAE','AAF','AAG','AAH','AAI','AAJ','AAK','AAL','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','QQQ','R','S','T','U','V','W','X','Y','Z']; invalid codes return 400 with the enum list."
+            },
+            "agency": {
+              "location": "body.filters",
+              "type": "string",
+              "description": "Internal toptier agency identifier.",
+              "constraints": "Optional. Observed acceptance of values like '097'; suspicious inputs may still trip WAF protections."
+            }
+          },
+          "required": [
+            "fy"
+          ]
+        },
+        "columns": {
+          "location": "body",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional explicit list of column identifiers to include in generated files.",
+          "constraints": "Optional. Values are echoed without validation when non-empty. An empty array may be dropped from the echoed request."
+        }
+      },
+      "required": [
+        "account_level",
+        "filters"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "status_url": {
+          "type": "string",
+          "description": "Absolute URL to poll download status."
+        },
+        "file_name": {
+          "type": "string",
+          "description": "Generated archive filename."
+        },
+        "file_url": {
+          "type": "string",
+          "description": "Absolute URL to the generated zip."
+        },
+        "download_request": {
+          "type": "object",
+          "description": "Echo of normalized request parameters used by the download job, including inferred defaults.",
+          "properties": {
+            "account_level": {
+              "type": "string",
+              "description": "Echoed account level."
+            },
+            "download_types": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Dataset categories selected."
+            },
+            "file_format": {
+              "type": "string",
+              "description": "Resolved file format (defaults to 'csv')."
+            },
+            "filters": {
+              "type": "object",
+              "description": "Filters after normalization; fy/period/quarter returned as integers and unspecified filters default to 'all'."
+            },
+            "request_type": {
+              "type": "string",
+              "description": "Constant 'account'."
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Echo of requested column identifiers when provided; omitted when the request lacked columns or used an empty list."
+            }
+          }
+        }
+      },
+      "required": [
+        "status_url",
+        "file_name",
+        "file_url",
+        "download_request"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/accounts/",
+          "query": {},
+          "body": {
+            "account_level": "federal_account",
+            "filters": {
+              "fy": "2023",
+              "quarter": "1",
+              "submission_types": [
+                "account_balances"
+              ],
+              "agency": "097"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "status_url": "https://api.usaspending.gov/api/v2/download/status?file_name=FY2023P01-P03_All_FA_AccountBalances_2026-02-15_H04M36S53319208.zip",
+            "file_name": "FY2023P01-P03_All_FA_AccountBalances_2026-02-15_H04M36S53319208.zip",
+            "file_url": "https://files.usaspending.gov/generated_downloads/FY2023P01-P03_All_FA_AccountBalances_2026-02-15_H04M36S53319208.zip",
+            "download_request": {
+              "account_level": "federal_account",
+              "download_types": [
+                "account_balances"
+              ],
+              "file_format": "csv",
+              "filters": {
+                "agency": "097",
+                "budget_function": "all",
+                "budget_subfunction": "all",
+                "federal_account": "all",
+                "fy": 2023,
+                "period": 3,
+                "quarter": 1,
+                "submission_types": [
+                  "account_balances"
+                ]
+              },
+              "request_type": "account"
+            }
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Server coerces fy/period/quarter to integers, infers quarter from period, and injects default 'all' placeholders for unspecified filters.",
+      "Supplying both quarter and period in filters triggers a WAF block page with Attack ID 20000021.",
+      "Columns arrays are echoed verbatim when non-empty, even for unknown identifiers; empty arrays may be omitted in the response.",
+      "Legacy singular 'submission_type' works but can intermittently hit WAF protections; prefer submission_types.",
+      "Sending numeric JSON values where strings are expected (e.g., period: 6) can cause the server to close the connection without an HTTP response."
+    ],
+    "risks": [
+      "WAF protections may still trigger (Attack ID 20000021) for certain value combinations or repeated patterns, yielding HTML 500 pages or dropped connections.",
+      "Clients must validate filters locally to avoid hard failures such as missing quarter/period or invalid enums, since the API responds with 400/422 or blocks the request.",
+      "Large generated files require polling status_url and handling long-running downloads or retries if generation fails."
+    ],
+    "gaps": [
+      "Acceptable value ranges for other AdvancedFilterObject keys (e.g., budget_function, budget_subfunction, federal_account) remain unverified beyond the default 'all' placeholders in responses.",
+      "Exact heuristics that trigger WAF Attack ID 20000021 are still unclear beyond the observed quarter/period conflict and malformed types."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-15"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/accounts/",
+        "query": {},
+        "body": {
+          "account_level": "federal_account",
+          "filters": {
+            "fy": "2023",
+            "quarter": "1",
+            "submission_types": [
+              "account_balances"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"status_url\":\"https://api.usaspending.gov/api/v2/download/status?file_name=FY2023P01-P03_All_FA_AccountBalances_2026-02-15_H04M30S25848239.zip\",\"file_name\":\"FY2023P01-P03_All_FA_AccountBalances_2026-02-15_H04M30S25848239.zip\",\"file_url\":\"https://files.usaspending.gov/generated_downloads/FY2023P01-P03_All_FA_AccountBalances_2026-02-15_H04M30S25848239.zip\",\"download_request\":{\"account_level\":\"feder..."
+      },
+      "notes": "pass - minimal required fields succeed; server fills period=3 and default 'all' filters and coerces fy/quarter to integers"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/accounts/",
+        "query": {},
+        "body": {
+          "account_level": "federal_account",
+          "filters": {
+            "fy": "2022",
+            "period": "3",
+            "submission_types": [
+              "account_balances"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"status_url\":\"https://api.usaspending.gov/api/v2/download/status?file_name=FY2022P01-P03_All_FA_AccountBalances_2026-02-15_H04M31S42620223.zip\",\"file_name\":\"FY2022P01-P03_All_FA_AccountBalances_2026-02-15_H04M31S42620223.zip\",\"file_url\":\"https://files.usaspending.gov/generated_downloads/FY2022P01-P03_All_FA_AccountBalances_2026-02-15_H04M31S42620223.zip\",\"download_request\":{\"account_level\":\"feder..."
+      },
+      "notes": "pass - when only period is supplied, server infers quarter and succeeds"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/accounts/",
+        "query": {},
+        "body": {
+          "account_level": "federal_account",
+          "filters": {
+            "fy": "2022",
+            "quarter": "2",
+            "submission_types": [
+              "account_balances"
+            ],
+            "def_codes": [
+              "INVALID"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'filters|def_codes' is outside valid values ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']\"}"
+      },
+      "notes": "fail - invalid def_codes rejected with explicit enum list"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/accounts/",
+        "query": {},
+        "body": {
+          "account_level": "federal_account",
+          "filters": {
+            "fy": "2023",
+            "quarter": "1",
+            "period": "3",
+            "submission_types": [
+              "account_balances"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 500,
+        "contentType": "text/html",
+        "bodyExcerpt": "Web Page Blocked (Attack ID: 20000021)"
+      },
+      "notes": "fail - providing both quarter and period triggers WAF block page"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/accounts/",
+        "query": {},
+        "body": {
+          "account_level": "federal_account",
+          "filters": {
+            "fy": "2022",
+            "period": 6,
+            "submission_types": [
+              "account_balances"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 0,
+        "contentType": "",
+        "bodyExcerpt": "empty reply from server; connection closed without HTTP status (curl 52)"
+      },
+      "notes": "fail - sending period as a numeric value causes the server to drop the connection"
+    }
+  ],
+  "mismatches": [
+    "Docs show file_url as a relative /csv_downloads path, but the live API returns an absolute https URL."
+  ],
+  "gaps": [
+    "Acceptable value ranges for other AdvancedFilterObject keys (e.g., budget_function, budget_subfunction, federal_account) remain unverified beyond the default 'all' placeholders in responses.",
+    "Exact heuristics that trigger WAF Attack ID 20000021 are still unclear beyond the observed quarter/period conflict and malformed types."
+  ],
+  "risks": [
+    "WAF protections may still trigger (Attack ID 20000021) for certain value combinations or repeated patterns, yielding HTML 500 pages or dropped connections.",
+    "Clients must validate filters locally to avoid hard failures such as missing quarter/period or invalid enums, since the API responds with 400/422 or blocks the request.",
+    "Large generated files require polling status_url and handling long-running downloads or retries if generation fails."
+  ]
+}
