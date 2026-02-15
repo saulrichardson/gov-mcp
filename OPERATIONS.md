@@ -86,6 +86,13 @@ Live monitor for a background job:
 make pipeline-status-watch JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>
 ```
 
+If `pipeline-status-watch` exits early and prints a warning about a dead runner pid (for example if the job was terminated),
+reconcile the job dir so follow-on commands (audit/retry) behave correctly:
+
+```bash
+make pipeline-repair-stale JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>
+```
+
 Replay only failed slugs from a previous job:
 
 ```bash
@@ -98,7 +105,7 @@ Coverage proof at any time:
 make pipeline-coverage PIPELINE_VERSION=v2
 ```
 
-Offline audit of completed outputs for a job:
+Offline audit of a job's outputs (fails loudly if the job is incomplete or has failed slugs):
 
 ```bash
 make pipeline-audit JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>

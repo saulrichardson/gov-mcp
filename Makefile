@@ -10,7 +10,7 @@ STAGE_KILL_GRACE_SECONDS ?= 20
 SKIP_OUTPUT_VALIDATION ?= 0
 FROM_JOB_DIR ?=
 
-.PHONY: discover validate profile pipeline clean-worktrees discover-all validate-all profile-all pipeline-all gather-runs merge-agent-branches mcp-server promote-profile verify codex-preflight pipeline-coverage pipeline-run-foreground pipeline-run-bg pipeline-retry-failed pipeline-audit pipeline-status pipeline-status-watch
+.PHONY: discover validate profile pipeline clean-worktrees discover-all validate-all profile-all pipeline-all gather-runs merge-agent-branches mcp-server promote-profile verify codex-preflight pipeline-coverage pipeline-run-foreground pipeline-run-bg pipeline-retry-failed pipeline-audit pipeline-repair-stale pipeline-status pipeline-status-watch
 
 discover:
 	@$(REPO_ROOT)/scripts/codex/bin/run-agent.sh discover $(SLUG) $(BASE)
@@ -122,6 +122,10 @@ pipeline-retry-failed:
 pipeline-audit:
 	@test -n "$(JOB_DIR)" || (echo "JOB_DIR is required, e.g. make pipeline-audit JOB_DIR=/abs/path/to/runs/_jobs/<job>"; exit 1)
 	@python $(REPO_ROOT)/scripts/full_pipeline.py audit --job-dir $(JOB_DIR)
+
+pipeline-repair-stale:
+	@test -n "$(JOB_DIR)" || (echo "JOB_DIR is required, e.g. make pipeline-repair-stale JOB_DIR=/abs/path/to/runs/_jobs/<job>"; exit 1)
+	@python $(REPO_ROOT)/scripts/full_pipeline.py repair-stale --job-dir $(JOB_DIR)
 
 pipeline-status:
 	@test -n "$(JOB_DIR)" || (echo "JOB_DIR is required, e.g. make pipeline-status JOB_DIR=/abs/path/to/runs/_jobs/<job>"; exit 1)

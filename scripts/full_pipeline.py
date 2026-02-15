@@ -6,6 +6,9 @@ Subcommands:
   - coverage: report staged-vs-final-vs-promoted coverage
   - run: run pipeline in foreground with structured status files
   - start-bg: launch `run` detached and print monitor commands
+  - retry-failed: replay only failed (and orphaned/incomplete) slugs from a prior job
+  - audit: offline validation of a job's outputs (fails loud on incomplete jobs)
+  - repair-stale: reconcile a job whose runner is gone but status still says running
   - status: inspect job status (once or watch mode)
 """
 from __future__ import annotations
@@ -151,6 +154,38 @@ def parse_slugs_override(
 def has_final_artifact(repo_root: Path, version: str, slug: str) -> bool:
     final_dir = repo_root / "runs" / version / slug / "final"
     return (final_dir / "profile.json").exists() and (final_dir / "prompt.md").exists()
+
+
+def pid_is_alive(pid: int | None) -> bool:
+    if pid is None:
+        return False
+    if not isinstance(pid, int) or pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        # Process exists but we cannot signal it.
+        return True
+    except Exception:
+        # Unknown error; assume alive to avoid false negatives.
+        return True
+    return True
+
+
+def read_job_runner_pid(job_dir: Path) -> int | None:
+    pid_path = job_dir / "pid"
+    if not pid_path.exists():
+        return None
+    raw = pid_path.read_text(encoding="utf-8").strip()
+    if not raw:
+        return None
+    try:
+        pid = int(raw)
+    except ValueError:
+        return None
+    return pid if pid > 0 else None
 
 
 def read_promoted_slugs(repo_root: Path) -> set[str]:
@@ -337,6 +372,39 @@ def failed_slugs_from_status(status: dict[str, Any]) -> list[str]:
     return sorted(failed)
 
 
+def incomplete_slugs_from_status(status: dict[str, Any]) -> list[str]:
+    slugs_obj = status.get("slugs", {})
+    incomplete: list[str] = []
+    for slug, info in slugs_obj.items():
+        if not isinstance(slug, str) or not isinstance(info, dict):
+            continue
+        state = info.get("state")
+        if state not in {"completed", "skipped"}:
+            incomplete.append(slug)
+    return sorted(incomplete)
+
+
+def compute_counts(slugs_obj: dict[str, Any]) -> dict[str, Any]:
+    counts = {
+        "total": len(slugs_obj),
+        "queued": 0,
+        "running": 0,
+        "completed": 0,
+        "failed": 0,
+        "skipped": 0,
+    }
+    for info in slugs_obj.values():
+        if not isinstance(info, dict):
+            continue
+        state = info.get("state")
+        if state in counts:
+            counts[state] += 1
+    counts["done"] = counts["completed"] + counts["skipped"]
+    counts["remaining"] = counts["total"] - counts["done"] - counts["failed"]
+    counts["coveragePercent"] = round((counts["done"] / counts["total"] * 100.0), 2) if counts["total"] else 0.0
+    return counts
+
+
 class PipelineJob:
     def __init__(
         self,
@@ -375,23 +443,7 @@ class PipelineJob:
         self.status: dict[str, Any] = {}
 
     def _compute_counts(self) -> dict[str, Any]:
-        slugs = self.status.get("slugs", {})
-        counts = {
-            "total": len(slugs),
-            "queued": 0,
-            "running": 0,
-            "completed": 0,
-            "failed": 0,
-            "skipped": 0,
-        }
-        for info in slugs.values():
-            state = info.get("state")
-            if state in counts:
-                counts[state] += 1
-        counts["done"] = counts["completed"] + counts["skipped"]
-        counts["remaining"] = counts["total"] - counts["done"] - counts["failed"]
-        counts["coveragePercent"] = round((counts["done"] / counts["total"] * 100.0), 2) if counts["total"] else 0.0
-        return counts
+        return compute_counts(self.status.get("slugs", {}))
 
     def _persist_status_locked(self) -> None:
         self.status["updatedAt"] = now_iso()
@@ -742,9 +794,19 @@ def parse_args() -> argparse.Namespace:
     p_retry.add_argument("--skip-output-validation", action="store_true", help="Skip post-stage offline artifact checks")
     p_retry.add_argument("--dry-run", action="store_true", help="Print planned retry payload without launching a run")
 
-    p_audit = sub.add_parser("audit", help="Offline validation of a job's completed outputs")
+    p_audit = sub.add_parser(
+        "audit",
+        help="Offline validation of a job's outputs (fails loudly on incomplete/failed jobs)",
+    )
     p_audit.add_argument("--job-dir", required=True, help="Job directory created by start-bg/run/retry-failed")
     p_audit.add_argument("--json", action="store_true", help="Emit JSON payload")
+
+    p_repair = sub.add_parser(
+        "repair-stale",
+        help="Reconcile a job whose runner pid is gone but status.json still shows queued/running slugs",
+    )
+    p_repair.add_argument("--job-dir", required=True, help="Job directory created by start-bg/run")
+    p_repair.add_argument("--json", action="store_true", help="Emit JSON payload")
 
     p_status = sub.add_parser("status", help="Inspect job status")
     p_status.add_argument("--job-dir", required=True, help="Job directory created by start-bg/run")
@@ -870,12 +932,31 @@ def cmd_retry_failed(args: argparse.Namespace, repo_root: Path) -> int:
     source_job_dir = Path(args.from_job_dir).resolve()
     source_status = read_job_status(source_job_dir)
     source_failed_slugs = failed_slugs_from_status(source_status)
-    if not source_failed_slugs:
+    runner_pid = read_job_runner_pid(source_job_dir)
+    runner_alive = pid_is_alive(runner_pid)
+    source_completed_at = source_status.get("completedAt")
+
+    orphaned: list[str] = []
+    if runner_pid is not None and (not runner_alive) and (not source_completed_at):
+        # If the runner is gone but status.json still shows queued/running slugs,
+        # treat them as retry candidates rather than silently claiming "no failures".
+        slugs_obj = source_status.get("slugs", {})
+        for slug, info in slugs_obj.items():
+            if not isinstance(slug, str) or not isinstance(info, dict):
+                continue
+            state = info.get("state")
+            if state in {"completed", "skipped", "failed"}:
+                continue
+            orphaned.append(slug)
+        orphaned = sorted(set(orphaned))
+
+    retry_slugs = sorted(set(source_failed_slugs) | set(orphaned))
+    if not retry_slugs:
         print(
             json.dumps(
                 {
                     "event": "pipeline_retry_skipped",
-                    "reason": "no failed slugs in source job",
+                    "reason": "no failed (or orphaned/incomplete) slugs in source job",
                     "sourceJobDir": str(source_job_dir),
                 },
                 indent=2,
@@ -902,6 +983,10 @@ def cmd_retry_failed(args: argparse.Namespace, repo_root: Path) -> int:
                     "retryJobDir": str(retry_job_dir),
                     "failedSlugCount": len(source_failed_slugs),
                     "failedSlugs": source_failed_slugs,
+                    "orphanedSlugCount": len(orphaned),
+                    "orphanedSlugs": orphaned,
+                    "retrySlugCount": len(retry_slugs),
+                    "retrySlugs": retry_slugs,
                     "version": version,
                     "base": base,
                     "parallel": max(1, int(parallel)),
@@ -922,13 +1007,13 @@ def cmd_retry_failed(args: argparse.Namespace, repo_root: Path) -> int:
         version=str(version),
         base=str(base),
         parallel=max(1, int(parallel)),
-        resume=False,
+        resume=True,
         skip_preflight=args.skip_preflight,
         stage_max_attempts=max(1, args.stage_max_attempts),
         stage_timeout_seconds=max(1.0, float(args.stage_timeout_seconds)),
         stage_kill_grace_seconds=max(1.0, float(args.stage_kill_grace_seconds)),
         validate_outputs=not args.skip_output_validation,
-        slugs_override=source_failed_slugs,
+        slugs_override=retry_slugs,
     )
     rc = job.run()
     print(
@@ -939,6 +1024,10 @@ def cmd_retry_failed(args: argparse.Namespace, repo_root: Path) -> int:
                 "retryJobDir": str(retry_job_dir),
                 "failedSlugCount": len(source_failed_slugs),
                 "failedSlugs": source_failed_slugs,
+                "orphanedSlugCount": len(orphaned),
+                "orphanedSlugs": orphaned,
+                "retrySlugCount": len(retry_slugs),
+                "retrySlugs": retry_slugs,
                 "exitCode": rc,
             },
             indent=2,
@@ -953,6 +1042,61 @@ def cmd_audit(args: argparse.Namespace, repo_root: Path) -> int:
     version = status.get("version") or "v2"
     slugs = status.get("slugs", {})
     issues: list[dict[str, Any]] = []
+
+    runner_pid = read_job_runner_pid(job_dir)
+    runner_alive = pid_is_alive(runner_pid) if runner_pid is not None else None
+    counts = compute_counts(slugs) if isinstance(slugs, dict) else {}
+
+    if not status.get("completedAt"):
+        issues.append(
+            {
+                "slug": "__job__",
+                "code": "JOB_INCOMPLETE",
+                "detail": (
+                    "status.completedAt is missing; this job is not a complete proof. "
+                    f"runnerPid={runner_pid} runnerAlive={runner_alive} counts={counts}"
+                ),
+            }
+        )
+
+    if runner_pid is not None and runner_alive and not status.get("completedAt"):
+        issues.append(
+            {
+                "slug": "__job__",
+                "code": "JOB_STILL_RUNNING",
+                "detail": f"runner pid {runner_pid} is still alive; job is still running",
+            }
+        )
+
+    failed_slugs = failed_slugs_from_status(status)
+    for slug in failed_slugs:
+        info = slugs.get(slug) if isinstance(slugs, dict) else {}
+        if not isinstance(info, dict):
+            info = {}
+        err = info.get("error") or ""
+        stage = info.get("stage") or "?"
+        issues.append(
+            {
+                "slug": slug,
+                "code": "SLUG_FAILED",
+                "detail": f"slug failed at stage={stage}. error={err!r}",
+            }
+        )
+
+    if counts.get("queued") or counts.get("running"):
+        # Keep output bounded: surface a short sample rather than one issue per slug.
+        incomplete = incomplete_slugs_from_status(status)
+        sample = incomplete[:20]
+        issues.append(
+            {
+                "slug": "__job__",
+                "code": "SLUGS_INCOMPLETE",
+                "detail": (
+                    "job contains queued/running slugs; audit cannot be considered OK. "
+                    f"incompleteSlugCount={len(incomplete)} sample={sample}"
+                ),
+            }
+        )
 
     for slug, info in slugs.items():
         if not isinstance(slug, str) or not isinstance(info, dict):
@@ -994,6 +1138,93 @@ def cmd_audit(args: argparse.Namespace, repo_root: Path) -> int:
             for issue in issues[:40]:
                 print(f"- {issue['slug']}: {issue['detail']}")
     return 0 if not issues else 2
+
+
+def cmd_repair_stale(args: argparse.Namespace) -> int:
+    job_dir = Path(args.job_dir).resolve()
+    status = read_job_status(job_dir)
+
+    runner_pid = read_job_runner_pid(job_dir)
+    runner_alive = pid_is_alive(runner_pid) if runner_pid is not None else None
+
+    if runner_pid is None:
+        payload = {
+            "event": "pipeline_job_repair_skipped",
+            "reason": "job pid file missing (cannot determine runner liveness)",
+            "jobDir": str(job_dir),
+            "generatedAt": now_iso(),
+        }
+        print(json.dumps(payload, indent=2, sort_keys=True) if args.json else json.dumps(payload, indent=2))
+        return 0
+
+    if runner_alive:
+        payload = {
+            "event": "pipeline_job_repair_skipped",
+            "reason": "runner still alive (job appears to still be running)",
+            "jobDir": str(job_dir),
+            "runnerPid": runner_pid,
+            "runnerAlive": runner_alive,
+            "generatedAt": now_iso(),
+        }
+        print(json.dumps(payload, indent=2, sort_keys=True) if args.json else json.dumps(payload, indent=2))
+        return 0
+
+    if status.get("completedAt"):
+        payload = {
+            "event": "pipeline_job_repair_skipped",
+            "reason": "job already completed (completedAt is set)",
+            "jobDir": str(job_dir),
+            "runnerPid": runner_pid,
+            "runnerAlive": runner_alive,
+            "generatedAt": now_iso(),
+        }
+        print(json.dumps(payload, indent=2, sort_keys=True) if args.json else json.dumps(payload, indent=2))
+        return 0
+
+    slugs_obj = status.get("slugs", {})
+    repaired: list[str] = []
+    repaired_at = now_iso()
+    for slug, info in slugs_obj.items():
+        if not isinstance(slug, str) or not isinstance(info, dict):
+            continue
+        state = info.get("state")
+        if state in {"completed", "skipped", "failed"}:
+            continue
+        info["state"] = "failed"
+        info["finishedAt"] = repaired_at
+        marker = f"[JOB_ABORTED] runner pid {runner_pid} not running; marked failed by repair-stale"
+        prev = info.get("error")
+        if not prev:
+            info["error"] = marker
+        else:
+            prev_str = str(prev)
+            if marker not in prev_str:
+                info["error"] = f"{prev_str} {marker}"
+        repaired.append(slug)
+
+    status["completedAt"] = repaired_at
+    status["updatedAt"] = repaired_at
+    if not status.get("fatalError") and repaired:
+        status["fatalError"] = f"runner pid {runner_pid} not running; repaired {len(repaired)} slug(s)"
+    if isinstance(slugs_obj, dict):
+        status["counts"] = compute_counts(slugs_obj)
+    write_json_atomic(job_dir / "status.json", status)
+
+    payload = {
+        "event": "pipeline_job_repaired_stale",
+        "jobDir": str(job_dir),
+        "runnerPid": runner_pid,
+        "runnerAlive": runner_alive,
+        "repairedAt": repaired_at,
+        "repairedSlugCount": len(repaired),
+        "repairedSlugsSample": repaired[:20],
+        "generatedAt": now_iso(),
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        print(json.dumps(payload, indent=2))
+    return 0
 
 
 def _status_snapshot(status: dict[str, Any]) -> dict[str, Any]:
@@ -1039,6 +1270,13 @@ def _print_status_human(snapshot: dict[str, Any]) -> None:
     print(f"job: {snapshot.get('jobDir')}")
     print(f"version/base: {snapshot.get('version')} / {snapshot.get('base')}")
     print(f"started: {snapshot.get('startedAt')}  updated: {snapshot.get('updatedAt')}")
+    runner_pid = snapshot.get("runnerPid")
+    runner_alive = snapshot.get("runnerAlive")
+    if runner_pid is not None:
+        print(f"runner: pid={runner_pid} alive={runner_alive}")
+        if runner_alive is False and not snapshot.get("completedAt"):
+            print("WARNING: runner pid is not alive but job is not completed; status.json is stale.")
+            print(f"         try: python scripts/full_pipeline.py repair-stale --job-dir {snapshot.get('jobDir')}")
     print(
         "counts: "
         f"total={counts.get('total', 0)} "
@@ -1077,31 +1315,39 @@ def _print_status_human(snapshot: dict[str, Any]) -> None:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    status_path = Path(args.job_dir).resolve() / "status.json"
+    job_dir = Path(args.job_dir).resolve()
+    status_path = job_dir / "status.json"
 
-    def emit_once() -> int:
+    def emit_once() -> tuple[int, dict[str, Any] | None]:
         if not status_path.exists():
             print(f"status not found yet: {status_path}")
-            return 1
+            return 1, None
         status = read_json(status_path)
         snapshot = _status_snapshot(status)
+        runner_pid = read_job_runner_pid(job_dir)
+        runner_alive = pid_is_alive(runner_pid) if runner_pid is not None else None
+        snapshot["runnerPid"] = runner_pid
+        snapshot["runnerAlive"] = runner_alive
         if args.json:
             print(json.dumps(snapshot, indent=2, sort_keys=True))
         else:
             _print_status_human(snapshot)
-        return 0
+        return 0, snapshot
 
     if not args.watch:
-        return emit_once()
+        rc, _ = emit_once()
+        return rc
 
     while True:
-        rc = emit_once()
+        rc, snapshot = emit_once()
         print("-" * 72)
-        time.sleep(max(1.0, args.interval))
-        if rc == 0 and status_path.exists():
-            status = read_json(status_path)
-            if status.get("completedAt"):
+        if rc == 0 and snapshot:
+            if snapshot.get("completedAt"):
                 return 0
+            if snapshot.get("runnerPid") is not None and snapshot.get("runnerAlive") is False:
+                # Don't spin forever: the job runner died and status.json will not update anymore.
+                return 2
+        time.sleep(max(1.0, args.interval))
 
 
 def main() -> int:
@@ -1118,6 +1364,8 @@ def main() -> int:
         return cmd_retry_failed(args, repo_root)
     if args.command == "audit":
         return cmd_audit(args, repo_root)
+    if args.command == "repair-stale":
+        return cmd_repair_stale(args)
     if args.command == "status":
         return cmd_status(args)
 
