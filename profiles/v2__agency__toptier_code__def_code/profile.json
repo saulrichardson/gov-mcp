@@ -1,0 +1,160 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/def_code.md",
+    "description": "Documented agency DEF code listing route currently responds 404 Not Found with an HTML body for every path/query combination tested.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/def_code/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Identifier inserted into the documented path segment; observed 404 for valid (086, 097) and invalid (000) values.",
+          "constraints": "Required path segment per documentation; live service returns 404 regardless of value."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "string",
+      "description": "HTML Not Found page (Content-Type: text/html; charset=utf-8) returned instead of the documented JSON payload."
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/def_code/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 404,
+          "contentType": "text/html; charset=utf-8",
+          "bodyExcerpt": "<!doctype html><html lang=\"en\"><head>  <title>Not Found</title></head><body>  <h1>Not Found</h1><p>The requested resource was not found on this server.</p></body></html>"
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/def_code/",
+          "query": {
+            "fiscal_year": "2024"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 404,
+          "contentType": "text/html; charset=utf-8",
+          "bodyExcerpt": "<!doctype html><html lang=\"en\"><head>  <title>Not Found</title></head><body>  <h1>Not Found</h1><p>The requested resource was not found on this server.</p></body></html>"
+        }
+      }
+    ],
+    "quirks": [
+      "Route is undeployed or removed; every probe returns HTML 404 regardless of query parameters or trailing slash variations.",
+      "Provider still serves other agency endpoints (e.g., /api/v2/agency/{toptier_code}/) and global DEF reference data, so the failure is specific to this path."
+    ],
+    "risks": [
+      "Integrations that rely on the documented JSON schema will fail outright with 404 responses and must defensively handle HTML error bodies.",
+      "Until the provider publishes a replacement route, clients cannot retrieve agency-level DEF financial totals programmatically."
+    ],
+    "gaps": [
+      "Documentation describes query parameters (fiscal_year, filter, order, sort, page, limit) and JSON payload fields, but none can be validated because the route never returns JSON."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "unknown",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/def_code/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head>  <title>Not Found</title></head><body>  <h1>Not Found</h1><p>The requested resource was not found on this server.</p></body></html>"
+      },
+      "notes": "fail - baseline documented request returned 404 Not Found HTML instead of the described JSON payload."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/def_code/",
+        "query": {
+          "fiscal_year": "2024"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head>  <title>Not Found</title></head><body>  <h1>Not Found</h1><p>The requested resource was not found on this server.</p></body></html>"
+      },
+      "notes": "fail - specifying fiscal_year still produced 404, so documented optional parameter was not evaluated."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/def_codes/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head>  <title>Not Found</title></head><body>  <h1>Not Found</h1><p>The requested resource was not found on this server.</p></body></html>"
+      },
+      "notes": "fail - pluralized route also missing, confirming no alternate deployment."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"fiscal_year\":2026,\"toptier_code\":\"086\",\"name\":\"Department of Housing and Urban Development\",...}"
+      },
+      "notes": "info - related endpoint still works and lists def_codes without financial totals; confirms service itself is reachable."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/references/def_codes/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"codes\":[{\"code\":\"1\",\"public_law\":\"Non-emergency P.L. 117-58\",\"title\":\"Infrastructure Investment and Jobs Act\",...}]"
+      },
+      "notes": "info - global DEF code reference endpoint still functions but does not include agency-specific totals."
+    }
+  ],
+  "mismatches": [
+    "Documentation promises JSON Disaster Emergency Fund totals for GET /api/v2/agency/{toptier_code}/def_code/, but the live service responds with HTML 404 Not Found for all tested inputs."
+  ],
+  "gaps": [
+    "Documentation describes query parameters (fiscal_year, filter, order, sort, page, limit) and JSON payload fields, but none can be validated because the route never returns JSON."
+  ],
+  "risks": [
+    "Integrations that rely on the documented JSON schema will fail outright with 404 responses and must defensively handle HTML error bodies.",
+    "Until the provider publishes a replacement route, clients cannot retrieve agency-level DEF financial totals programmatically."
+  ]
+}

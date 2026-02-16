@@ -1,0 +1,531 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/awards/award_id.md",
+    "description": "Returns the award profile payload for a single award (contract, IDV, or financial assistance) identified by its generated hash or internal id.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/awards/{award_id}/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "award_id": {
+          "type": "string",
+          "location": "path",
+          "description": "Identifier segment inserted into the path; accepts generated unique award hashes (for example `CONT_AWD_...`) or numeric internal award ids.",
+          "constraints": "Required path segment; case-sensitive; canonical endpoint expects a trailing slash (requests without it receive 301 redirects); invalid numeric ids return a JSON 404 payload, while malformed slugs return an HTML 404 page."
+        }
+      },
+      "required": [
+        "award_id"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "description": "Award profile object combining shared fields with category-specific sections for contracts/IDVs and financial assistance.",
+      "properties": {
+        "id": {
+          "type": "number",
+          "description": "Internal USAspending award identifier."
+        },
+        "generated_unique_award_id": {
+          "type": "string",
+          "description": "Canonical generated award identifier; assistance hashes may be normalized before being returned."
+        },
+        "category": {
+          "type": "string",
+          "description": "Award family label; observed values include contract, idv, grant, direct payment, loans, and other."
+        },
+        "type": {
+          "type": "string",
+          "description": "Award subtype code such as A, C, IDV_E, 03, 08, 10, or 11."
+        },
+        "type_description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Human-readable description of the award type."
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Narrative or purpose description derived from the base transaction."
+        },
+        "date_signed": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Base award signature date; can be null for some loan records."
+        },
+        "base_exercised_options": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Total obligated dollars through exercised options; null for assistance awards."
+        },
+        "base_and_all_options": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Ceiling including all options for contracts/IDVs; null for assistance."
+        },
+        "total_obligation": {
+          "type": "number",
+          "description": "Cumulative obligated dollars for the award."
+        },
+        "subaward_count": {
+          "type": "number",
+          "description": "Number of recorded subawards."
+        },
+        "total_subaward_amount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Sum of subaward spending, null when data is unavailable."
+        },
+        "total_account_outlay": {
+          "type": "number",
+          "description": "Sum of outlays across related Treasury accounts (frequently zero in observed payloads)."
+        },
+        "total_account_obligation": {
+          "type": "number",
+          "description": "Sum of obligations across related Treasury accounts (frequently zero in observed payloads)."
+        },
+        "total_outlay": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Additional outlay field present for all categories; observed values were null."
+        },
+        "piid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Procurement Instrument Identifier for contract and IDV awards."
+        },
+        "fain": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Financial assistance identifier (FAIN or similar)."
+        },
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Legacy URI identifier for some assistance awards."
+        },
+        "total_subsidy_cost": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Subtotal specific to loan programs; zero or null in observed responses."
+        },
+        "total_loan_value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Face value for loan awards; null for other categories."
+        },
+        "non_federal_funding": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Reported non-federal contribution amount for grants and similar assistance."
+        },
+        "total_funding": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Total funding amount for assistance awards."
+        },
+        "transaction_obligated_amount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Latest transaction obligated amount for assistance awards."
+        },
+        "record_type": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Record type code returned on assistance payloads; absent for contracts and IDVs."
+        },
+        "funding_agency": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Agency providing funding; object includes id, has_agency_page, toptier_agency, subtier_agency, and office_agency_name. Assistance responses may return null."
+        },
+        "awarding_agency": {
+          "type": "object",
+          "description": "Agency issuing the award; mirrors funding_agency structure and was always present in observed payloads."
+        },
+        "recipient": {
+          "type": "object",
+          "description": "Recipient profile including name, UEI/DUNS identifiers, parent recipient fields, business_categories array, and a nested location object with address components."
+        },
+        "period_of_performance": {
+          "type": "object",
+          "description": "Object containing start_date, end_date, last_modified_date, and (for contracts/IDVs) potential_end_date. Assistance awards may supply null start/end dates."
+        },
+        "place_of_performance": {
+          "type": "object",
+          "description": "Location object for the place of performance; string fields may be null when unknown."
+        },
+        "latest_transaction_contract_data": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Contract competition metadata (e.g., extent_competed, solicitation_procedures, type_of_contract_pricing_description, product_or_service_code, naics). Present for contract and IDV awards; null for assistance."
+        },
+        "parent_award": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Parent IDV metadata including agency identifiers, PIID, and generated_unique_award_id for child contracts. Null for root IDVs and assistance awards."
+        },
+        "psc_hierarchy": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Product Service Code hierarchy with toptier_code, midtier_code, subtier_code, and base_code leaves. Present for contracts and IDVs."
+        },
+        "naics_hierarchy": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "NAICS hierarchy with toptier_code, midtier_code, and base_code leaves. Present for contracts and IDVs."
+        },
+        "cfda_info": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "description": "Array of CFDA detail objects for assistance awards (fields include cfda_number, cfda_title, applicant_eligibility, beneficiary_eligibility, and funding amounts)."
+        },
+        "funding_opportunity": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Assistance-only object with number and goals keys, both observed as null."
+        },
+        "account_outlays_by_defc": {
+          "type": "array",
+          "description": "Array of objects with code and amount fields keyed by Disaster Emergency Fund Code; arrays were empty in observed data.",
+          "items": {
+            "type": "object"
+          }
+        },
+        "account_obligations_by_defc": {
+          "type": "array",
+          "description": "Array of objects with code and amount fields showing obligations by DEFC; arrays were empty in observed data.",
+          "items": {
+            "type": "object"
+          }
+        },
+        "executive_details": {
+          "type": "object",
+          "description": "Executive compensation summary with an officers array (five entries) containing name and amount fields that are frequently null."
+        }
+      },
+      "required": [
+        "id",
+        "generated_unique_award_id",
+        "category",
+        "type",
+        "description",
+        "total_obligation",
+        "subaward_count",
+        "total_subaward_amount",
+        "total_account_outlay",
+        "total_account_obligation",
+        "account_outlays_by_defc",
+        "account_obligations_by_defc",
+        "recipient",
+        "period_of_performance",
+        "place_of_performance",
+        "executive_details"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/awards/CONT_AWD_H907_9700_SPE2DX16D1500_9700/"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "id": 306293964,
+            "generated_unique_award_id": "CONT_AWD_H907_9700_SPE2DX16D1500_9700",
+            "category": "contract",
+            "type": "C",
+            "type_description": "DELIVERY ORDER",
+            "description": "4534723185!PV PHARM BRANCH, VENDOR, CAGE 0U9U0",
+            "total_obligation": 61241.34,
+            "subaward_count": 0,
+            "total_subaward_amount": null,
+            "total_account_outlay": 0,
+            "total_account_obligation": 0,
+            "total_outlay": null,
+            "piid": "H907",
+            "account_outlays_by_defc": [],
+            "account_obligations_by_defc": [],
+            "recipient": {
+              "recipient_name": "MCKESSON CORPORATION",
+              "recipient_uei": "JTAPCFM4NSL4",
+              "business_categories": [
+                "Category Business",
+                "Corporate Entity Not Tax Exempt",
+                "Not Designated a Small Business",
+                "Special Designations",
+                "U.S.-Owned Business"
+              ],
+              "location": {
+                "location_country_code": "USA",
+                "state_code": "CA",
+                "city_name": "WEST SACRAMENTO",
+                "zip5": "95691"
+              }
+            },
+            "period_of_performance": {
+              "start_date": "2016-06-24",
+              "end_date": "2016-06-27",
+              "last_modified_date": "2019-10-27",
+              "potential_end_date": "2016-06-27 00:00:00"
+            },
+            "latest_transaction_contract_data": {
+              "extent_competed": "A",
+              "solicitation_procedures": "NP",
+              "type_of_contract_pricing_description": "FIRM FIXED PRICE",
+              "product_or_service_code": "6505",
+              "naics": "325411"
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/awards/ASST_NON_12FA00PY54661041_012/"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "id": 205367146,
+            "generated_unique_award_id": "ASST_NON_12FA00PY54661041_012",
+            "category": "direct payment",
+            "type": "10",
+            "type_description": "DIRECT PAYMENT WITH UNRESTRICTED USE (RETIREMENT, PENSION, VETERANS BENEFITS, ETC.) (D)",
+            "description": "AGRICULTURAL RISK COVERAGE PROG - COUNTY",
+            "total_obligation": 479,
+            "subaward_count": 0,
+            "total_subaward_amount": null,
+            "total_account_outlay": 0,
+            "total_account_obligation": 0,
+            "total_outlay": null,
+            "fain": "12FA00PY54661041",
+            "funding_opportunity": {
+              "number": null,
+              "goals": null
+            },
+            "funding_agency": {
+              "toptier_agency": {
+                "code": "012",
+                "name": "Department of Agriculture"
+              },
+              "subtier_agency": {
+                "code": "12D2",
+                "name": "Farm Service Agency"
+              },
+              "office_agency_name": "Deputy Administrator Farm Programs"
+            },
+            "cfda_info": [
+              {
+                "cfda_number": "10.112",
+                "cfda_title": "Price Loss Coverage",
+                "federal_action_obligation_amount": 479,
+                "total_funding_amount": 479
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Requests without the trailing slash receive a 301 redirect to the canonical URL.",
+      "Path accepts both generated award hashes and numeric internal identifiers and returns the same payload for each.",
+      "Award identifiers are case-sensitive; lower-case hashes miss the route and return the HTML 404 variant.",
+      "Financial assistance responses omit contract-specific sections such as latest_transaction_contract_data and the NAICS/PSC hierarchies.",
+      "Funding agency can be null for assistance payloads despite documentation marking it required.",
+      "Responses include a total_outlay field that is absent from the published contract schema.",
+      "Assistance hashes in requests may be normalized (for example, agency suffix adjustments) before being echoed back in generated_unique_award_id."
+    ],
+    "risks": [
+      "Clients must branch on category because contracts/IDVs and assistance awards expose different nested structures.",
+      "Error payloads vary: numeric-looking misses return JSON, while malformed strings return HTML 404 pages.",
+      "Callers that do not follow redirects will fail if they omit the trailing slash."
+    ],
+    "gaps": [
+      "Non-empty account_outlays_by_defc and account_obligations_by_defc arrays were not observed, so real-world value magnitudes remain unverified.",
+      "Full enumeration of possible award type codes beyond the sampled values is still unknown.",
+      "Only simple 404 errors were exercised; other error scenarios (authorization, throttling) remain untested."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/CONT_AWD_H907_9700_SPE2DX16D1500_9700/"
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"id\":306293964,\"generated_unique_award_id\":\"CONT_AWD_H907_9700_SPE2DX16D1500_9700\",\"category\":\"contract\",\"type\":\"C\",\"total_outlay\":null,\"account_outlays_by_defc\":[],\"latest_transaction_contract_data\":{\"extent_competed\":\"A\"}}"
+      },
+      "notes": "Contract lookup via generated unique ID returns contract payload with empty DEFC arrays and populated contract metadata."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/306293964/"
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"id\":306293964,\"generated_unique_award_id\":\"CONT_AWD_H907_9700_SPE2DX16D1500_9700\",\"category\":\"contract\"}"
+      },
+      "notes": "Numeric award id resolves to the same contract payload, confirming support for internal identifiers."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/CONT_IDV_FA304715A0037_9700/"
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"id\":351168119,\"category\":\"idv\",\"total_obligation\":0.0,\"latest_transaction_contract_data\":{\"product_or_service_code\":\"V111\"}}"
+      },
+      "notes": "IDV payload includes contract metadata while parent_award remains null."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/ASST_NON_12FA00PY54661041_12D2/"
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"generated_unique_award_id\":\"ASST_NON_12FA00PY54661041_012\",\"category\":\"direct payment\",\"funding_opportunity\":{\"number\":null}}"
+      },
+      "notes": "Direct payment award normalizes the hash suffix and returns assistance-specific funding_opportunity."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/200000000/"
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"category\":\"loans\",\"total_loan_value\":427350.0,\"total_subsidy_cost\":-4914.53}"
+      },
+      "notes": "Loan award exposes total_loan_value and total_subsidy_cost values specific to loan programs."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/229361195/"
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"category\":\"grant\",\"funding_agency\":null,\"cfda_info\":[{\"cfda_number\":\"10.557\"}]}"
+      },
+      "notes": "Grant response shows funding_agency can be null while CFDA information remains populated."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/CONT_AWD_H907_9700_SPE2DX16D1500_9700"
+      },
+      "response": {
+        "status": 301,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": ""
+      },
+      "notes": "Missing trailing slash triggers a 301 redirect rather than returning data."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/cont_awd_h907_9700_spe2dx16d1500_9700/"
+      },
+      "response": {
+        "status": 404,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head><title>Not Found</title></head><body><h1>Not Found</h1></body></html>"
+      },
+      "notes": "Lower-case hash variant misses the route and produces the HTML 404 error page."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/0/"
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"No Award found with: {'award_id': 0}\"}"
+      },
+      "notes": "Numeric ID that does not exist returns a JSON 404 payload."
+    }
+  ],
+  "mismatches": [
+    "Published documentation spells the assistance field as `funding_opportunty`, but live responses use `funding_opportunity` with `number` and `goals` keys.",
+    "Documentation marks funding_agency as required for assistance responses, yet observed grant payloads return it as null.",
+    "Contract schema omits the total_outlay field that is present (null) in live responses across categories."
+  ],
+  "gaps": [
+    "Non-empty account_outlays_by_defc and account_obligations_by_defc arrays were not observed, so real-world value magnitudes remain unverified.",
+    "Full enumeration of possible award type codes beyond the sampled values is still unknown.",
+    "Only simple 404 errors were exercised; other error scenarios (authorization, throttling) remain untested."
+  ],
+  "risks": [
+    "Clients must branch on category because contracts/IDVs and assistance awards expose different nested structures.",
+    "Error payloads vary: numeric-looking misses return JSON, while malformed strings return HTML 404 pages.",
+    "Callers that do not follow redirects will fail if they omit the trailing slash."
+  ]
+}

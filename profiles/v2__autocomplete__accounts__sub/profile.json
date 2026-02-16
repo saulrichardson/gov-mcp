@@ -1,0 +1,289 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/accounts/sub.md",
+    "description": "Returns Treasury Sub Account code suggestions filtered by TAS component inputs.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/accounts/sub/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Optional Treasury account component filters. If omitted or not an object, the request behaves as unfiltered.",
+          "constraints": "Recognized keys: ata, aid, bpoa, epoa, a, main, sub. Values must be strings (trimmed before matching) or null. Null targets accounts missing that component. Blank strings fail with 422 except whitespace-only sub values, which behave like an empty prefix. Length and format are not validated; malformed values simply return no matches. Arrays, scalars, or null filters are treated as empty filters."
+        },
+        "limit": {
+          "location": "body",
+          "type": [
+            "integer",
+            "string"
+          ],
+          "description": "Maximum number of suggestions to return.",
+          "constraints": "Optional; defaults to 10. Accepts integers or strings containing an integer (whitespace allowed). Values above 500 return 422. Zero is allowed and yields an empty list. Negative numbers, including numeric strings, trigger a 500 HTML error. Decimal or alphabetic strings, floats, null, and booleans return 400 validation errors."
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Sorted list (ascending) of sub account code strings with leading zeros preserved. Empty array indicates no matches or limit 0. Maximum observed length is capped at 500 entries.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/sub/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              "000",
+              "001",
+              "002",
+              "003",
+              "004",
+              "005",
+              "006",
+              "007",
+              "008",
+              "009"
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/sub/",
+          "query": {},
+          "body": {
+            "limit": " 5 "
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              "000",
+              "001",
+              "002",
+              "003",
+              "004"
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/sub/",
+          "query": {},
+          "body": {
+            "filters": {
+              "aid": "097",
+              "bpoa": "2016",
+              "epoa": "2016"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              "000"
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Requests with no body, null filters, or filters provided as arrays or scalars still succeed and return the default suggestions despite documentation marking filters as required.",
+      "Unknown filter keys and component values with incorrect lengths are silently ignored, producing empty results instead of validation errors.",
+      "Whitespace-only sub prefixes bypass validation and behave like an empty prefix, returning the default list.",
+      "Limit accepts integers or integer strings with surrounding whitespace, but negative numbers (including numeric strings) trigger HTML 500 errors while other non-integer strings raise 400 validation errors.",
+      "Responses return the codes sorted ascending and are capped at 500 entries even if a higher limit is supplied."
+    ],
+    "risks": [
+      "Negative limit inputs, including numeric strings, return an HTML 500 response instead of JSON, so clients must validate limits before sending requests.",
+      "Lenient filter handling (unknown keys, whitespace-only sub values) can hide user errors by returning default results with no warning.",
+      "High limits may fetch the entire code list; avoid unnecessary large pulls to reduce latency and caching load."
+    ],
+    "gaps": [
+      "Could not identify any treasury accounts lacking sub codes, so behavior of sub=null remains inferred from empty results.",
+      "Dataset currently surfaces 27 distinct sub codes; behavior when more than 500 matches exist remains unobserved."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/sub/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"000\",\"001\",\"002\",\"003\",\"004\",\"005\",\"006\",\"007\",\"008\",\"009\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Default suggestions returned when no filters are provided."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/sub/",
+        "query": {},
+        "body": {
+          "limit": " 5 "
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"000\",\"001\",\"002\",\"003\",\"004\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Limit accepts integer strings with surrounding whitespace."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/sub/",
+        "query": {},
+        "body": {
+          "filters": null
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"000\",\"001\",\"002\",\"003\",\"004\",\"005\",\"006\",\"007\",\"008\",\"009\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Null filters are treated as empty filters, contradicting documentation."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/sub/",
+        "query": {},
+        "body": {
+          "filters": {
+            "aid": ""
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'filters|aid' value '' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Blank strings for component filters fail validation with 422."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/sub/",
+        "query": {},
+        "body": {
+          "filters": {
+            "aid": "097",
+            "bpoa": "2016",
+            "epoa": "2016"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"000\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Multiple component filters can be combined to narrow to a single code."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/sub/",
+        "query": {},
+        "body": {
+          "filters": {
+            "sub": "012"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Unmatched prefixes simply return an empty array without error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/sub/",
+        "query": {},
+        "body": {
+          "limit": -1
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head><title>Server Error (500)</title></head>...",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Negative limits trigger an HTML 500 error response."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/sub/",
+        "query": {},
+        "body": {
+          "limit": "5.0"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. '5.0' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Decimal strings are rejected with a 400 validation error."
+    }
+  ],
+  "mismatches": [
+    "Docs describe filters as required object fields, yet the API accepts omitted, null, array, or scalar filters and still returns data.",
+    "Documentation treats limit as a numeric value but omits the 500-result ceiling, acceptance of whitespace-wrapped numeric strings, and the 500 error thrown for negative numbers."
+  ],
+  "gaps": [
+    "Could not identify any treasury accounts lacking sub codes, so behavior of sub=null remains inferred from empty results.",
+    "Dataset currently surfaces 27 distinct sub codes; behavior when more than 500 matches exist remains unobserved."
+  ],
+  "risks": [
+    "Negative limit inputs, including numeric strings, return an HTML 500 response instead of JSON, so clients must validate limits before sending requests.",
+    "Lenient filter handling (unknown keys, whitespace-only sub values) can hide user errors by returning default results with no warning.",
+    "High limits may fetch the entire code list; avoid unnecessary large pulls to reduce latency and caching load."
+  ]
+}

@@ -1,0 +1,533 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/sub_agency.md",
+    "description": "Returns sub-agency obligation and award counts (with office rollups) for a toptier agency in a fiscal year, supporting pagination and award-type filtering.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/sub_agency/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Identifies the CGAC/FREC toptier agency to summarize.",
+          "constraints": "Required 3-4 digit numeric string; unknown codes return JSON 404, non-numeric codes hit HTML 404."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Fiscal year to aggregate award activity for.",
+          "constraints": "Optional; integer 2008-2026 inclusive; defaults to 2026; non-integer rejected with 400."
+        },
+        "agency_type": {
+          "location": "query",
+          "type": "string",
+          "description": "Selects whether to aggregate by awarding or funding hierarchy.",
+          "constraints": "Optional; enum ['awarding','funding']; default 'awarding'."
+        },
+        "award_type_codes": {
+          "location": "query",
+          "type": "array",
+          "description": "Filters results to specific award type codes; send as repeated query parameters.",
+          "constraints": "Optional; accepts ['02','03','04','05','06','07','08','09','10','11','A','B','C','D','IDV_A','IDV_B','IDV_B_A','IDV_B_B','IDV_B_C','IDV_C','IDV_D','IDV_E','-1','no intersection']; invalid values rejected with 400; '-1' and 'no intersection' return empty results."
+        },
+        "order": {
+          "location": "query",
+          "type": "string",
+          "description": "Sort direction for the selected field.",
+          "constraints": "Optional; enum ['asc','desc']; defaults to 'desc'."
+        },
+        "sort": {
+          "location": "query",
+          "type": "string",
+          "description": "Field to sort sub-agency results by.",
+          "constraints": "Optional; enum ['name','total_obligations','transaction_count','new_award_count']; defaults to 'total_obligations'."
+        },
+        "page": {
+          "location": "query",
+          "type": "integer",
+          "description": "Page number for pagination.",
+          "constraints": "Optional; minimum 1; defaults to 1; <1 rejected with 422; non-integer rejected with 400."
+        },
+        "limit": {
+          "location": "query",
+          "type": "integer",
+          "description": "Number of sub-agency rows per page.",
+          "constraints": "Optional; range 1-100; defaults to 10; values outside range rejected with 422; non-integer rejected with 400."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echo of the requested toptier code."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Fiscal year represented in the aggregation."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination details for the current result set.",
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "Current page number, mirrors request even when empty."
+            },
+            "total": {
+              "type": "integer",
+              "description": "Total number of matching sub-agency records."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum rows per page used for this response."
+            },
+            "next": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Next page number when more data exists; otherwise null."
+            },
+            "previous": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Previous page number when applicable; otherwise null."
+            },
+            "hasNext": {
+              "type": "boolean",
+              "description": "True when another page is available."
+            },
+            "hasPrevious": {
+              "type": "boolean",
+              "description": "True when a prior page exists."
+            }
+          }
+        },
+        "results": {
+          "type": "array",
+          "description": "Sub-agency aggregates matching the filters; may be empty when no results.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Display name of the sub-agency."
+              },
+              "abbreviation": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Sub-agency abbreviation when available."
+              },
+              "total_obligations": {
+                "type": "number",
+                "description": "Total obligations attributed to the sub-agency (can be negative)."
+              },
+              "transaction_count": {
+                "type": "integer",
+                "description": "Number of contributing transactions."
+              },
+              "new_award_count": {
+                "type": "integer",
+                "description": "Number of new awards in the aggregation."
+              },
+              "children": {
+                "type": "array",
+                "description": "Office-level rollups under the sub-agency; array is present but may be empty.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Office identifier."
+                    },
+                    "name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Office name; null observed for historical records."
+                    },
+                    "total_obligations": {
+                      "type": "number",
+                      "description": "Obligations attributed to the office (can be negative)."
+                    },
+                    "transaction_count": {
+                      "type": "integer",
+                      "description": "Office-level transaction count."
+                    },
+                    "new_award_count": {
+                      "type": "integer",
+                      "description": "Office-level new award count."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Warnings or disclaimers; includes DATA Act coverage notice for FY 2008 results.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "page_metadata",
+        "results",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/sub_agency/",
+          "query": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2026,
+            "page_metadata": {
+              "page": 1,
+              "total": 7,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "name": "Assistant Secretary for Public and Indian Housing",
+                "abbreviation": null,
+                "total_obligations": 15882577867.88,
+                "transaction_count": 30222,
+                "new_award_count": 23655,
+                "children": [
+                  {
+                    "code": "866601",
+                    "name": "PIH : PIH NYNRO;OFFICE OF PUBLIC H",
+                    "total_obligations": 2152786635.45,
+                    "transaction_count": 760,
+                    "new_award_count": 557
+                  }
+                ]
+              },
+              {
+                "name": "Assistant Secretary for Housing--Federal Housing Commissioner",
+                "abbreviation": null,
+                "total_obligations": 3888007832.68,
+                "transaction_count": 178756,
+                "new_award_count": 174296,
+                "children": [
+                  {
+                    "code": "861539",
+                    "name": "HSNG : ED MF HOUSING DIV",
+                    "total_obligations": 1002048580,
+                    "transaction_count": 2203,
+                    "new_award_count": 1733
+                  }
+                ]
+              }
+            ],
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/sub_agency/",
+          "query": {
+            "fiscal_year": 2008
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2008,
+            "page_metadata": {
+              "page": 1,
+              "total": 9,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "name": "Assistant Secretary for Public and Indian Housing",
+                "abbreviation": null,
+                "total_obligations": 21846342238,
+                "transaction_count": 40169,
+                "new_award_count": 39853,
+                "children": []
+              },
+              {
+                "name": "Department of Housing and Urban Development",
+                "abbreviation": "HUD",
+                "total_obligations": 982676769.53,
+                "transaction_count": 4909,
+                "new_award_count": 1166,
+                "children": [
+                  {
+                    "code": "DU100",
+                    "name": null,
+                    "total_obligations": 369397125.25,
+                    "transaction_count": 1914,
+                    "new_award_count": 410
+                  }
+                ]
+              }
+            ],
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/sub_agency/",
+          "query": {
+            "award_type_codes": [
+              "-1"
+            ]
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2026,
+            "page_metadata": {
+              "page": 1,
+              "total": 0,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "results": [],
+            "messages": []
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Sort defaults to 'total_obligations' descending; combining sort=name without order yields reverse alphabetical order.",
+      "award_type_codes accept sentinel values '-1' and 'no intersection' that return empty result sets despite missing from docs.",
+      "page_metadata.total reports total record count (not page count) and mirrors the request's page even when results are empty.",
+      "Totals and office-level obligations can be negative, and children arrays may be empty with null office names in historical data.",
+      "Non-numeric toptier codes return an HTML 404 response while unknown numeric codes return JSON."
+    ],
+    "risks": [
+      "Clients expecting JSON errors must handle HTML 404 pages when the toptier path is non-numeric.",
+      "Some toptier codes (e.g., 247) respond with 503 Service Unavailable and no JSON payload.",
+      "Large responses with extensive children arrays can impact consumers if limit remains high.",
+      "Negative obligation values may break consumers that assume non-negative aggregates.",
+      "Office-level arrays can be empty or contain null names, so downstream systems must treat them as optional."
+    ],
+    "gaps": [
+      "Semantics of the '-1' and 'no intersection' award_type_codes sentinels remain undisclosed."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/sub_agency/",
+        "query": {}
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "toptier_code": "086",
+          "fiscal_year": 2026,
+          "page_metadata": {
+            "page": 1,
+            "total": 7,
+            "limit": 10,
+            "next": null,
+            "previous": null,
+            "hasNext": false,
+            "hasPrevious": false
+          },
+          "results": [
+            {
+              "name": "Assistant Secretary for Public and Indian Housing",
+              "abbreviation": null,
+              "total_obligations": 15882577867.88,
+              "transaction_count": 30222,
+              "new_award_count": 23655,
+              "children": [
+                {
+                  "code": "866601",
+                  "name": "PIH : PIH NYNRO;OFFICE OF PUBLIC H",
+                  "total_obligations": 2152786635.45,
+                  "transaction_count": 760,
+                  "new_award_count": 557
+                }
+              ]
+            }
+          ],
+          "messages": []
+        }
+      },
+      "notes": "Default awarding view returns FY 2026 data with seven sub-agency rows."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/sub_agency/",
+        "query": {
+          "fiscal_year": 2008
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "toptier_code": "086",
+          "fiscal_year": 2008,
+          "page_metadata": {
+            "page": 1,
+            "total": 9,
+            "limit": 10,
+            "next": null,
+            "previous": null,
+            "hasNext": false,
+            "hasPrevious": false
+          },
+          "results": [
+            {
+              "name": "Assistant Secretary for Public and Indian Housing",
+              "abbreviation": null,
+              "total_obligations": 21846342238,
+              "transaction_count": 40169,
+              "new_award_count": 39853,
+              "children": []
+            }
+          ],
+          "messages": [
+            "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+          ]
+        }
+      },
+      "notes": "FY 2008 request populates DATA Act disclaimer and shows empty children arrays."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/sub_agency/",
+        "query": {
+          "fiscal_year": 1999
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": "Field 'fiscal_year' value '1999' is below min '2008'"
+        }
+      },
+      "notes": "Values below 2008 are rejected with 422 and explicit min bound."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/sub_agency/",
+        "query": {
+          "award_type_codes": [
+            "-1"
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "toptier_code": "086",
+          "fiscal_year": 2026,
+          "page_metadata": {
+            "page": 1,
+            "total": 0,
+            "limit": 10,
+            "next": null,
+            "previous": null,
+            "hasNext": false,
+            "hasPrevious": false
+          },
+          "results": [],
+          "messages": []
+        }
+      },
+      "notes": "Sentinel '-1' is accepted and yields an empty result set."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/ABC/sub_agency/",
+        "query": {}
+      },
+      "response": {
+        "status": 404,
+        "body": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1><p>The requested resource was not found on this server.</p>\n</body>\n</html>\n"
+      },
+      "notes": "Non-numeric toptier codes return an HTML 404 page instead of JSON error payload."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/247/sub_agency/",
+        "query": {}
+      },
+      "response": {
+        "status": 503,
+        "body": ""
+      },
+      "notes": "Certain toptier codes (e.g., 247) respond with 503 Service Unavailable and no JSON body."
+    }
+  ],
+  "mismatches": [
+    "Docs describe the endpoint as listing Federal/Treasury accounts, but live responses provide sub-agency-level award aggregates with office children.",
+    "Documentation implies office child names are always present, yet probes show null office names for historical records.",
+    "Docs omit sentinel award_type_codes '-1' and 'no intersection' even though the API accepts them."
+  ],
+  "gaps": [
+    "Semantics of the '-1' and 'no intersection' award_type_codes sentinels remain undisclosed."
+  ],
+  "risks": [
+    "Clients expecting JSON errors must handle HTML 404 pages when the toptier path is non-numeric.",
+    "Certain toptier codes can return 503 Service Unavailable without JSON, requiring resilient error handling.",
+    "Large nested children arrays may inflate payload size unless callers manage pagination and limits.",
+    "Negative obligation values may break consumers that assume non-negative aggregates.",
+    "Office children arrays may be empty or contain null names, so consumers must treat those fields as optional."
+  ]
+}

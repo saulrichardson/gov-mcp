@@ -1,0 +1,424 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/accounts/epoa.md",
+    "description": "Autocomplete for Treasury account Ending Period of Availability (EPOA) values used in advanced search filters.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/accounts/epoa/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Optional object of Treasury Account components. When omitted, null, or not an object the service returns the default top EPOA values.",
+          "constraints": "Recognized keys: ata, aid, bpoa, epoa, a, main, sub. Each must be a text value or null. Unknown keys are ignored. Text that fails validation (wrong type or empty for epoa) yields 400/422 errors, while otherwise-invalid structures fall back to default results.",
+          "properties": {
+            "ata": {
+              "type": "string",
+              "description": "Allocation Transfer Agency Identifier (3 characters). Matches exactly when provided.",
+              "constraints": "Optional; non-text values rejected. Non-matching strings simply return no results."
+            },
+            "aid": {
+              "type": "string",
+              "description": "Agency Identifier (3 characters). Matches exactly when combined with other components.",
+              "constraints": "Optional; must be text. Numeric types return 400. Null is accepted but produced no matches in probes."
+            },
+            "bpoa": {
+              "type": "string",
+              "description": "Beginning Period of Availability (4 characters). Filters to accounts with the specified period.",
+              "constraints": "Optional; accepts text. Non-matching strings yield empty results."
+            },
+            "epoa": {
+              "type": "string",
+              "description": "Ending Period of Availability (typically 4 digits). Performs prefix matching on the provided text.",
+              "constraints": "Optional string with minimum length 1; empty string returns 422. Null returns accounts missing EPOA. Arrays or other non-text values return 400."
+            },
+            "a": {
+              "type": "string",
+              "description": "Availability Type Code (observed value 'X').",
+              "constraints": "Optional; text value 'X' surfaced null EPOA entries."
+            },
+            "main": {
+              "type": "string",
+              "description": "Main Account Code (4 characters).",
+              "constraints": "Optional text filter; combines with other components."
+            },
+            "sub": {
+              "type": "string",
+              "description": "Sub Account Code (3 characters).",
+              "constraints": "Optional text filter; combines with other components."
+            }
+          }
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of autocomplete values to return.",
+          "constraints": "Optional; defaults to 10. Accepts integer values from 0 through 500 inclusive. Digit-only strings, including those with leading zeros, are coerced. Null, booleans, decimals (even as strings), and integers above 500 return validation errors. Negative integers trigger a 500 HTML error."
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Array of EPOA values as strings; elements may be null for accounts without an ending period. Observed responses were ascending and capped by the chosen limit."
+        }
+      },
+      "required": [
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/epoa/",
+          "query": {},
+          "body": {
+            "filters": {
+              "epoa": "201"
+            },
+            "limit": 5
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              "2010",
+              "2011",
+              "2012",
+              "2013",
+              "2014"
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/epoa/",
+          "query": {},
+          "body": {
+            "limit": 0
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/epoa/",
+          "query": {},
+          "body": {
+            "filters": {
+              "epoa": "20"
+            },
+            "limit": 1000
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'limit' value '1000' is above max '500'"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "`filters` is documented as required but the service accepts missing, null, or non-object values and returns default results.",
+      "Unknown keys inside `filters` are silently ignored instead of raising validation errors.",
+      "`limit` accepts digit-only strings (including leading zeros) but rejects decimals, booleans, and null; values above 500 return 422 while negative integers cause a 500 HTML error.",
+      "Responses may include `null` EPOA entries when matching accounts without an ending period.",
+      "Non-object bodies (for example an array) are treated as empty filters and succeed."
+    ],
+    "risks": [
+      "Negative `limit` values trigger an unstructured 500 HTML error; clients should validate limits before calling.",
+      "Invalid filter structures are ignored, which can hide client bugs by returning broad default results.",
+      "`results` can contain `null` entries; consumers must handle missing EPOA values."
+    ],
+    "gaps": [
+      "Unclear whether additional EPOA values exist beyond the 36 observed or if pagination is ever needed."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "filters": {
+            "epoa": "201"
+          },
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"2010\",\"2011\",\"2012\",\"2013\",\"2014\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – prefix filter with limit 5 returned ascending EPOA values."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"1993\",\"1995\",\"1996\",\"1997\",\"1998\",\"1999\",\"2000\",\"2001\",\"2002\",\"2003\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "fail – docs require filters but empty body returned default results."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "filters": {
+            "epoa": "20"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"2000\",\"2001\",\"2002\",\"2003\",\"2004\",\"2005\",\"2006\",\"2007\",\"2008\",\"2009\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – default limit of 10 applied when limit omitted."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – limit 0 returned an empty array."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "limit": -1
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<html>Server Error (500)</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail – negative limit triggered a 500 HTML error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "filters": {
+            "epoa": "201"
+          },
+          "limit": "05"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"2010\",\"2011\",\"2012\",\"2013\",\"2014\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – digit-only string limit with leading zero was accepted."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "filters": {
+            "epoa": "201"
+          },
+          "limit": "5.0"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. '5.0' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail – decimal string rejected as non-integer input."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "filters": {
+            "epoa": "20"
+          },
+          "limit": 501
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '501' is above max '500'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail – confirmed maximum limit of 500."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "filters": {
+            "epoa": "20"
+          },
+          "limit": null
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. 'None' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail – null limit rejected as wrong type."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "filters": {
+            "epoa": ""
+          },
+          "limit": 25
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'filters|epoa' value '' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – empty epoa string failed minimum length validation."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "filters": {
+            "epoa": null
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[null]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – null epoa returned records with missing ending period."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "filters": {
+            "epoa": []
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'filters|epoa'. '[]' is not a valid type (text)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail – array assigned to epoa triggered type validation error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "filters": {
+            "aid": 123
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'filters|aid'. '123' is not a valid type (text)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – numeric aid rejected as wrong type."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/epoa/",
+        "query": {},
+        "body": {
+          "filters": null
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"1993\",\"1995\",\"1996\",\"1997\",\"1998\",\"1999\",\"2000\",\"2001\",\"2002\",\"2003\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "fail – null filters treated as empty filters despite documentation."
+    }
+  ],
+  "mismatches": [
+    "Documentation states `filters` is required, but the endpoint returns data when it is omitted, null, or non-object.",
+    "Documentation omits the enforced maximum `limit` of 500; values above that return 422.",
+    "Documentation treats `limit` as a generic number, yet the service requires integers and rejects floats while coercing digit-only strings."
+  ],
+  "gaps": [
+    "Unclear whether additional EPOA values exist beyond the 36 observed or if pagination is ever needed."
+  ],
+  "risks": [
+    "Negative `limit` values trigger an unstructured 500 HTML error; clients should validate limits before calling.",
+    "Invalid filter structures are ignored, which can hide client bugs by returning broad default results.",
+    "`results` can contain `null` entries; consumers must handle missing EPOA values."
+  ]
+}

@@ -1,0 +1,449 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/program_activity.md",
+    "description": "Returns aggregated obligated and gross outlay amounts for each program activity within a toptier agency for a given fiscal year, including pagination metadata and advisory messages when data are unavailable.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "\/api\/v2\/agency\/{toptier_code}\/program_activity\/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Identifier of the toptier agency to query.",
+          "constraints": "Required; accepts digit strings of length 3-4 that correspond to existing CGAC or FREC codes. Invalid codes return an HTML 404 page instead of JSON."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Appropriations fiscal year for which to retrieve program activities.",
+          "constraints": "Optional; defaults to the current fiscal year (observed 2026). Accepts integers from 2008 through 2026 inclusive. Values below 2008 or above 2026 return 422 validation errors."
+        },
+        "filter": {
+          "location": "query",
+          "type": "string",
+          "description": "Case-insensitive substring applied to program activity names.",
+          "constraints": "Optional; empty string behaves like no filter. Partial matches return activities whose names contain the provided text."
+        },
+        "order": {
+          "location": "query",
+          "type": "string",
+          "description": "Sort direction for the selected field.",
+          "constraints": "Optional; enum ['asc','desc']; defaults to 'desc'. Invalid values return 400 with an enum validation message."
+        },
+        "sort": {
+          "location": "query",
+          "type": "string",
+          "description": "Field used for ordering results.",
+          "constraints": "Optional; enum ['name','obligated_amount','gross_outlay_amount']; defaults to 'obligated_amount'. Invalid values return 400 with an enum validation message."
+        },
+        "page": {
+          "location": "query",
+          "type": "integer",
+          "description": "1-indexed page number to retrieve.",
+          "constraints": "Optional; must be an integer \u2265 1. Defaults to 1. Pages beyond available data return empty results and may set 'previous' and 'hasPrevious' to null/false even when the echoed page number is greater than 1."
+        },
+        "limit": {
+          "location": "query",
+          "type": "integer",
+          "description": "Maximum number of results per page.",
+          "constraints": "Optional; accepts integers from 1 through 100 inclusive. Defaults to 10. Values outside the range return 422 validation errors; non-integer inputs return 400 type errors."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echoes the requested toptier agency code."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Fiscal year represented in the response."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata for the result set.",
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "Current page number."
+            },
+            "total": {
+              "type": "integer",
+              "description": "Total count of matching program activities."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of results per page in this response."
+            },
+            "next": {
+              "type": ["integer", "null"],
+              "description": "Next page number when more data are available; otherwise null."
+            },
+            "previous": {
+              "type": ["integer", "null"],
+              "description": "Previous page number when available; may be null when requests exceed the available range."
+            },
+            "hasNext": {
+              "type": "boolean",
+              "description": "True when another page exists beyond the current one."
+            },
+            "hasPrevious": {
+              "type": "boolean",
+              "description": "True when a prior page exists; may be false when the request is beyond the available range."
+            }
+          },
+          "required": [
+            "page",
+            "total",
+            "limit",
+            "next",
+            "previous",
+            "hasNext",
+            "hasPrevious"
+          ]
+        },
+        "results": {
+          "type": "array",
+          "description": "Program activity aggregates for the requested fiscal year.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Program activity name; 'N/A' appears when data lack a specific categorization."
+              },
+              "obligated_amount": {
+                "type": "number",
+                "description": "Total obligated amount for the program activity; values may be zero or negative."
+              },
+              "gross_outlay_amount": {
+                "type": "number",
+                "description": "Total gross outlay amount for the program activity; values may be zero or negative."
+              }
+            },
+            "required": [
+              "name",
+              "obligated_amount",
+              "gross_outlay_amount"
+            ]
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Array of advisory strings. Typically empty; includes availability warnings for fiscal years before 2017.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "page_metadata",
+        "results",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "\/api\/v2\/agency\/086\/program_activity\/",
+          "query": {
+            "fiscal_year": "2024",
+            "limit": "5"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2024,
+            "page_metadata": {
+              "page": 1,
+              "total": 151,
+              "limit": 5,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "name": "CONTRACT RENEWALS",
+                "obligated_amount": 35575186534.85,
+                "gross_outlay_amount": 38144269382.91
+              },
+              {
+                "name": "TENANT-BASED RENTAL ASSISTANCE (EMERGENCY)",
+                "obligated_amount": 5993799205.0,
+                "gross_outlay_amount": 3719156422.0
+              }
+            ],
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "\/api\/v2\/agency\/086\/program_activity\/",
+          "query": {
+            "fiscal_year": "2008",
+            "limit": "1"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2008,
+            "page_metadata": {
+              "page": 1,
+              "total": 0,
+              "limit": 1,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "results": [],
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "\/api\/v2\/agency\/086\/program_activity\/",
+          "query": {
+            "limit": "0"
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'limit' value '0' is below min '1'"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Live responses omit the 'totals' object documented in the reference spec.",
+      "page_metadata exposes a 'total' field instead of the documented 'count'.",
+      "Name filtering is case-insensitive and performs substring matches across program activity names.",
+      "Financial amounts may be zero or negative and should not be assumed positive.",
+      "Fiscal years before 2017 return 200 responses with empty results and a DATA Act availability warning in 'messages'.",
+      "Requesting pages beyond the available range returns empty results and can clear 'previous'/'hasPrevious' despite the echoed page number being greater than 1."
+    ],
+    "risks": [
+      "Invalid toptier codes return HTML 404 pages instead of JSON errors.",
+      "Defaulting to the current fiscal year (observed 2026) can yield empty datasets if the fiscal year is not yet populated.",
+      "Requests for fiscal years before 2017 return 200 responses with empty results and an availability warning rather than an error.",
+      "Financial figures include zero and negative values, so downstream aggregations must not assume positivity.",
+      "Page size is capped at 100; integrations expecting larger batches must paginate.",
+      "Requests beyond the available page range yield empty results with pagination flags reset, which can obscure prior pages."
+    ],
+    "gaps": [],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/program_activity\/",
+        "query": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2026,\"page_metadata\":{\"page\":1,\"total\":0,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Default call uses current fiscal year (2026) and returns an empty dataset without the documented totals object."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/program_activity\/",
+        "query": {
+          "fiscal_year": "2024"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2024,\"page_metadata\":{\"page\":1,\"total\":151,\"limit\":10,\"next\":2,...},\"results\":[{\"name\":\"CONTRACT RENEWALS\",\"obligated_amount\":35575186534.85,...}],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Specifying fiscal_year=2024 returns populated data while totals remain absent."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/program_activity\/",
+        "query": {
+          "fiscal_year": "2024",
+          "filter": "admin"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"total\":9,...},\"results\":[{\"name\":\"ADMINISTRATIVE FEES\",...}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Name filtering is case-insensitive and performs substring matching."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/program_activity\/",
+        "query": {
+          "fiscal_year": "2024",
+          "limit": "5",
+          "page": "2"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":2,\"limit\":5,\"next\":3,\"previous\":1,...},\"results\":[...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Pagination honors requested page and limit, returning next/previous pointers."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/program_activity\/",
+        "query": {
+          "fiscal_year": "2024",
+          "limit": "100",
+          "page": "5"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":5,\"total\":151,\"limit\":100,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Requesting pages beyond the available range returns an empty result set and clears previous/hasPrevious."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/program_activity\/",
+        "query": {
+          "limit": "abc"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. 'abc' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Non-integer limit values are rejected with a 400 type validation error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/program_activity\/",
+        "query": {
+          "limit": "0"
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Limit enforces a minimum of 1."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/program_activity\/",
+        "query": {
+          "fiscal_year": "1800"
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '1800' is below min '2008'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Fiscal years below 2008 are rejected with a 422 validation error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/program_activity\/",
+        "query": {
+          "fiscal_year": "2008",
+          "limit": "1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2008,\"results\":[],\"messages\":[\"Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Fiscal years before 2017 return empty results with an availability warning message."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/program_activity\/",
+        "query": {
+          "fiscal_year": "2017",
+          "limit": "1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2017,\"page_metadata\":{\"total\":113,...},\"results\":[{\"name\":\"CONTRACT RENEWALS\",...}],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "FY2017 is the first year with populated data and no availability warning."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/ABC\/program_activity\/",
+        "query": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>...Not Found...",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Invalid toptier codes return HTML 404 pages rather than JSON errors."
+    }
+  ],
+  "mismatches": [
+    "Spec requires a 'totals' object in 200 responses, but live responses across agencies and fiscal years omit it entirely.",
+    "Spec example documents page_metadata.count, while live responses provide page_metadata.total instead."
+  ],
+  "gaps": [],
+  "risks": [
+    "Invalid toptier codes return HTML instead of JSON, requiring callers to handle content-type changes.",
+    "Defaulting to the current fiscal year can yield empty datasets if data is not yet published.",
+    "Requests for fiscal years before 2017 return 200 responses with empty results and an availability warning rather than an error.",
+    "Financial figures include zero and negative values, so downstream aggregations must not assume positivity.",
+    "Page size is capped at 100; integrations expecting larger batches must paginate.",
+    "Requests beyond the available page range yield empty results with pagination flags reset, which can obscure the presence of earlier pages."
+  ]
+}

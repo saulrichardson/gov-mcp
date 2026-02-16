@@ -1,0 +1,459 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/spending_by_geography.md",
+    "description": "Aggregates disaster emergency fund spending totals by state, county, or congressional district using DEFC-based filters and optional shared search constraints.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/spending_by_geography/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Disaster filter object; must include at least one DEFC code and may include additional Search Filters v2 keys supported by this endpoint.",
+          "properties": {
+            "def_codes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Uppercase Disaster Emergency Fund codes identifying the disaster appropriations to aggregate.",
+              "constraints": "Minimum 1 item; values must match the published uppercase DEFC set (e.g., 'L', 'M', 'AAA'); lowercase entries are rejected with HTTP 400."
+            },
+            "award_type_codes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Optional award type filters; accepts the same codes as Search Filters v2 (A, B, C, D, 02-11, IDV_*).",
+              "constraints": "Values outside the documented award type list trigger HTTP 400 validation errors."
+            },
+            "time_period": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "start_date": {
+                    "type": "string"
+                  },
+                  "end_date": {
+                    "type": "string"
+                  },
+                  "date_type": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "start_date",
+                  "end_date"
+                ]
+              },
+              "description": "Optional date ranges; accepted structures match the shared Search Filters v2 time period objects (YYYY-MM-DD strings)."
+            },
+            "recipient_scope": {
+              "type": "string",
+              "description": "Optional recipient scope radio value.",
+              "constraints": "Observed values: 'domestic', 'foreign'."
+            },
+            "recipient_locations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "description": "Standard location object with at least a 'country' key; API accepted entries with {\"country\":\"USA\",\"state\":\"CA\"}."
+              },
+              "description": "Optional list of recipient geography filters following the standard location object schema."
+            }
+          },
+          "required": [
+            "def_codes"
+          ]
+        },
+        "geo_layer": {
+          "location": "body",
+          "type": "string",
+          "description": "Geographic aggregation level.",
+          "constraints": "Required enum: ['state', 'county', 'district']."
+        },
+        "geo_layer_filters": {
+          "location": "body",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional allowlist of shape codes for the selected layer.",
+          "constraints": "If provided, must contain at least one string. Shape codes are case-sensitive; valid codes return matching rows, lowercase or unknown codes are silently ignored, and certain alphanumeric county codes (e.g., '34LL') caused the server to close the connection without a response."
+        },
+        "scope": {
+          "location": "body",
+          "type": "string",
+          "description": "Selects whether to group by recipient location or place of performance.",
+          "constraints": "Optional enum: ['recipient_location', 'place_of_performance']; default is 'recipient_location'."
+        },
+        "spending_type": {
+          "location": "body",
+          "type": "string",
+          "description": "Financial measure to aggregate.",
+          "constraints": "Required enum: ['obligation', 'outlay', 'face_value_of_loan']."
+        }
+      },
+      "required": [
+        "filter",
+        "geo_layer",
+        "spending_type"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "geo_layer": {
+          "type": "string",
+          "description": "Echo of the requested geographic layer."
+        },
+        "scope": {
+          "type": "string",
+          "description": "Scope used for aggregation; defaults to 'recipient_location' when omitted in the request."
+        },
+        "spending_type": {
+          "type": "string",
+          "description": "Echo of the requested spending type."
+        },
+        "results": {
+          "type": "array",
+          "description": "Array of aggregated totals for each returned shape; may be empty when filters exclude all data.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "shape_code": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Geographic identifier (state postal code, 5-digit county FIPS, or 4-digit state FIPS + district); null indicates the aggregate bucket when no geo_layer_filters are provided."
+              },
+              "display_name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Human-readable geography label; may be null even when shape_code is populated."
+              },
+              "amount": {
+                "type": "number",
+                "description": "Aggregated dollar amount for the selected spending type; may be negative."
+              },
+              "population": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Associated population; often null for territories or the null aggregate bucket."
+              },
+              "per_capita": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Per-capita amount calculated from population; null when population is unavailable."
+              },
+              "award_count": {
+                "type": "integer",
+                "description": "Count of awards included in the aggregated amount."
+              }
+            },
+            "required": [
+              "shape_code",
+              "display_name",
+              "amount",
+              "population",
+              "per_capita",
+              "award_count"
+            ]
+          }
+        }
+      },
+      "required": [
+        "geo_layer",
+        "scope",
+        "spending_type",
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/spending_by_geography/",
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            },
+            "geo_layer": "state",
+            "spending_type": "obligation"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "geo_layer": "state",
+            "scope": "recipient_location",
+            "spending_type": "obligation",
+            "results": [
+              {
+                "shape_code": "CA",
+                "display_name": "California",
+                "amount": 278311818.14,
+                "population": 39538223,
+                "per_capita": 7.04,
+                "award_count": 671
+              },
+              {
+                "shape_code": null,
+                "display_name": null,
+                "amount": 276087453.19,
+                "population": null,
+                "per_capita": null,
+                "award_count": 333
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/spending_by_geography/",
+          "body": {
+            "filter": {
+              "def_codes": []
+            },
+            "geo_layer": "state",
+            "spending_type": "obligation"
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'filter|def_codes' value '[]' is below min '1' items"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Omitting scope returns 'recipient_location' automatically and echoes it in the response.",
+      "Supplying geo_layer_filters removes the null aggregate row; without filters an extra null shape_code bucket contains uncoded totals.",
+      "geo_layer_filters matching is case-sensitive; lowercase or mistyped codes silently drop from the response, yielding empty results if none remain.",
+      "Requesting county geo_layer_filters with certain alphanumeric codes seen in full responses (e.g., '34LL') caused the server to close the connection without returning JSON.",
+      "Face value of loan spending currently reports zeros for named shapes while the null aggregate bucket can hold non-zero totals.",
+      "display_name, population, and per_capita may be null even when shape_code is present."
+    ],
+    "risks": [
+      "County and district layers return very large result sets (hundreds of records, ~100KB bodies), which can stress clients and upstream services.",
+      "geo_layer_filters case-sensitivity means silent empty responses on typos, increasing the chance of unnoticed misconfiguration.",
+      "Connection closures observed when requesting certain alphanumeric county codes (e.g., '34LL') indicate potential WAF or stability issues requiring client retries.",
+      "Validation errors split between HTTP 400 and 422, so callers must handle both status families."
+    ],
+    "gaps": [
+      "Shared filters beyond award_type_codes, time_period, recipient_scope, and recipient_locations were not exercised; compatibility is inferred from Search Filters v2 docs.",
+      "Unknown maximum payload size or safe upper bound for geo_layer_filters; large unfiltered requests occasionally preceded connection drops.",
+      "Unable to confirm whether error payloads include auxiliary fields (e.g., messages) because the server sometimes closed the connection before responding."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/spending_by_geography/",
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "geo_layer": "state",
+          "spending_type": "obligation"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"geo_layer\":\"state\",\"spending_type\":\"obligation\",\"scope\":\"recipient_location\",\"results\":[{\"shape_code\":\"CA\",\"amount\":278311818.14},{\"shape_code\":null,\"amount\":276087453.19}]}"
+      },
+      "notes": "Baseline request: scope defaulted to recipient_location, null aggregate bucket present."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/spending_by_geography/",
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "geo_layer": "state",
+          "spending_type": "outlay"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"geo_layer\":\"state\",\"spending_type\":\"outlay\",\"scope\":\"recipient_location\",\"results\":[{\"shape_code\":\"CA\",\"amount\":416325970.49},{\"shape_code\":null,\"amount\":271393762.97}]}"
+      },
+      "notes": "Changing spending_type alters amounts while retaining structure."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/spending_by_geography/",
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "geo_layer": "state",
+          "geo_layer_filters": [
+            "CA"
+          ],
+          "spending_type": "obligation"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"geo_layer\":\"state\",\"scope\":\"recipient_location\",\"spending_type\":\"obligation\",\"results\":[{\"shape_code\":\"CA\",\"population\":39538223,\"per_capita\":7.04,\"award_count\":671}]}"
+      },
+      "notes": "Applying geo_layer_filters removes the null aggregate bucket and shows extended fields including population and per_capita."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/spending_by_geography/",
+        "body": {
+          "filter": {
+            "def_codes": [
+              "l"
+            ]
+          },
+          "geo_layer": "state",
+          "spending_type": "obligation"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' is outside valid values ['1','2','3',...,'Z']\"}"
+      },
+      "notes": "DEFC codes are case-sensitive; lowercase input rejected with HTTP 400."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/spending_by_geography/",
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "geo_layer": "state",
+          "geo_layer_filters": [
+            "ca"
+          ],
+          "spending_type": "obligation"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"geo_layer\":\"state\",\"results\":[]}"
+      },
+      "notes": "Lowercase geo_layer_filters are silently ignored, producing an empty result set without errors."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/spending_by_geography/",
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "geo_layer": "state",
+          "geo_layer_filters": [
+            "CA",
+            "ZZ"
+          ],
+          "spending_type": "obligation"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"geo_layer\":\"state\",\"results\":[{\"shape_code\":\"CA\",\"amount\":278311818.14}]}"
+      },
+      "notes": "Mixed geo_layer_filters silently drop invalid entries while returning rows for valid codes."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/spending_by_geography/",
+        "body": {
+          "filter": {
+            "def_codes": []
+          },
+          "geo_layer": "state",
+          "spending_type": "obligation"
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' value '[]' is below min '1' items\"}"
+      },
+      "notes": "Empty def_codes arrays are rejected with HTTP 422."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/spending_by_geography/",
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "geo_layer": "county",
+          "geo_layer_filters": [
+            "34LL"
+          ],
+          "spending_type": "obligation"
+        }
+      },
+      "response": {
+        "status": 0,
+        "bodyExcerpt": ""
+      },
+      "notes": "Request using county filter '34LL' caused the server to close the connection without a JSON response (RemoteDisconnected)."
+    }
+  ],
+  "mismatches": [
+    "Endpoint documentation declares the request body schema as a string, but the live API requires a JSON object with the documented attributes."
+  ],
+  "gaps": [
+    "Shared filters beyond award_type_codes, time_period, recipient_scope, and recipient_locations were not exercised; compatibility is inferred from Search Filters v2 docs.",
+    "Unknown maximum payload size or safe upper bound for geo_layer_filters; large unfiltered requests occasionally preceded connection drops.",
+    "Unable to confirm whether error payloads include auxiliary fields (e.g., messages) because the server sometimes closed the connection before responding."
+  ],
+  "risks": [
+    "County and district layers return very large result sets (hundreds of records, ~100KB bodies), which can stress clients and upstream services.",
+    "geo_layer_filters case-sensitivity means silent empty responses on typos, increasing the chance of unnoticed misconfiguration.",
+    "Connection closures observed when requesting certain alphanumeric county codes (e.g., '34LL') indicate potential WAF or stability issues requiring client retries.",
+    "Validation errors split between HTTP 400 and 422, so callers must handle both status families."
+  ]
+}

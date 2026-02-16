@@ -1,0 +1,574 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/budget_function.md",
+    "description": "List budget functions and their subfunctions for a given agency toptier code and fiscal year, including obligated and gross outlay totals.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/budget_function/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Numeric agency toptier code used in the path segment.",
+          "constraints": "required; digits only; observed success with 3- and 4-digit values; non-numeric paths return HTML 404"
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Fiscal year to report. Defaults to the current fiscal year when omitted.",
+          "constraints": "optional; integer between 2008 and 2026 inclusive; numeric strings accepted; decimals or non-integer values return 400; requests before FY2017 return empty data with guidance message"
+        },
+        "filter": {
+          "location": "query",
+          "type": "string",
+          "description": "Case-insensitive substring filter applied to budget function and subfunction names.",
+          "constraints": "optional; empty string behaves like absence; matches restrict both child list and parent totals to hits"
+        },
+        "order": {
+          "location": "query",
+          "type": "string",
+          "description": "Sort direction for the selected field.",
+          "constraints": "optional; enum ['asc','desc']; default 'desc'; invalid values return 400"
+        },
+        "sort": {
+          "location": "query",
+          "type": "string",
+          "description": "Field to sort results by.",
+          "constraints": "optional; enum ['name','obligated_amount','gross_outlay_amount']; default 'obligated_amount'; invalid values return 400"
+        },
+        "page": {
+          "location": "query",
+          "type": "integer",
+          "description": "One-based page number.",
+          "constraints": "optional; minimum 1; default 1; numeric strings accepted; decimals return 400; zero yields 422 below-min error"
+        },
+        "limit": {
+          "location": "query",
+          "type": "integer",
+          "description": "Maximum results per page.",
+          "constraints": "optional; range 1-100 inclusive; default 10; numeric strings accepted; decimals return 400; values above 100 return 422"
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echoes the requested agency toptier code."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Fiscal year represented in the payload."
+        },
+        "results": {
+          "type": "array",
+          "description": "Budget function rollups. May be empty when no data or filters eliminate all matches.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Budget function name."
+              },
+              "obligated_amount": {
+                "type": "number",
+                "description": "Total obligations for the function; recalculated to reflect filtered children."
+              },
+              "gross_outlay_amount": {
+                "type": "number",
+                "description": "Total gross outlays for the function; recalculated to reflect filtered children."
+              },
+              "children": {
+                "type": "array",
+                "description": "Matching budget subfunctions with their own totals.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Budget subfunction name."
+                    },
+                    "obligated_amount": {
+                      "type": "number",
+                      "description": "Obligations attributed to the subfunction."
+                    },
+                    "gross_outlay_amount": {
+                      "type": "number",
+                      "description": "Gross outlays attributed to the subfunction."
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "obligated_amount",
+                    "gross_outlay_amount"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "name",
+              "obligated_amount",
+              "gross_outlay_amount",
+              "children"
+            ]
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Array of guidance strings; typically empty but populated for unsupported fiscal years."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata including nullable cursors and boolean flags.",
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "Current page number."
+            },
+            "total": {
+              "type": "integer",
+              "description": "Total number of results across all pages."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Requested page size."
+            },
+            "next": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Next page number when available."
+            },
+            "previous": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Previous page number when available."
+            },
+            "hasNext": {
+              "type": "boolean",
+              "description": "Indicates if another page follows."
+            },
+            "hasPrevious": {
+              "type": "boolean",
+              "description": "Indicates if a prior page exists."
+            }
+          },
+          "required": [
+            "page",
+            "total",
+            "limit",
+            "next",
+            "previous",
+            "hasNext",
+            "hasPrevious"
+          ]
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "results",
+        "messages",
+        "page_metadata"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/budget_function/",
+          "query": {
+            "fiscal_year": 2022,
+            "limit": 1
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2022,
+            "results": [
+              {
+                "name": "Income Security",
+                "children": [
+                  {
+                    "name": "Housing assistance",
+                    "obligated_amount": 59175698386.06,
+                    "gross_outlay_amount": 57564336703
+                  }
+                ],
+                "obligated_amount": 59175698386.06,
+                "gross_outlay_amount": 57564336703
+              }
+            ],
+            "messages": [],
+            "page_metadata": {
+              "page": 1,
+              "total": 4,
+              "limit": 1,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/097/budget_function/",
+          "query": {
+            "fiscal_year": 2022,
+            "limit": 5,
+            "page": 2
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "097",
+            "fiscal_year": 2022,
+            "results": [
+              {
+                "name": "International Affairs",
+                "children": [
+                  {
+                    "name": "International security assistance",
+                    "obligated_amount": 4179914.85,
+                    "gross_outlay_amount": 6471486.47
+                  },
+                  {
+                    "name": "International development and humanitarian assistance",
+                    "obligated_amount": 736.48,
+                    "gross_outlay_amount": 0
+                  }
+                ],
+                "obligated_amount": 4180651.33,
+                "gross_outlay_amount": 6471486.47
+              }
+            ],
+            "messages": [],
+            "page_metadata": {
+              "page": 2,
+              "total": 6,
+              "limit": 5,
+              "next": null,
+              "previous": 1,
+              "hasNext": false,
+              "hasPrevious": true
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/097/budget_function/",
+          "query": {
+            "fiscal_year": 2016
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "097",
+            "fiscal_year": 2016,
+            "results": [],
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 0,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/097/budget_function/",
+          "query": {
+            "fiscal_year": 2050
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'fiscal_year' value '2050' is above max '2026'"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/097/budget_function/",
+          "query": {
+            "fiscal_year": 2024,
+            "filter": "security"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "097",
+            "fiscal_year": 2024,
+            "results": [
+              {
+                "name": "Income Security",
+                "children": [
+                  {
+                    "name": "Federal employee retirement and disability",
+                    "obligated_amount": 78203861136.58,
+                    "gross_outlay_amount": 72160308851.77
+                  }
+                ],
+                "obligated_amount": 78203861136.58,
+                "gross_outlay_amount": 72160308851.77
+              },
+              {
+                "name": "International Affairs",
+                "children": [
+                  {
+                    "name": "International security assistance",
+                    "obligated_amount": 3179325.88,
+                    "gross_outlay_amount": 4718383.4
+                  }
+                ],
+                "obligated_amount": 3179325.88,
+                "gross_outlay_amount": 4718383.4
+              }
+            ],
+            "messages": [],
+            "page_metadata": {
+              "page": 1,
+              "total": 2,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            }
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Requests for fiscal years before 2017 return 200 with empty data and a guidance message instead of an error.",
+      "The filter parameter matches both budget function and subfunction names, and parent totals recompute to the filtered children.",
+      "Limit values above 100 or below 1 trigger 422 validation errors despite documentation omitting the range.",
+      "Numeric query parameters accept digit strings but reject decimal inputs with 400 invalid type errors.",
+      "Requesting pages beyond available data yields 200 with empty results and metadata reflecting the requested page.",
+      "Non-numeric toptier path segments receive an HTML 404 response instead of JSON."
+    ],
+    "risks": [
+      "Pre-FY2017 requests rely on the messages array to explain missing data, so clients must surface those warnings.",
+      "Malformed toptier codes can return HTML instead of JSON, requiring defensive parsing.",
+      "Financial totals can exceed billions and require high-precision handling to avoid rounding issues.",
+      "Validation mixes 400 and 422 responses depending on the failure mode, so integrations must handle both."
+    ],
+    "gaps": [
+      "Unclear whether the filter supports multi-word patterns or operators beyond simple substring matching.",
+      "No evidence showing budget functions with empty children arrays or null amount fields; handling of that case is unknown."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/budget_function/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2026,\"results\":[{\"name\":\"Income Security\",\"children\":[{\"name\":\"Housing assistance\",\"obligated_amount\":22218626268.13,\"gross_outlay_amount\":18588023015.65}],\"obligated_amount\":22218626268.13,\"gross_outlay_amount\":18588023015.65},...",
+        "contentType": "application/json"
+      },
+      "notes": "Defaults to FY2026 when fiscal_year is omitted."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/budget_function/",
+        "query": {
+          "fiscal_year": "2022"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2022,\"results\":[{\"name\":\"Income Security\",...",
+        "contentType": "application/json"
+      },
+      "notes": "Numeric strings accepted for fiscal_year and return matching dataset."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/097/budget_function/",
+        "query": {
+          "fiscal_year": "2022",
+          "limit": "5",
+          "page": "2"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"097\",\"fiscal_year\":2022,\"results\":[{\"name\":\"International Affairs\",...",
+        "contentType": "application/json"
+      },
+      "notes": "Pagination works with numeric string inputs for page and limit."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/097/budget_function/",
+        "query": {
+          "fiscal_year": "2016"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"097\",\"fiscal_year\":2016,\"results\":[],\"messages\":[\"Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act;...",
+        "contentType": "application/json"
+      },
+      "notes": "Pre-2017 requests succeed with empty results and explanatory message.",
+      "meta": {
+        "newFromPass2": true
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/097/budget_function/",
+        "query": {
+          "fiscal_year": "2024",
+          "filter": "security"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"097\",\"fiscal_year\":2024,\"results\":[{\"name\":\"Income Security\",...",
+        "contentType": "application/json"
+      },
+      "notes": "Filter matches subfunction names and narrows parent totals to the matching children.",
+      "meta": {
+        "newFromPass2": true
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/097/budget_function/",
+        "query": {
+          "fiscal_year": "2024",
+          "limit": "5.5"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. '5.5' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Decimal limit values are rejected with 400 invalid type errors.",
+      "meta": {
+        "newFromPass2": true
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/097/budget_function/",
+        "query": {
+          "fiscal_year": "2050"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2050' is above max '2026'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Upper-bound fiscal year validation enforces max 2026."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/9553/budget_function/",
+        "query": {
+          "fiscal_year": "2024"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"9553\",\"fiscal_year\":2024,\"results\":[{\"name\":\"Administration of Justice\",...",
+        "contentType": "application/json"
+      },
+      "notes": "Four-digit numeric toptier codes are supported.",
+      "meta": {
+        "newFromPass2": true
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/ABC/budget_function/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">...",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Non-numeric path segments return an HTML 404 page."
+    }
+  ],
+  "mismatches": [
+    "Docs describe the GET request body schema as a number, but the live endpoint only uses path and query parameters."
+  ],
+  "gaps": [
+    "Unclear whether the filter supports multi-word patterns or operators beyond simple substring matching.",
+    "No evidence showing budget functions with empty children arrays or null amount fields; handling of that case is unknown."
+  ],
+  "risks": [
+    "Pre-FY2017 requests rely on the messages array to explain missing data, so clients must surface those warnings.",
+    "Malformed toptier codes can return HTML instead of JSON, requiring defensive parsing.",
+    "Financial totals can exceed billions and require high-precision handling to avoid rounding issues.",
+    "Validation mixes 400 and 422 responses depending on the failure mode, so integrations must handle both."
+  ]
+}

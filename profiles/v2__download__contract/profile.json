@@ -1,0 +1,322 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/download/contract.md",
+    "description": "Creates a download job for a specific contract award and returns job metadata plus the backend configuration snapshot for the generated archive.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/download/contract/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "award_id": {
+          "location": "body",
+          "type": [
+            "string",
+            "integer"
+          ],
+          "description": "Identifier of the target contract award. Accepts canonical contract award strings (e.g., 'CONT_AWD_…') and the internal numeric award identifier.",
+          "constraints": "required; rejects null or empty strings; value must resolve to an existing contract award; purely numeric strings are accepted and resolve to the associated award."
+        },
+        "file_format": {
+          "location": "body",
+          "type": "string",
+          "description": "Optional override for the archive format applied to all files in the download.",
+          "constraints": "optional; defaults to 'csv'; accepts only lowercase values in ['csv','tsv','pstxt']; other strings return HTTP 400 with an explicit enum message; null or numeric JSON values currently trigger an HTML 500 response."
+        }
+      },
+      "required": [
+        "award_id"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "status_url": {
+          "type": "string",
+          "description": "Absolute HTTPS endpoint for polling the download job status; includes file_name as a query parameter."
+        },
+        "file_name": {
+          "type": "string",
+          "description": "Generated archive name following CONT_<PIID>_<timestamp>.zip."
+        },
+        "file_url": {
+          "type": "string",
+          "description": "Absolute HTTPS URL where the generated archive is published once the job finishes."
+        },
+        "download_request": {
+          "type": "object",
+          "description": "Snapshot of the backend download configuration applied to the job.",
+          "properties": {
+            "account_level": {
+              "type": "string",
+              "description": "Aggregation level used for generated datasets; observed value 'treasury_account'."
+            },
+            "award_id": {
+              "type": "integer",
+              "description": "Internal numeric award identifier associated with the request."
+            },
+            "download_types": {
+              "type": "array",
+              "description": "Dataset identifiers included in the archive; observed to always contain the contract trio regardless of request input order.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "file_format": {
+              "type": "string",
+              "description": "Format applied to generated files, echoing the requested or default format."
+            },
+            "filters": {
+              "type": "object",
+              "description": "Filters applied to the download; includes the internal award_id and contract award type codes.",
+              "properties": {
+                "award_id": {
+                  "type": "integer",
+                  "description": "Internal award identifier used for filtering."
+                },
+                "award_type_codes": {
+                  "type": "array",
+                  "description": "Set of contract award type codes automatically applied (A, B, C, D).",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "include_data_dictionary": {
+              "type": "boolean",
+              "description": "Indicates whether the archive bundles the contract data dictionary."
+            },
+            "include_file_description": {
+              "type": "object",
+              "description": "Supplemental readme packaged with the archive.",
+              "properties": {
+                "destination": {
+                  "type": "string",
+                  "description": "Filename used for the supplemental readme inside the archive."
+                },
+                "source": {
+                  "type": "string",
+                  "description": "Backend source path for the supplemental file."
+                }
+              }
+            },
+            "is_for_assistance": {
+              "type": "boolean",
+              "description": "Flag indicating the job targets assistance data (observed false)."
+            },
+            "is_for_contract": {
+              "type": "boolean",
+              "description": "Flag confirming the job targets contract data (observed true)."
+            },
+            "is_for_idv": {
+              "type": "boolean",
+              "description": "Flag indicating whether the job targets an IDV award (observed false)."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Row ceiling applied to generated datasets; observed 500000."
+            },
+            "piid": {
+              "type": "string",
+              "description": "Contract PIID associated with the award."
+            },
+            "request_type": {
+              "type": "string",
+              "description": "Descriptor for the job request type; observed value 'contract'."
+            }
+          }
+        }
+      },
+      "required": [
+        "status_url",
+        "file_name",
+        "file_url",
+        "download_request"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/contract/",
+          "query": {},
+          "body": {
+            "award_id": "CONT_AWD_N0002404C2105_9700_-NONE-_-NONE-"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "status_url": "https://api.usaspending.gov/api/v2/download/status?file_name=CONT_N0002404C2105_2026-02-13_H22M33S49137532.zip",
+            "file_name": "CONT_N0002404C2105_2026-02-13_H22M33S49137532.zip",
+            "file_url": "https://files.usaspending.gov/generated_downloads/CONT_N0002404C2105_2026-02-13_H22M33S49137532.zip",
+            "download_request": {
+              "account_level": "treasury_account",
+              "award_id": 309502235,
+              "download_types": [
+                "contract_federal_account_funding",
+                "contract_transactions",
+                "sub_contracts"
+              ],
+              "file_format": "csv",
+              "filters": {
+                "award_id": 309502235,
+                "award_type_codes": [
+                  "D",
+                  "C",
+                  "A",
+                  "B"
+                ]
+              },
+              "include_data_dictionary": true,
+              "include_file_description": {
+                "destination": "ContractAwardSummary_download_readme.txt",
+                "source": "/data-act/backend/usaspending_api/data/ContractSummary_download_readme.txt"
+              },
+              "is_for_assistance": false,
+              "is_for_contract": true,
+              "is_for_idv": false,
+              "limit": 500000,
+              "piid": "N0002404C2105",
+              "request_type": "contract"
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/contract/",
+          "query": {},
+          "body": {
+            "award_id": "CONT_AWD_N0002404C2105_9700_-NONE-_-NONE-",
+            "file_format": "json"
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Field 'file_format' is outside valid values ['csv', 'tsv', 'pstxt']"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Response file_name pattern is CONT_<PIID>_<timestamp>.zip without the _transactions/_awards suffix documented.",
+      "API accepts both numeric award IDs and numeric-string award IDs even though the docs only describe string values.",
+      "Additional body keys such as download_types are ignored; the backend always expands to the default contract dataset trio.",
+      "status_url and file_url are returned as absolute HTTPS links rather than the relative examples shown in the markdown docs.",
+      "The production IPv6 listener often closes connections without a response; forcing IPv4 delivers the JSON payloads reliably.",
+      "Supplying null or numeric values for file_format currently yields an HTML 500 error instead of JSON validation feedback."
+    ],
+    "risks": [
+      "Download jobs are asynchronous; clients must poll status_url until status='finished' before using file_url.",
+      "Clients that prefer IPv6 may see empty replies because the IPv6 listener drops connections; applications should retry over IPv4.",
+      "Non-string file_format inputs surface server-side 500 errors, so callers should validate the enum client-side.",
+      "Generated archives can be large (limit 500000 rows), which may impact download time and storage."
+    ],
+    "gaps": [],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/contract/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0002404C2105_9700_-NONE-_-NONE-"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"status_url\":\"https://api.usaspending.gov/api/v2/download/status?file_name=CONT_N0002404C2105_2026-02-13_H22M33S49137532.zip\",\"file_name\":\"CONT_N0002404C2105_2026-02-13_H22M33S49137532.zip\",\"file_url\":\"https://files.usaspending.gov/generated_downloads/CONT_N0002404C2105_2026-02-13_H22M33S49137532.zip\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - minimal request succeeds and defaults file_format to csv."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/contract/",
+        "query": {},
+        "body": {
+          "award_id": "309502235"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"file_name\":\"CONT_N0002404C2105_2026-02-13_H22M33S49137532.zip\",\"download_request\":{\"award_id\":309502235,\"file_format\":\"csv\"}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - numeric-string award_id resolves to the same contract metadata when routed via IPv4."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/contract/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0002404C2105_9700_-NONE-_-NONE-",
+          "file_format": "json"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'file_format' is outside valid values ['csv', 'tsv', 'pstxt']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - invalid file_format rejected with explicit enum list."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/contract/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0002404C2105_9700_-NONE-_-NONE-",
+          "file_format": null
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head><title>Server Error (500)</title></head>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail - null file_format triggers an HTML 500 response."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/download/status",
+        "query": {
+          "file_name": "CONT_N0002404C2105_2026-02-13_H22M33S49137532.zip"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"status\":\"finished\",\"total_rows\":70,\"seconds_elapsed\":\"7.794033\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - status endpoint confirms completion for the generated file."
+    }
+  ],
+  "mismatches": [
+    "Documentation claims file_name ends with a timestamp plus _transactions/_awards, but production responses use CONT_<PIID>_<timestamp>.zip instead."
+  ],
+  "gaps": [],
+  "risks": [
+    "Download jobs are asynchronous; clients must poll status_url until status='finished' before using file_url.",
+    "The IPv6 listener drops connections, so callers should retry over IPv4 when they receive empty replies.",
+    "Non-string file_format inputs currently raise 500 HTML responses, requiring client-side validation.",
+    "Generated archives can be large (limit 500000 rows), potentially impacting download size and processing time."
+  ]
+}

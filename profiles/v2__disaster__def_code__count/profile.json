@@ -1,0 +1,301 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/def_code/count.md",
+    "description": "Returns the count of Disaster Emergency Fund (DEFC) codes from the request that currently have disaster/emergency funding.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/def_code/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Container for search criteria. Omitting it or providing null yields a 422 validation error. The backend only evaluates the def_codes array; other keys are accepted but ignored.",
+          "constraints": "required"
+        },
+        "filter.def_codes": {
+          "location": "body",
+          "type": "array",
+          "description": "Array of uppercase DEFC strings to evaluate. Items must be one of ['1','2','3','4','5','6','7','8','9','A','AAA','AAB','AAC','AAD','AAE','AAF','AAG','AAH','AAI','AAJ','AAK','AAL','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','QQQ','R','S','T','U','V','W','X','Y','Z']. Duplicates are allowed but deduplicated.",
+          "constraints": "required; minItems=1; items must belong to the observed enum"
+        }
+      },
+      "required": [
+        "filter",
+        "filter.def_codes"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "number",
+          "description": "Integer count of distinct requested DEFC that currently have disaster/emergency funding. Returns 0 when none qualify; duplicates in the request do not increase the value."
+        }
+      },
+      "required": [
+        "count"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/def_code/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 1
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/def_code/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "QQQ"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 0
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Request payload must be sent as JSON with Content-Type application/json; otherwise the server reports the required field as missing.",
+      "Duplicate DEFC entries in def_codes do not increase the returned count because the endpoint deduplicates before tallying.",
+      "Filter keys other than def_codes (for example, time_period or agencies) are accepted but ignored, even for future-only ranges.",
+      "Invalid DEFC values trigger a 400 response that echoes the set of allowed codes."
+    ],
+    "risks": [
+      "Clients must send Content-Type application/json; otherwise the body is ignored and the request fails validation.",
+      "Invalid DEFC values trigger 400 responses, so integrations should validate codes before calling.",
+      "Returned counts depend on live disaster funding data and can change between calls with identical inputs.",
+      "Additional filters such as time_period are silently ignored, which can mislead callers into assuming results are constrained."
+    ],
+    "gaps": [
+      "The authoritative DEFC enumeration may change over time; only the set currently returned in 400 responses has been verified."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/def_code/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":1}",
+        "contentType": "application/json"
+      },
+      "notes": "Minimal valid request returns 1."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/def_code/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Missing value: 'filter|def_codes' is a required field\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Same payload without Content-Type header is ignored and fails validation."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/def_code/count/",
+        "query": {},
+        "body": {
+          "filter": {}
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Missing value: 'filter|def_codes' is a required field\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Filter object without def_codes fails validation."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/def_code/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": []
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' value '[]' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Empty def_codes array rejected for being below minimum size."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/def_code/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "INVALID"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' is outside valid values ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Invalid DEFC is rejected with a 400 and the allowable enum."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/def_code/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L",
+              "L"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":1}",
+        "contentType": "application/json"
+      },
+      "notes": "Duplicate codes return a count of 1, demonstrating deduplication."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/def_code/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "time_period": [
+              {
+                "start_date": "2100-01-01",
+                "end_date": "2100-12-31"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":1}",
+        "contentType": "application/json"
+      },
+      "notes": "Future-only time_period filter is accepted but does not change the count."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/def_code/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "QQQ"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":0}",
+        "contentType": "application/json"
+      },
+      "notes": "Valid DEFC that currently lacks funding returns 0."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/def_code/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L",
+              "INVALID"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' is outside valid values ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Mixing valid and invalid DEFC yields a 400; the valid code is not processed."
+    }
+  ],
+  "mismatches": [],
+  "gaps": [
+    "The authoritative DEFC enumeration may change over time; only the set currently returned in 400 responses has been verified."
+  ],
+  "risks": [
+    "Clients must send Content-Type application/json; otherwise the body is ignored and the request fails validation.",
+    "Invalid DEFC values trigger 400 responses, so integrations should validate codes before calling.",
+    "Returned counts depend on live disaster funding data and can change between calls with identical inputs.",
+    "Additional filters such as time_period are silently ignored, which can mislead callers into assuming results are constrained."
+  ]
+}

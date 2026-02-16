@@ -1,0 +1,564 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/federal_account/loans.md",
+    "description": "Aggregates disaster and emergency loan spending totals by federal account using required DEF code filters with optional keyword narrowing.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/federal_account/loans/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [
+        "filter"
+      ],
+      "properties": {
+        "filter": {
+          "type": "object",
+          "description": "Required object containing Disaster Emergency Fund (DEF) code selections; additional keys are accepted but ignored unless explicitly supported.",
+          "required": [
+            "def_codes"
+          ],
+          "properties": {
+            "def_codes": {
+              "type": "array",
+              "description": "List of DEF codes that drive the aggregation.",
+              "constraints": "Required; minItems=1; each entry must be one of ['1','2','3','4','5','6','7','8','9','A','AAA','AAB','AAC','AAD','AAE','AAF','AAG','AAH','AAI','AAJ','AAK','AAL','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','QQQ','R','S','T','U','V','W','X','Y','Z']; invalid values raise 400."
+            },
+            "query": {
+              "type": "string",
+              "description": "Case-insensitive substring match applied to account labels.",
+              "constraints": "Optional; must be non-empty text. Empty strings trigger 422; non-string values trigger 400."
+            },
+            "time_period": {
+              "type": [
+                "array",
+                "object",
+                "string"
+              ],
+              "description": "Accepted without validation or observed filtering effect.",
+              "constraints": "Optional; malformed or nonsensical values are silently ignored in current behavior."
+            }
+          },
+          "additionalProperties": true
+        },
+        "pagination": {
+          "type": "object",
+          "description": "Optional paging and sorting directives mirrored in metadata only.",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "Requested page size reported in metadata.",
+              "constraints": "Optional; integer ≥ 1. 0 or negatives return 422; null returns 400. Numeric strings are coerced but still ignored for slicing."
+            },
+            "page": {
+              "type": "integer",
+              "description": "Requested page index reported in metadata.",
+              "constraints": "Optional; integer ≥ 1. 0 or negatives return 422. Numeric strings are coerced and do not change the record set."
+            },
+            "order": {
+              "type": "string",
+              "description": "Sort direction.",
+              "constraints": "Optional; must be 'asc' or 'desc'. Defaults to 'desc'."
+            },
+            "sort": {
+              "type": "string",
+              "description": "Field used for ordering results.",
+              "constraints": "Optional; allowed values ['id','code','description','award_count','obligation','outlay','face_value_of_loan']. Observed default when omitted sorts by 'code' descending."
+            }
+          },
+          "additionalProperties": false
+        },
+        "spending_type": {
+          "type": "string",
+          "description": "Accepted but currently ignored parameter mirroring documentation examples.",
+          "constraints": "Optional; any string (e.g., 'obligation', 'face_value_of_loan', arbitrary tokens) returns identical aggregates."
+        }
+      },
+      "additionalProperties": true
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [
+        "totals",
+        "results",
+        "page_metadata"
+      ],
+      "properties": {
+        "totals": {
+          "type": "object",
+          "description": "Overall aggregates across all matched federal accounts.",
+          "required": [
+            "award_count",
+            "obligation",
+            "outlay",
+            "face_value_of_loan"
+          ],
+          "properties": {
+            "award_count": {
+              "type": "integer",
+              "description": "Total number of awards contributing to the aggregation; zero when no matches."
+            },
+            "obligation": {
+              "type": "number",
+              "description": "Sum of obligations for the matched accounts."
+            },
+            "outlay": {
+              "type": "number",
+              "description": "Sum of outlays for the matched accounts."
+            },
+            "face_value_of_loan": {
+              "type": "number",
+              "description": "Sum of loan face values for the matched accounts."
+            }
+          }
+        },
+        "results": {
+          "type": "array",
+          "description": "List of federal account aggregates ordered per the pagination sort directive.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "code",
+              "description",
+              "award_count",
+              "obligation",
+              "outlay",
+              "face_value_of_loan",
+              "children"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "Internal identifier for the federal account."
+              },
+              "code": {
+                "type": "string",
+                "description": "Composite federal account code (agency-main account)."
+              },
+              "description": {
+                "type": "string",
+                "description": "Human-readable description of the federal account."
+              },
+              "award_count": {
+                "type": "integer",
+                "description": "Number of awards contributing to this account's totals."
+              },
+              "obligation": {
+                "type": "number",
+                "description": "Aggregate obligation for the account."
+              },
+              "outlay": {
+                "type": "number",
+                "description": "Aggregate outlay for the account."
+              },
+              "face_value_of_loan": {
+                "type": "number",
+                "description": "Aggregate face value of loans for the account."
+              },
+              "children": {
+                "type": "array",
+                "description": "Treasury account rollups belonging to the federal account.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "code"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "description": "Internal identifier for the treasury account."
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Treasury account identifier (TAS)."
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Optional human-readable description when available."
+                    },
+                    "award_count": {
+                      "type": "integer",
+                      "description": "Awards contributing to this treasury account when present."
+                    },
+                    "obligation": {
+                      "type": "number",
+                      "description": "Obligation total for the treasury account when present."
+                    },
+                    "outlay": {
+                      "type": "number",
+                      "description": "Outlay total for the treasury account when present."
+                    },
+                    "face_value_of_loan": {
+                      "type": "number",
+                      "description": "Loan face value total for the treasury account when present."
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Echoes the requested pagination values without altering the dataset.",
+          "required": [
+            "page",
+            "total",
+            "limit",
+            "hasNext",
+            "hasPrevious"
+          ],
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "Requested page number."
+            },
+            "total": {
+              "type": "integer",
+              "description": "Count of result rows available for the filter."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Requested page size."
+            },
+            "next": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Next page number if additional pages are implied, otherwise null."
+            },
+            "previous": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Previous page number if applicable, otherwise null."
+            },
+            "hasNext": {
+              "type": "boolean",
+              "description": "Indicates if more pages are implied by metadata."
+            },
+            "hasPrevious": {
+              "type": "boolean",
+              "description": "Indicates if a prior page is implied by metadata."
+            }
+          },
+          "additionalProperties": true
+        }
+      }
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/federal_account/loans/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L",
+                "M",
+                "N",
+                "O",
+                "P",
+                "U"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "totals": {
+              "obligation": 852066449266.55,
+              "outlay": 852031726894.52,
+              "award_count": 16022853,
+              "face_value_of_loan": 1191375071959.04
+            },
+            "results": [
+              {
+                "id": 6310,
+                "code": "077-0110",
+                "description": "Program Account, United States International Development Finance Corporation",
+                "award_count": 1,
+                "obligation": 99043.63,
+                "outlay": 99043.63,
+                "face_value_of_loan": 24486834.0,
+                "children": [
+                  {
+                    "id": 80383,
+                    "code": "077-2020/2023-0110-000",
+                    "description": "Program Account, United States International Development Finance Corporation",
+                    "award_count": 1,
+                    "obligation": 99043.63,
+                    "outlay": 99043.63,
+                    "face_value_of_loan": 24486834.0
+                  }
+                ]
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 5,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/federal_account/loans/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L",
+                "M",
+                "N",
+                "O",
+                "P",
+                "U"
+              ],
+              "query": "business loans"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "totals": {
+              "obligation": 807450456415.85,
+              "outlay": 807436697856.96,
+              "award_count": 12016668,
+              "face_value_of_loan": 820701089089.28
+            },
+            "results": [
+              {
+                "id": 5380,
+                "code": "073-1154",
+                "description": "Business Loans Program Account, Small Business Administration",
+                "award_count": 12016668,
+                "obligation": 807450456415.85,
+                "outlay": 807436697856.96,
+                "face_value_of_loan": 820701089089.28,
+                "children": [
+                  {
+                    "id": 78466,
+                    "code": "073-2020/2021-1154-000"
+                  },
+                  {
+                    "id": 16340,
+                    "code": "073-X-1154-000"
+                  }
+                ]
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 1,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            }
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Pagination limit and page values only update metadata; the API still returns the full result set for the provided filter.",
+      "'spending_type' accepts any string and does not alter the aggregates.",
+      "Malformed or unsupported filter keys (e.g., broken time_period, unknown attributes) are silently ignored without warnings.",
+      "Numeric strings for pagination fields are coerced instead of rejected, potentially hiding input errors."
+    ],
+    "risks": [
+      "Clients may assume metadata-driven pagination works and inadvertently refetch the complete dataset each request.",
+      "Silently ignored or malformed filters can mislead callers into believing results are constrained when they are not.",
+      "Large monetary values and award counts require handling beyond 32-bit integer precision.",
+      "Extraneous keys accepted inside 'filter' can conceal misconfigured integrations."
+    ],
+    "gaps": [
+      "Impact of 'spending_type' remains unverified because all tested values returned identical data.",
+      "Unclear which shared filters beyond 'def_codes' are honored; time period inputs had no observable effect.",
+      "Unknown whether the service ever enforces actual pagination slicing when result sets exceed observed counts."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "notes": "pass - minimal request with required def_codes returns data",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/federal_account/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"totals\":{\"obligation\":99043.63},\"results\":[{\"id\":6310,\"code\":\"077-0110\"}],\"page_metadata\":{\"page\":1,\"total\":1,\"limit\":10}}"
+      }
+    },
+    {
+      "notes": "pass - query matching is case-insensitive",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/federal_account/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L",
+              "M",
+              "N",
+              "O",
+              "P",
+              "U"
+            ],
+            "query": "business loans"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[{\"code\":\"073-1154\"}],\"page_metadata\":{\"total\":1,\"hasNext\":false}}"
+      }
+    },
+    {
+      "notes": "fail - pagination limit ignored while metadata reflects request",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/federal_account/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L",
+              "M",
+              "N",
+              "O",
+              "P",
+              "U"
+            ]
+          },
+          "pagination": {
+            "limit": 2,
+            "order": "desc",
+            "page": 1,
+            "sort": "obligation"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[{\"code\":\"073-1154\"},{\"code\":\"073-1152\"},{\"code\":\"012-0115\"}],\"page_metadata\":{\"limit\":2,\"next\":2}}"
+      }
+    },
+    {
+      "notes": "pass - invalid def_code rejected with enumerated error",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/federal_account/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "ZZ"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' is outside valid values ['1','2','3','4','5','6','7','8','9','A','AAA',...,'Z']\"}"
+      }
+    },
+    {
+      "notes": "pass - pagination limit must be integer >= 1",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/federal_account/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "pagination": {
+            "limit": 0
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}"
+      }
+    },
+    {
+      "notes": "pass - extraneous filter key accepted without effect",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/federal_account/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "foo": "bar"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[{\"code\":\"077-0110\"}],\"page_metadata\":{\"total\":1}}"
+      }
+    }
+  ],
+  "mismatches": [
+    "Docs describe Result.id as a string, but live responses return integers (e.g., 6310).",
+    "Docs state pagination limit/page determine the slice of results, yet the service returns the full dataset regardless of those values.",
+    "Docs list the default sort as 'id', while observed default ordering is by 'code' descending.",
+    "Documentation highlights only CARES-era DEFC codes, but validation accepts a broader enumerated list (e.g., '1'-'9', 'AAA', 'QQQ')."
+  ],
+  "gaps": [
+    "Impact of 'spending_type' remains unverified because all tested values returned identical data.",
+    "Unclear which shared filters beyond 'def_codes' are honored; time period inputs had no observable effect.",
+    "Unknown whether the service ever enforces actual pagination slicing when result sets exceed observed counts."
+  ],
+  "risks": [
+    "Clients may assume metadata-driven pagination works and inadvertently refetch the complete dataset each request.",
+    "Silently ignored or malformed filters can mislead callers into believing results are constrained when they are not.",
+    "Large monetary values and award counts require handling beyond 32-bit integer precision.",
+    "Extraneous keys accepted inside 'filter' can conceal misconfigured integrations."
+  ]
+}

@@ -1,0 +1,393 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/sub_agency/count.md",
+    "description": "Counts distinct sub-agencies and offices for a specified toptier agency in a single fiscal year, using either the awarding or funding perspective.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/sub_agency/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "CGAC or FREC toptier code whose sub-agencies and offices are aggregated.",
+          "constraints": "Required; 3-4 digit numeric string with significant leading zeros. Unknown numeric codes return JSON 404, while non-numeric or mis-padded segments (e.g., '12A', '12') return an HTML 404 response."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Appropriations fiscal year to aggregate; defaults to the current published fiscal year when omitted or empty.",
+          "constraints": "Optional; integer between 2008 and 2026 inclusive (bounds observed via 422 errors). Empty values (e.g., '?fiscal_year=') default to the current year. Non-integers or whitespace-only inputs raise 400, and values outside the range raise 422."
+        },
+        "agency_type": {
+          "location": "query",
+          "type": "string",
+          "description": "Selects awarding or funding agency view for the aggregation.",
+          "constraints": "Optional; case-sensitive enum ['awarding', 'funding']. Defaults to awarding when omitted or provided as an empty string. Uppercase or whitespace-only values raise 400."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echoes the requested toptier code."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Fiscal year actually used for aggregation (defaults to the current year when unspecified)."
+        },
+        "sub_agency_count": {
+          "type": "integer",
+          "description": "Distinct count of sub-agencies for the selected fiscal year and agency view; can be zero."
+        },
+        "office_count": {
+          "type": "integer",
+          "description": "Distinct count of offices for the selected fiscal year and agency view; can be zero."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Array of warning or informational strings. Fiscal years prior to 2017 include a DATA Act coverage warning; other years typically return an empty array.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "sub_agency_count",
+        "office_count",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/012/sub_agency/count/",
+          "query": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "012",
+            "fiscal_year": 2026,
+            "sub_agency_count": 20,
+            "office_count": 257,
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/012/sub_agency/count/",
+          "query": {
+            "fiscal_year": "2024",
+            "agency_type": "funding"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "012",
+            "fiscal_year": 2024,
+            "sub_agency_count": 42,
+            "office_count": 1316,
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/012/sub_agency/count/",
+          "query": {
+            "fiscal_year": "2010"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "012",
+            "fiscal_year": 2010,
+            "sub_agency_count": 18,
+            "office_count": 403,
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Requests without the trailing slash receive a 301 redirect to the slash-terminated path.",
+      "Empty query parameters (e.g., '?fiscal_year=' or '?agency_type=') fall back to defaults, but whitespace-only values raise 400.",
+      "Messages include a DATA Act coverage warning for fiscal years before 2017.",
+      "Non-numeric or mis-padded 'toptier_code' segments return an HTML 404 page instead of JSON.",
+      "agency_type is case-sensitive; uppercase variants like 'FUNDING' are rejected with HTTP 400."
+    ],
+    "risks": [
+      "Maximum supported fiscal_year tracks USAspending data releases (2026 observed) and will change as new fiscal years are published.",
+      "Malformed toptier_code segments return HTML rather than JSON errors, which can break clients expecting JSON responses.",
+      "Valid responses may contain zero counts; integrations must treat zeros as legitimate data.",
+      "Case-sensitive agency_type validation may reject user-supplied values that are capitalized or localized."
+    ],
+    "gaps": [
+      "Full catalog of valid toptier codes (CGAC and FREC) was not exhaustively enumerated.",
+      "Messages content beyond the observed DATA Act warning remains unverified."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/sub_agency/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2026,\"sub_agency_count\":20,\"office_count\":257,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Default request returns current fiscal year counts with messages empty."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/sub_agency/count/",
+        "query": {
+          "fiscal_year": "2024"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2024,\"sub_agency_count\":23,\"office_count\":345,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Explicit fiscal_year within range returns data without warnings."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/sub_agency/count/",
+        "query": {
+          "fiscal_year": "2024",
+          "agency_type": "funding"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2024,\"sub_agency_count\":42,\"office_count\":1316,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Funding view returns different counts, confirming agency_type switch."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/sub_agency/count/",
+        "query": {
+          "agency_type": "invalid"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'agency_type' is outside valid values ['awarding', 'funding']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Invalid agency_type raises 400 with allowed values."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/sub_agency/count/",
+        "query": {
+          "fiscal_year": "2027"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2027' is above max '2026'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Upper bound of supported fiscal years is currently 2026."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/sub_agency/count/",
+        "query": {
+          "fiscal_year": "2007"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2007' is below min '2008'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Lower bound validation rejects fiscal years before 2008."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/sub_agency/count/",
+        "query": {
+          "fiscal_year": "2008"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2008,\"sub_agency_count\":20,\"office_count\":398,\"messages\":[\"Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Earliest supported year returns counts plus DATA Act warning message."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/sub_agency/count/",
+        "query": {
+          "fiscal_year": ""
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2026,\"sub_agency_count\":20,\"office_count\":257,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Empty fiscal_year query falls back to the default current year."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/sub_agency/count/",
+        "query": {
+          "fiscal_year": "%20"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'fiscal_year'. ' ' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Whitespace-only fiscal_year values raise a 400 instead of defaulting."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/sub_agency/count/",
+        "query": {
+          "agency_type": ""
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2026,\"sub_agency_count\":20,\"office_count\":257,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Empty agency_type query defaults back to awarding view."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/sub_agency/count/",
+        "query": {
+          "agency_type": "FUNDING"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'agency_type' is outside valid values ['awarding', 'funding']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Uppercase agency_type is rejected, confirming case sensitivity."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/321/sub_agency/count/",
+        "query": {
+          "fiscal_year": "2026"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"321\",\"fiscal_year\":2026,\"sub_agency_count\":0,\"office_count\":0,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Some agencies legitimately return zero sub-agency and office counts."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/12/sub_agency/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head><title>Not Found</title></head><body><h1>Not Found</h1><p>The requested resource was not found on this server.</p></body></html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Missing leading zero in toptier_code results in HTML 404 rather than JSON."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/9553/sub_agency/count/",
+        "query": {
+          "fiscal_year": "2026"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"9553\",\"fiscal_year\":2026,\"sub_agency_count\":2,\"office_count\":2,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Four-digit FREC-style toptier codes are accepted."
+    }
+  ],
+  "mismatches": [
+    "Docs describe the 'toptier_code' parameter as a number, but the live API requires a zero-padded numeric string and rejects numeric parsing that drops leading zeros.",
+    "Documentation lists a numeric request body schema, yet the live API ignores bodies and relies entirely on path and query parameters.",
+    "Docs imply JSON error payloads for invalid paths, but malformed 'toptier_code' segments return an HTML 404 page."
+  ],
+  "gaps": [
+    "Full catalog of valid toptier codes (CGAC and FREC) was not exhaustively enumerated.",
+    "Messages content beyond the observed DATA Act warning remains unverified."
+  ],
+  "risks": [
+    "Maximum supported fiscal_year tracks USAspending data releases (2026 observed) and will change as new fiscal years are published.",
+    "Malformed toptier_code segments return HTML rather than JSON errors, which can break clients expecting JSON responses.",
+    "Valid responses may contain zero counts; integrations must treat zeros as legitimate data.",
+    "Case-sensitive agency_type validation may reject user-supplied values that are capitalized or localized."
+  ]
+}

@@ -1,0 +1,166 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/agency/count.md",
+    "description": "Documentation reports this POST endpoint should return a count of toptier agencies associated with disaster or emergency funding filtered by supplied DEF codes; runtime behavior could not be verified due to connection resets.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/agency/count/"
+    },
+    "inputSchema": {
+      "confidence": "hypothesis",
+      "type": "object",
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Wrapper object expected by the published documentation; docs state it should contain disaster funding filters such as `def_codes`.",
+          "constraints": "Structure inferred solely from documentation; live validation unavailable."
+        },
+        "filter.def_codes": {
+          "location": "body",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Documentation claims this array enumerates Disaster Emergency Fund codes to include (examples show values like 'L', 'M', 'N').",
+          "constraints": "Marked as required in docs but requirement is unverified."
+        },
+        "filter.award_type_codes": {
+          "location": "body",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Documentation notes this optional array limits the count to awards matching the provided award type codes.",
+          "constraints": "Acceptable values list comes from documentation and remains unconfirmed."
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "hypothesis",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "number",
+          "description": "Documentation example shows a numeric count of agencies; no live responses were observed.",
+          "nullable": false
+        }
+      },
+      "required": []
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/agency/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 0,
+          "body": null
+        }
+      }
+    ],
+    "quirks": [
+      "API host repeatedly terminates TLS handshakes without returning HTTP status or body, preventing contract confirmation.",
+      "Hitting analogous paths on https://www.usaspending.gov succeeds but serves cached HTML rather than the JSON API."
+    ],
+    "risks": [
+      "Integrations may require allowlisting, mTLS, or other undisclosed network prerequisites to access api.usaspending.gov.",
+      "Relying on documentation alone risks schema drift because no live responses have been captured."
+    ],
+    "gaps": [
+      "No successful response captured; true response shape, status codes, and error formats are unknown.",
+      "Cannot confirm whether documentation-described request validation (e.g., required def_codes) is enforced."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "unknown",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/status/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 0,
+        "bodyExcerpt": "",
+        "contentType": ""
+      },
+      "notes": "Connectivity check returned 'Empty reply from server'; no HTTP response received."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/agency/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 0,
+        "bodyExcerpt": "",
+        "contentType": ""
+      },
+      "notes": "Minimal payload per documentation; server closed connection with 'Empty reply from server'."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/disaster/agency/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 0,
+        "bodyExcerpt": "",
+        "contentType": ""
+      },
+      "notes": "GET attempt ended with connection close and no response body."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/status/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\">",
+        "contentType": "text/html"
+      },
+      "notes": "Request to https://www.usaspending.gov/api/v2/status/ returned cached HTML shell rather than JSON."
+    }
+  ],
+  "mismatches": [
+    "Documentation describes a JSON response with an agency count, yet every probe to https://api.usaspending.gov closed the connection without any HTTP response.",
+    "Even when using alternative clients and headers, the API host never emitted the documented JSON payloads."
+  ],
+  "gaps": [
+    "Unclear whether additional authentication, network prerequisites, or headers are required to receive responses.",
+    "Actual request validation rules, error formats, and successful response schema remain undocumented by probes."
+  ],
+  "risks": [
+    "Production integrations could experience total outages if the host requires allowlisting or mTLS not documented.",
+    "Implementations based solely on documentation may diverge from reality due to lack of runtime verification."
+  ]
+}

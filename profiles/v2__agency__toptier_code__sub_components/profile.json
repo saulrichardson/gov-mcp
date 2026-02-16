@@ -1,0 +1,392 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/sub_components.md",
+    "description": "Retrieves appropriation sub-component rollups for a toptier agency and fiscal year with budgetary totals, pagination, and sortable metrics.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/sub_components/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "CGAC or FREC toptier code identifying the agency.",
+          "constraints": "Required. Accepts numeric strings of length 3-4; non-numeric paths return HTML 404 and unknown numeric codes return JSON 404."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Fiscal year to aggregate appropriations for.",
+          "constraints": "Optional. Defaults to the latest published year (observed 2026). Validation enforces integers 2008-2026, but requests for 2008-2016 returned HTML 500 for tested agencies. Non-integer inputs return 400 and values above 2026 return 422."
+        },
+        "agency_type": {
+          "location": "query",
+          "type": "string",
+          "description": "Specifies awarding versus funding agency rollup.",
+          "constraints": "Optional. Documentation lists 'awarding' (default) or 'funding', but the server accepts arbitrary, blank, and uppercase values without error and falls back to awarding data. Awarding and funding responses matched for sampled agencies."
+        },
+        "order": {
+          "location": "query",
+          "type": "string",
+          "description": "Sort direction for the chosen metric.",
+          "constraints": "Optional. Defaults to 'desc'. Only lowercase 'asc' or 'desc' are accepted; other values, including uppercase, return 400."
+        },
+        "sort": {
+          "location": "query",
+          "type": "string",
+          "description": "Field used to sort the result set.",
+          "constraints": "Optional. Defaults to 'total_budgetary_resources'. Allowed values are 'name', 'total_obligations', 'total_outlays', and 'total_budgetary_resources'. Other inputs return 400."
+        },
+        "page": {
+          "location": "query",
+          "type": "integer",
+          "description": "Page number for paginated results.",
+          "constraints": "Optional. Defaults to 1. Must be an integer \u22651; lower values return 422 and non-integers return 400. Out-of-range pages return empty results, and some agencies omit previous/hasPrevious pointers on those pages."
+        },
+        "limit": {
+          "location": "query",
+          "type": "integer",
+          "description": "Number of records per page.",
+          "constraints": "Optional. Defaults to 10. Must be between 1 and 100 inclusive; lower or higher values return 422 and non-integers return 400."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echo of the requested toptier code."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Fiscal year represented in the result set."
+        },
+        "results": {
+          "type": "array",
+          "description": "List of sub-component aggregates.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Human-readable sub-component name."
+              },
+              "id": {
+                "type": "string",
+                "description": "Kebab-case identifier for the sub-component."
+              },
+              "total_budgetary_resources": {
+                "type": "number",
+                "description": "Total budgetary resources attributed to the sub-component."
+              },
+              "total_obligations": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Total obligations; may be null or negative."
+              },
+              "total_outlays": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Total outlays; may be null and were never enforced as required."
+              }
+            }
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Warning or info messages; observed responses returned an empty array even for empty datasets and fallback agency_type values."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata for the current query.",
+          "properties": {
+            "page": {
+              "type": "integer"
+            },
+            "total": {
+              "type": "integer"
+            },
+            "limit": {
+              "type": "integer"
+            },
+            "next": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "previous": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "hasNext": {
+              "type": "boolean"
+            },
+            "hasPrevious": {
+              "type": "boolean"
+            }
+          },
+          "notes": "Some agencies return null previous/hasPrevious on empty pages while others retain those pointers."
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "results",
+        "messages",
+        "page_metadata"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/sub_components/",
+          "query": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2026,
+            "results": [
+              {
+                "name": "Housing Programs",
+                "id": "housing-programs",
+                "total_budgetary_resources": 206163404188.06,
+                "total_obligations": 5075642709.25,
+                "total_outlays": 4874218893.95
+              }
+            ],
+            "messages": [],
+            "page_metadata": {
+              "page": 1,
+              "total": 8,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/020/sub_components/",
+          "query": {
+            "fiscal_year": 2025,
+            "limit": 5,
+            "page": 100
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "020",
+            "fiscal_year": 2025,
+            "results": [],
+            "messages": [],
+            "page_metadata": {
+              "page": 100,
+              "total": 17,
+              "limit": 5,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/sub_components/",
+          "query": {
+            "limit": 1000
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'limit' value '1000' is above max '100'"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "'agency_type' accepts arbitrary strings, blank values, and uppercase variants without validation and simply serves default awarding data.",
+      "Sort validation allows 'total_outlays' even though the documentation omits it from the allowed list.",
+      "Sub-component 'id' values are returned in kebab-case despite documentation promising snake_case identifiers.",
+      "Pagination metadata on empty pages varies by agency; some responses omit previous/hasPrevious while others populate them.",
+      "Requests for fiscal years prior to 2017 returned HTML 500 errors even though validation allows those years."
+    ],
+    "risks": [
+      "Requests for fiscal years 2008-2016 return HTML 500 responses, so callers must handle text/html error bodies for those inputs.",
+      "Pagination metadata can drop previous/hasPrevious on empty pages, which may break client navigation logic if not guarded.",
+      "Financial totals may be null or negative; consumers should not assume positive numeric values.",
+      "Non-numeric toptier codes respond with HTML 404 pages rather than JSON, requiring tolerant error handling.",
+      "IPv6 connections intermittently closed without an HTTP response during testing; prefer IPv4 if requests hang or fail."
+    ],
+    "gaps": [
+      "No evidence that 'funding' agency_type ever diverges from 'awarding'; additional agencies may behave differently.",
+      "Root cause of the 500 errors for fiscal years 2008-2016 is unknown; no workaround beyond avoiding those inputs was identified."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/sub_components/",
+        "query": {}
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2026,\"results\":[{\"name\":\"Housing Programs\"...}],\"messages\":[],\"page_metadata\":{\"page\":1,...}}"
+      },
+      "notes": "Default request returned FY2026 awarding data with 8 sub-components."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/sub_components/",
+        "query": {
+          "agency_type": "funding"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"results\":[{\"name\":\"Housing Programs\"...}]}"
+      },
+      "notes": "Setting agency_type=funding yielded the same dataset as the default awarding view."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/sub_components/",
+        "query": {
+          "sort": "invalid_field"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'sort' is outside valid values ['name', 'total_obligations', 'total_outlays', 'total_budgetary_resources']\"}"
+      },
+      "notes": "Invalid sort value rejected with 400 and validator lists 'total_outlays'."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/sub_components/",
+        "query": {
+          "limit": "1000"
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '1000' is above max '100'\"}"
+      },
+      "notes": "Limit is capped at 100; higher values return 422."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/sub_components/",
+        "query": {
+          "fiscal_year": "2009"
+        }
+      },
+      "response": {
+        "status": 500,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<!doctype html><html><body><h1>Server Error (500)</h1>..."
+      },
+      "notes": "Fiscal years before 2017 returned HTML 500 responses despite passing validation."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/abc/sub_components/",
+        "query": {}
+      },
+      "response": {
+        "status": 404,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<!doctype html><html><body><h1>Not Found</h1>..."
+      },
+      "notes": "Non-numeric toptier codes return an HTML 404 page instead of JSON."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/020/sub_components/",
+        "query": {
+          "fiscal_year": "2025",
+          "limit": "5",
+          "page": "100"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[],\"page_metadata\":{\"page\":100,\"previous\":null,\"hasPrevious\":false,...}}"
+      },
+      "notes": "Out-of-range page returned empty results and omitted previous/hasPrevious metadata for Treasury."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/247/sub_components/",
+        "query": {}
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"toptier_code\":\"247\",\"fiscal_year\":2026,\"results\":[],\"messages\":[],\"page_metadata\":{\"total\":0,...}}"
+      },
+      "notes": "Agency 247 returned an empty dataset while keeping messages=[], confirming zero-result shape."
+    }
+  ],
+  "mismatches": [
+    "Documentation lists sort values 'name', 'total_obligations', and 'total_budgetary_resources', but live validation also allows 'total_outlays'.",
+    "Documentation describes sub-component 'id' as snake_case, yet the API returns kebab-case identifiers.",
+    "Documentation treats agency_type as an enforced enum, but the API accepts arbitrary values without error.",
+    "Documentation marks SubComponent.total_outlays as a required number, but the API returns null for programs like Military Sales Program."
+  ],
+  "gaps": [
+    "No evidence that 'funding' agency_type ever diverges from 'awarding'; additional agencies may behave differently.",
+    "Root cause of the 500 errors for fiscal years 2008-2016 is unknown; no workaround beyond avoiding those inputs was identified."
+  ],
+  "risks": [
+    "Requests for fiscal years 2008-2016 return HTML 500 responses, so callers must handle text/html error bodies for those inputs.",
+    "Pagination metadata can drop previous/hasPrevious on empty pages, which may break client navigation logic if not guarded.",
+    "Financial totals may be null or negative; consumers should not assume positive numeric values.",
+    "Non-numeric toptier codes respond with HTML 404 pages rather than JSON, requiring tolerant error handling.",
+    "IPv6 connections intermittently closed without an HTTP response during testing; prefer IPv4 if requests hang or fail."
+  ]
+}

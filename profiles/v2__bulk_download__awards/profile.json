@@ -1,0 +1,393 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/bulk_download/awards.md",
+    "description": "Starts a bulk award download job and returns URLs plus the sanitized payload used to build the archive.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/bulk_download/awards/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Primary filter payload sent to the download generator.",
+          "constraints": "required; must be a JSON object; server rejects non-object values."
+        },
+        "filters.prime_award_types": {
+          "location": "body",
+          "type": "array",
+          "description": "Codes for prime award types to include.",
+          "constraints": "enum members ['IDV_A','IDV_B','IDV_B_A','IDV_B_B','IDV_B_C','IDV_C','IDV_D','IDV_E','02','03','04','05','06','07','08','09','10','11','A','B','C','D','-1']; at least one item required when sub_award_types absent; empty array or unknown codes return 400."
+        },
+        "filters.sub_award_types": {
+          "location": "body",
+          "type": "array",
+          "description": "Codes for subaward types to include.",
+          "constraints": "enum members ['grant','procurement']; at least one item required when prime_award_types absent; empty array or unknown codes return 422/400."
+        },
+        "filters.date_type": {
+          "location": "body",
+          "type": "string",
+          "description": "Determines which transaction date field is filtered.",
+          "constraints": "enum ['action_date','last_modified_date']; invalid values return 400; requirement status when omitted is unknown (see gaps)."
+        },
+        "filters.date_range": {
+          "location": "body",
+          "type": "object",
+          "description": "Inclusive bounds for the filtered date field.",
+          "constraints": "required; must include start_date and end_date strings; missing object returns 422."
+        },
+        "filters.date_range.start_date": {
+          "location": "body",
+          "type": "string",
+          "description": "Lower bound in YYYY-MM-DD format.",
+          "constraints": "values earlier than 1980-01-01 triggered upstream WAF resets; 1980-01-01 and later accepted."
+        },
+        "filters.date_range.end_date": {
+          "location": "body",
+          "type": "string",
+          "description": "Upper bound in YYYY-MM-DD format.",
+          "constraints": "must be on or after start_date; reversed ranges trigger WAF HTML block."
+        },
+        "filters.agencies": {
+          "location": "body",
+          "type": "array",
+          "description": "Optional list of agency filter objects.",
+          "constraints": "optional; each object must include type ('funding'|'awarding'), tier ('toptier'|'subtier'), and name; missing name triggered WAF HTML block."
+        },
+        "filters.keyword": {
+          "location": "body",
+          "type": "string",
+          "description": "Deprecated single-string keyword filter.",
+          "constraints": "optional; accepted but removed from stored filters in responses."
+        },
+        "filters.keywords": {
+          "location": "body",
+          "type": "array",
+          "description": "List-based keyword filter used by the UI.",
+          "constraints": "optional; accepts array of strings; values are omitted from download_request.filters."
+        },
+        "filters.place_of_performance_scope": {
+          "location": "body",
+          "type": "string",
+          "description": "Filter for domestic or foreign places of performance.",
+          "constraints": "optional; enum ['domestic','foreign']; invalid values return 400."
+        },
+        "filters.place_of_performance_locations": {
+          "location": "body",
+          "type": "array",
+          "description": "Place of performance filters using the shared location schema.",
+          "constraints": "optional; each object must include country; missing country returns 422 with required-field list."
+        },
+        "filters.recipient_scope": {
+          "location": "body",
+          "type": "string",
+          "description": "Filter for domestic or foreign recipient scope.",
+          "constraints": "optional; enum ['domestic','foreign']; invalid values return 400."
+        },
+        "filters.recipient_locations": {
+          "location": "body",
+          "type": "array",
+          "description": "Recipient location filters using the shared schema.",
+          "constraints": "optional; each entry must include country; missing country returns 422."
+        },
+        "columns": {
+          "location": "body",
+          "type": "array",
+          "description": "Optional list of requested column identifiers.",
+          "constraints": "optional; accepts [] or null; arbitrary strings are accepted; non-array non-null values return 400."
+        },
+        "file_format": {
+          "location": "body",
+          "type": "string",
+          "description": "Requested file format for generated CSV/TSV/PSTXT files.",
+          "constraints": "optional; default 'csv'; enum ['csv','tsv','pstxt']; invalid values return 400."
+        }
+      },
+      "required": [
+        "filters"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "status_url": {
+          "type": "string",
+          "description": "URL to poll download job status."
+        },
+        "file_name": {
+          "type": "string",
+          "description": "Zip filename assigned to the generated archive."
+        },
+        "file_url": {
+          "type": "string",
+          "description": "Direct HTTPS link to the generated archive under files.usaspending.gov."
+        },
+        "download_request": {
+          "type": "object",
+          "description": "Echo of the sanitized request used to create the job.",
+          "properties": {
+            "download_types": {
+              "type": "array",
+              "description": "Job types that will be generated (e.g., ['prime_awards'], ['elasticsearch_sub_awards'])."
+            },
+            "file_format": {
+              "type": "string",
+              "description": "File format queued for the job."
+            },
+            "columns": {
+              "type": "array",
+              "description": "Echoed column list when provided; omitted when null."
+            },
+            "filters": {
+              "type": "object",
+              "description": "Normalized filters; includes prime_and_sub_award_types, time_period, and any accepted location or scope filters."
+            },
+            "request_type": {
+              "type": "string",
+              "description": "Observed constant value 'award'."
+            }
+          }
+        }
+      },
+      "required": [
+        "status_url",
+        "file_name",
+        "file_url",
+        "download_request"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/bulk_download/awards/",
+          "query": {},
+          "body": {
+            "filters": {
+              "prime_award_types": [
+                "A"
+              ],
+              "date_type": "action_date",
+              "date_range": {
+                "start_date": "2023-01-01",
+                "end_date": "2023-12-31"
+              },
+              "agencies": [
+                {
+                  "type": "funding",
+                  "tier": "toptier",
+                  "name": "Department of Agriculture"
+                }
+              ]
+            },
+            "file_format": "csv"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "status_url": "https://api.usaspending.gov/api/v2/download/status?file_name=All_PrimeTransactions_2026-02-13_H19M46S29013778.zip",
+            "file_name": "All_PrimeTransactions_2026-02-13_H19M46S29013778.zip",
+            "file_url": "https://files.usaspending.gov/generated_downloads/All_PrimeTransactions_2026-02-13_H19M46S29013778.zip",
+            "download_request": {
+              "download_types": [
+                "prime_awards"
+              ],
+              "file_format": "csv",
+              "filters": {
+                "agencies": [
+                  {
+                    "name": "Department of Agriculture",
+                    "tier": "toptier",
+                    "type": "funding"
+                  }
+                ],
+                "prime_and_sub_award_types": {
+                  "prime_awards": [
+                    "A"
+                  ]
+                },
+                "time_period": [
+                  {
+                    "date_type": "action_date",
+                    "start_date": "2023-01-01",
+                    "end_date": "2023-12-31"
+                  }
+                ]
+              },
+              "request_type": "award"
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/bulk_download/awards/",
+          "query": {},
+          "body": {
+            "filters": {
+              "date_type": "action_date",
+              "date_range": {
+                "start_date": "2023-01-01",
+                "end_date": "2023-12-31"
+              },
+              "agencies": [
+                {
+                  "type": "funding",
+                  "tier": "toptier",
+                  "name": "Department of Agriculture"
+                }
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Missing one or more required body parameters: prime_award_types or sub_award_types"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Request must include prime_award_types or sub_award_types despite documentation marking them optional.",
+      "Backend rewrites filters into prime_and_sub_award_types/time_period and drops keyword/keywords inputs from the stored payload.",
+      "columns values are only type-checked; unknown column names are accepted without validation.",
+      "Upstream WAF returns HTML 500 pages or connection resets for certain validation issues (reversed date ranges, missing agency names, or start dates before 1980)."
+    ],
+    "risks": [
+      "Repeated invalid requests or early date ranges can trip the WAF and temporarily block subsequent calls.",
+      "Asynchronous jobs can produce large files; clients must poll status_url and handle sizable downloads.",
+      "Requesting invalid column names may yield unusable output files because the server does not validate column identifiers."
+    ],
+    "gaps": [
+      "Unclear whether filters.date_type defaults when omitted; omission behavior not probed.",
+      "Exact mapping between malformed agency objects and WAF blocks versus structured JSON errors remains unknown."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/awards/",
+        "query": {},
+        "body": {
+          "filters": {
+            "prime_award_types": [
+              "A"
+            ],
+            "date_type": "action_date",
+            "date_range": {
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31"
+            }
+          },
+          "file_format": "csv"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"status_url\":\"https://api.usaspending.gov/api/v2/download/status?file_name=All_PrimeTransactions_2026-02-13_H19M46S29013778.zip\",\"file_url\":\"https://files.usaspending.gov/generated_downloads/All_PrimeTransactions_2026-02-13_H19M46S29013778.zip\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Prime award request succeeds and returns status/file URLs plus normalized filters."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/awards/",
+        "query": {},
+        "body": {
+          "filters": {
+            "date_type": "action_date",
+            "date_range": {
+              "start_date": "2023-01-01",
+              "end_date": "2023-12-31"
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Missing one or more required body parameters: prime_award_types or sub_award_types\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Server enforces presence of prime_award_types or sub_award_types."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/awards/",
+        "query": {},
+        "body": {
+          "filters": {
+            "prime_award_types": [
+              "A"
+            ],
+            "date_type": "action_date",
+            "date_range": {
+              "start_date": "2023-12-31",
+              "end_date": "2023-01-01"
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!DOCTYPE HTML...Web Page Blocked! Attack ID: 20000021>",
+        "contentType": "text/html"
+      },
+      "notes": "Reversed date ranges trip the upstream WAF and return an HTML block page."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/awards/",
+        "query": {},
+        "body": {
+          "filters": {
+            "prime_award_types": [
+              "A"
+            ],
+            "date_type": "action_date",
+            "date_range": {
+              "start_date": "1970-01-01",
+              "end_date": "1970-12-31"
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 0,
+        "bodyExcerpt": "Connection closed without HTTP response (curl exit 52)",
+        "contentType": ""
+      },
+      "notes": "Start dates before 1980 caused the upstream WAF to drop the connection entirely."
+    }
+  ],
+  "mismatches": [
+    "Documentation marks filters.agencies as required, but probes show successful calls without it.",
+    "Documentation lists prime_award_types as optional, yet the API demands prime_award_types or sub_award_types.",
+    "Documentation implies keyword values are preserved, but the service drops keyword/keywords from download_request.filters."
+  ],
+  "gaps": [
+    "Unclear whether filters.date_type defaults when omitted; omission behavior not probed.",
+    "Exact mapping between malformed agency objects and WAF blocks versus structured JSON errors remains unknown."
+  ],
+  "risks": [
+    "Repeated invalid requests or early date ranges can trip the WAF and temporarily block subsequent calls.",
+    "Asynchronous jobs can produce large files; clients must poll status_url and handle sizable downloads.",
+    "Requesting invalid column names may yield unusable output files because the server does not validate column identifiers."
+  ]
+}

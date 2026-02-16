@@ -1,0 +1,335 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/accounts/a.md",
+    "description": "Returns Availability Type Code options (Availability Type A) for Treasury account autocomplete queries in Advanced Search.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/accounts/a/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Component filters that restrict Treasury Account matches; missing, null, or non-object inputs are treated as if no filters were provided.",
+          "constraints": "Accepts an object keyed by treasury account components. Unknown keys and casing differences are ignored. Boolean, string, array, or null values are accepted but interpreted as empty filters instead of triggering validation errors.",
+          "properties": {
+            "ata": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Allocation Transfer Agency Identifier (3 characters).",
+              "constraints": "Null is accepted. Non-null values must be non-empty strings; empty strings raise 422 errors and non-string types raise 400 type errors."
+            },
+            "aid": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Agency Identifier (3 characters).",
+              "constraints": "Null is accepted. Non-null values must be non-empty strings; empty strings raise 422 errors and non-string types raise 400 type errors."
+            },
+            "bpoa": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Beginning Period of Availability (4 characters).",
+              "constraints": "Null is accepted. Four-digit year strings filter finite-period TAS. Empty strings raise 422 errors and non-string types raise 400 type errors."
+            },
+            "epoa": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Ending Period of Availability (4 characters).",
+              "constraints": "Null is accepted. Four-digit year strings filter finite-period TAS. Empty strings raise 422 errors and non-string types raise 400 type errors."
+            },
+            "a": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Availability Type Code (1 character).",
+              "constraints": "Null is accepted. String values must be at least one character; empty strings raise 422 errors. Observed value 'X' returns perpetual TAS; other characters return 200 with no matches."
+            },
+            "main": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Main Account Code (4 characters).",
+              "constraints": "Null is accepted. Non-null values must be non-empty strings; empty strings raise 422 errors and non-string types raise 400 type errors."
+            },
+            "sub": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Sub Account Code (3 characters).",
+              "constraints": "Null is accepted. Non-null values must be non-empty strings; empty strings raise 422 errors and non-string types raise 400 type errors."
+            }
+          }
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of availability code records to return.",
+          "constraints": "Integer between 0 and 500 inclusive; defaults to 10 when omitted. Numeric strings within range are coerced. Floats (including decimal strings), booleans, null, or alphabetic text return 400 validation errors. Values above 500 return 422. Negative integers or negative numeric strings trigger a 500 HTML error.",
+          "default": 10
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Array of availability type codes that match the provided filters. Observed outputs include the literal string 'X' and JSON null; ordering is stable with 'X' preceding null when both are present.",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "required": [
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/a/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              "X",
+              null
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/a/",
+          "query": {},
+          "body": {
+            "filters": {
+              "bpoa": "2016"
+            },
+            "limit": 2
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              null
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/a/",
+          "query": {},
+          "body": {
+            "filters": {
+              "a": ""
+            }
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'filters|a' value '' is below min '1' items"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Missing, null, or non-object filters (including booleans, strings, or arrays) are treated as an unfiltered request with no warnings.",
+      "Unknown filter keys or casing differences are silently ignored.",
+      "Empty strings for component filters trigger 422 length validations, while numeric types raise 400 type errors.",
+      "Limit accepts numeric strings within range but rejects decimals with 400 responses and returns HTML 500 errors for negative integers.",
+      "Limit 0 is allowed and returns an empty results array; the documented upper bound is 500 inclusive."
+    ],
+    "risks": [
+      "Negative limit values produce a 500 HTML error page instead of structured JSON.",
+      "Typos or unexpected casing in filter keys are ignored, which can expand the search unintentionally.",
+      "Error payload formats vary between JSON validation messages and HTML server errors, so clients must handle both."
+    ],
+    "gaps": [
+      "Observed responses only returned the string 'X' and null; other availability type codes, if they exist, were not surfaced."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/a/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"X\",null]}",
+        "contentType": "application/json"
+      },
+      "notes": "Unfiltered request returns both availability code options."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/a/",
+        "query": {},
+        "body": {
+          "filters": {
+            "a": null
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[null]}",
+        "contentType": "application/json"
+      },
+      "notes": "Null availability type filter returns only accounts without the code."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/a/",
+        "query": {},
+        "body": {
+          "filters": {
+            "bpoa": "2016"
+          },
+          "limit": 2
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[null]}",
+        "contentType": "application/json"
+      },
+      "notes": "Finite period TAS filter narrows results to null availability type even when requesting two items."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/a/",
+        "query": {},
+        "body": {
+          "filters": {
+            "a": ""
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'filters|a' value '' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Empty strings in component filters trigger 422 validation errors."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/a/",
+        "query": {},
+        "body": {
+          "filters": {},
+          "limit": "5"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"X\",null]}",
+        "contentType": "application/json"
+      },
+      "notes": "Numeric strings within range are coerced and honored by limit."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/a/",
+        "query": {},
+        "body": {
+          "filters": {},
+          "limit": 501
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '501' is above max '500'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Limit values above 500 return JSON validation errors."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/a/",
+        "query": {},
+        "body": {
+          "filters": {},
+          "limit": -1
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<html>Server Error (500)</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Negative integer limit produces an HTML 500 error response."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/a/",
+        "query": {},
+        "body": {
+          "filters": "bad"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"X\",null]}",
+        "contentType": "application/json"
+      },
+      "notes": "Non-object filters such as strings are ignored and treated as empty filters."
+    }
+  ],
+  "mismatches": [
+    "Docs require 'filters', but the API accepts missing, null, or non-object filters and still returns data.",
+    "Docs describe 'limit' as a generic number, yet the API enforces an integer-only range of 0-500."
+  ],
+  "gaps": [
+    "Observed responses only returned the string 'X' and null; other availability type codes, if they exist, were not surfaced."
+  ],
+  "risks": [
+    "Negative limit values produce a 500 HTML error page instead of structured JSON.",
+    "Typos or unexpected casing in filter keys are ignored, which can expand the search unintentionally.",
+    "Error payload formats vary between JSON validation messages and HTML server errors, so clients must handle both."
+  ]
+}

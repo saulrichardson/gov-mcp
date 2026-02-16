@@ -1,0 +1,345 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/cfda/count.md",
+    "description": "Counts CFDA programs that received disaster or emergency funding for the supplied Disaster Emergency Fund (DEFC) codes, optionally narrowed by assistance award type codes.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/cfda/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Filter criteria. Requires DEFC codes and optionally accepts assistance award type codes. Additional keys are accepted but ignored.",
+          "properties": {
+            "def_codes": {
+              "location": "body",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7",
+                  "8",
+                  "9",
+                  "A",
+                  "AAA",
+                  "AAB",
+                  "AAC",
+                  "AAD",
+                  "AAE",
+                  "AAF",
+                  "AAG",
+                  "AAH",
+                  "AAI",
+                  "AAJ",
+                  "AAK",
+                  "AAL",
+                  "B",
+                  "C",
+                  "D",
+                  "E",
+                  "F",
+                  "G",
+                  "H",
+                  "I",
+                  "J",
+                  "K",
+                  "L",
+                  "M",
+                  "N",
+                  "O",
+                  "P",
+                  "Q",
+                  "QQQ",
+                  "R",
+                  "S",
+                  "T",
+                  "U",
+                  "V",
+                  "W",
+                  "X",
+                  "Y",
+                  "Z"
+                ]
+              },
+              "minItems": 1,
+              "description": "DEFC codes to include in the CFDA count.",
+              "constraints": "Case-sensitive strings matching the observed enum; duplicates tolerated without changing the count. Nulls, empty arrays, or non-string items are rejected."
+            },
+            "award_type_codes": {
+              "location": "body",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["-1", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11"]
+              },
+              "minItems": 1,
+              "description": "Optional assistance award type codes to further restrict the CFDA count.",
+              "constraints": "When present must contain at least one of the observed enum values; null or empty arrays trigger validation errors."
+            }
+          },
+          "required": ["def_codes"],
+          "additionalProperties": true
+        }
+      },
+      "required": ["filter"],
+      "additionalProperties": true
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "Number of distinct CFDA programs matching the supplied filter criteria.",
+          "constraints": "Observed as non-negative integers."
+        }
+      },
+      "required": ["count"],
+      "additionalProperties": false
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/cfda/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": ["L", "M", "N"]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 323
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/cfda/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": ["L"],
+              "award_type_codes": ["-1"]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 0
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/cfda/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": ["QQQ"]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 0
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Endpoint ignores additional top-level body keys and unknown entries inside filter without error.",
+      "Missing required arrays yield HTTP 422 responses, while invalid enum values or types return HTTP 400 with \"Field ... outside valid values\" messaging.",
+      "DEFC validation is case sensitive; lowercase or non-string entries are rejected even if they would normalize to valid codes.",
+      "Duplicate DEFC values are accepted but do not alter the resulting count.",
+      "Responses are cacheable; Cache-Trace headers reported hits in repeated requests."
+    ],
+    "risks": [
+      "Clients must handle both HTTP 400 and 422 validation errors with differing message formats.",
+      "DEFC and award type enumerations appear centrally managed and may change without notice; avoid hard-coding beyond observed values.",
+      "Unrecognized filters are silently ignored, which can hide misconfigured requests that callers expect to affect results."
+    ],
+    "gaps": [
+      "Meaning and intended usage of the '-1' award_type_codes value remains undocumented despite being accepted."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": ["L", "M", "N"]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\": 323}",
+        "contentType": "application/json"
+      },
+      "notes": "Baseline multi-code request succeeds."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": ["L"],
+            "award_type_codes": ["06"]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\": 2}",
+        "contentType": "application/json"
+      },
+      "notes": "Award type filtering narrows the count."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": ["L"],
+            "award_type_codes": ["ZZ"]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\": \"Field 'filter|award_type_codes' is outside valid values ['-1', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Invalid award type surfaces the observed enum list."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\": \"Missing value: 'filter|def_codes' is a required field\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Missing filter produces HTTP 422."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": []
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\": \"Field 'filter|def_codes' value '[]' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Empty DEFC array rejected with min-items validation."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": ["L"],
+            "program_numbers": ["10.553"]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\": 52}",
+        "contentType": "application/json"
+      },
+      "notes": "Unrecognized filter key is tolerated and ignored."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": ["QQQ"]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":0}",
+        "contentType": "application/json"
+      },
+      "notes": "Rare DEFC such as QQQ accepted and returns zero count."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [5]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' is outside valid values ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Non-string DEFC values are rejected despite matching valid codes numerically."
+    }
+  ],
+  "mismatches": [
+    "Docs limit AssistanceAwardTypeCodes to '02'-'11', but live validation also accepts '-1'.",
+    "Docs describe DEFC as CARES Act codes, yet validation allows additional entries including numeric strings and 'QQQ'."
+  ],
+  "gaps": [
+    "Meaning and intended usage of the '-1' award_type_codes value remains undocumented despite being accepted."
+  ],
+  "risks": [
+    "Clients must handle both HTTP 400 and 422 validation errors with differing message formats.",
+    "DEFC and award type enumerations appear centrally managed and may change without notice; avoid hard-coding beyond observed values.",
+    "Unrecognized filters are silently ignored, which can hide misconfigured requests that callers expect to affect results."
+  ]
+}

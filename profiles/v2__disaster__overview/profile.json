@@ -1,0 +1,342 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/overview.md",
+    "description": "Aggregates disaster-related budget authority and spending totals for selected Disaster Emergency Fund (DEFC) codes and may expose unlabeled rollups under 'additional'.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/overview/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "def_codes": {
+          "location": "query",
+          "type": "string",
+          "description": "Comma-separated list of DEFC codes to aggregate. Accepts numeric and uppercase multi-character tokens; invalid or case-mismatched codes are ignored without error.",
+          "constraints": "At least one token is required in practice. Blank strings return 422 and omitting the parameter runs until a 504 timeout. Leading whitespace on the overall parameter is trimmed, but per-token spaces prevent matches. Repeating the key keeps only the final string. Array-style keys (def_codes[]) trigger 504 gateway errors. Large selections or heavy codes such as 'O' or 'Q' frequently time out once before succeeding on retry."
+        }
+      },
+      "required": [
+        "def_codes"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "funding": {
+          "type": "array",
+          "description": "Aggregated funding totals per DEFC. Entries appear only when the amount is non-zero, amounts may be negative, and ordering does not follow request order or amount magnitude.",
+          "items": {
+            "type": "object",
+            "required": [
+              "def_code",
+              "amount"
+            ],
+            "properties": {
+              "def_code": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "total_budget_authority": {
+          "type": "number",
+          "description": "Sum of budget authority attributed to the matched DEFC codes; equals the sum of reported funding amounts and can be negative."
+        },
+        "spending": {
+          "type": "object",
+          "description": "Totals for obligations and outlays. All fields are always present and numeric but may be zero or internally inconsistent.",
+          "required": [
+            "award_obligations",
+            "award_outlays",
+            "total_obligations",
+            "total_outlays"
+          ],
+          "properties": {
+            "award_obligations": {
+              "type": "number"
+            },
+            "award_outlays": {
+              "type": "number"
+            },
+            "total_obligations": {
+              "type": "number"
+            },
+            "total_outlays": {
+              "type": "number"
+            }
+          }
+        },
+        "additional": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Optional rollup for amounts lacking the requested DEFC labels. When present it contains its own budget authority and spending totals.",
+          "required": [
+            "total_budget_authority",
+            "spending"
+          ],
+          "properties": {
+            "total_budget_authority": {
+              "type": "number"
+            },
+            "spending": {
+              "type": "object",
+              "required": [
+                "total_obligations",
+                "total_outlays"
+              ],
+              "properties": {
+                "total_obligations": {
+                  "type": "number"
+                },
+                "total_outlays": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "funding",
+        "total_budget_authority",
+        "spending",
+        "additional"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/disaster/overview/",
+          "query": {
+            "def_codes": "V"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "funding": [
+              {
+                "def_code": "V",
+                "amount": 1447673226031.0
+              }
+            ],
+            "total_budget_authority": 1447673226031.0,
+            "spending": {
+              "award_obligations": 820260109911.14,
+              "award_outlays": 876464659887.34,
+              "total_obligations": 1427157054877.09,
+              "total_outlays": 1400187094955.56
+            },
+            "additional": {
+              "spending": {
+                "total_obligations": 179472501844.23,
+                "total_outlays": 183992942503.55
+              },
+              "total_budget_authority": 179472501844.23
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/disaster/overview/",
+          "query": {
+            "def_codes": "1,AAA"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "funding": [
+              {
+                "def_code": "AAA",
+                "amount": 18655296896.75
+              },
+              {
+                "def_code": "1",
+                "amount": 312707179242.43
+              }
+            ],
+            "total_budget_authority": 331362476139.18,
+            "spending": {
+              "award_obligations": 268889535282.24,
+              "award_outlays": 181216070491.22,
+              "total_obligations": 287267301576.54,
+              "total_outlays": 196128239633.01
+            },
+            "additional": null
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/disaster/overview/",
+          "query": {
+            "def_codes": ""
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'def_codes' value '' is below min '1' items"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/disaster/overview/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 504,
+          "body": "<html><head><title>504 Gateway Time-out</title></head><body><center><h1>504 Gateway Time-out</h1></center></body></html>"
+        }
+      }
+    ],
+    "quirks": [
+      "Requests without def_codes or targeting heavy codes (e.g., 'O', 'Q') often run for about a minute before returning a 504 HTML timeout; retrying immediately can succeed once the response is cached.",
+      "Whitespace handling is asymmetric: leading spaces on the overall parameter are trimmed, but spaces within the comma-separated list prevent tokens from matching, so 'L, M' only yields 'L'.",
+      "Submitting def_codes[] style array syntax results in 504 gateway errors instead of validation feedback.",
+      "funding entries may be absent for zero totals, can contain negative amounts, and appear in an order unrelated to input order or amount size.",
+      "The 'additional' field alternates between an object and null depending on which DEFC combinations are requested."
+    ],
+    "risks": [
+      "Gateway timeouts are common for uncached or broad requests, so clients should implement retries with backoff and tolerate HTML error payloads.",
+      "Case or whitespace mistakes silently drop DEFC tokens, yielding zeroed aggregates without explicit errors.",
+      "Downstream logic must handle 'additional' switching between null and an object with totals."
+    ],
+    "gaps": [
+      "Ordering guarantees for the funding array are undocumented and remain unexplained by the observed data.",
+      "Maximum safe breadth of the def_codes list is unknown; large selections still occasionally produce 504 responses despite caching."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/disaster/overview/",
+        "query": {
+          "def_codes": "V"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"funding\":[{\"def_code\":\"V\",\"amount\":1447673226031.0}],...\"additional\":{...}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – code 'V' returns populated funding and an 'additional' object containing unlabeled totals."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/disaster/overview/",
+        "query": {
+          "def_codes": "1,AAA"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"funding\":[{\"def_code\":\"AAA\",...},{\"def_code\":\"1\",...}],\"additional\":null}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – demonstrates multi-character codes and non-deterministic funding order."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/disaster/overview/",
+        "query": {
+          "def_codes": ""
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'def_codes' value '' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – blank def_codes triggers validation error proving a practical minimum of one token."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/disaster/overview/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 504,
+        "bodyExcerpt": "<html><head><title>504 Gateway Time-out</title></head>...",
+        "contentType": "text/html"
+      },
+      "notes": "fail – omitting def_codes hangs until the gateway returns a 504 HTML timeout."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/disaster/overview/",
+        "query": {
+          "def_codes": "L, M"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"funding\":[{\"def_code\":\"L\",...}],...}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – internal space after comma causes the 'M' token to be ignored."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/disaster/overview/",
+        "query": {
+          "def_codes": "O"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 504,
+        "bodyExcerpt": "<html><head><title>504 Gateway Time-out</title></head>...",
+        "contentType": "text/html"
+      },
+      "notes": "fail – first attempt for heavy code 'O' ended in a 504 before a cached retry succeeded."
+    }
+  ],
+  "mismatches": [
+    "Docs describe def_codes as an optional array parameter, but the live service requires a single comma-separated string and treats it as mandatory in practice (omitted requests time out)."
+  ],
+  "gaps": [
+    "Ordering guarantees for the funding array are undocumented and remain unexplained by the observed data.",
+    "Maximum safe breadth of the def_codes list is unknown; large selections still occasionally produce 504 responses despite caching."
+  ],
+  "risks": [
+    "Gateway timeouts are common for uncached or broad requests, so clients should implement retries with backoff and tolerate HTML error payloads.",
+    "Case or whitespace mistakes silently drop DEFC tokens, yielding zeroed aggregates without explicit errors.",
+    "Downstream logic must handle 'additional' switching between null and an object with totals."
+  ]
+}

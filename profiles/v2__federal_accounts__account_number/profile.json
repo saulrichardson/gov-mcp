@@ -1,0 +1,555 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/federal_accounts/account_number.md",
+    "description": "Returns summary fields and child Treasury Account aggregates for a single federal account (account_number) and fiscal_year.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/federal_accounts/{account_number}/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "account_number": {
+          "location": "path",
+          "type": "string",
+          "description": "Federal account symbol (Agency Identifier + Main Account Code), e.g., '011-1022'. Used to select which federal account record to return.",
+          "constraints": "Required. Observed route-compatible format is `^\\d{3}-\\d{4}$` (e.g., `011-1022`). If the value does not match this format, the server responds `404 Not Found` with an HTML body. If it matches the format but no federal account exists, the server responds `400` with JSON `{ \"detail\": \"Cannot find Federal Account...\" }`."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Appropriations fiscal year for which totals and children Treasury Accounts are returned.",
+          "constraints": "Optional. If omitted, the API defaults to its current FY (observed default was `2026` at probe time). If provided, it must be parseable as an integer; leading zeros (e.g., `02022`) and trailing whitespace (e.g., `2022 `) were accepted. Non-integer values (e.g., `2022.0`, `abcd`, empty string) can trigger a `500 Server Error` with an HTML response body. Duplicate `fiscal_year` query params are accepted but yield a single-year response with unclear selection; avoid duplicates for determinism."
+        }
+      },
+      "required": [
+        "account_number"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "fiscal_year": {
+          "type": "string|number",
+          "description": "Fiscal year context for returned totals/children. If `fiscal_year` is omitted, this is a number (API default FY). If `fiscal_year` is provided, this is a string echo of the raw query value (may include leading zeros, whitespace, or sign) and may not be a normalized year representation."
+        },
+        "id": {
+          "type": "integer",
+          "description": "Internal database identifier for the federal account."
+        },
+        "agency_identifier": {
+          "type": "string",
+          "description": "3-digit agency identifier component of the federal account symbol."
+        },
+        "main_account_code": {
+          "type": "string",
+          "description": "Main account code component of the federal account symbol."
+        },
+        "federal_account_code": {
+          "type": "string",
+          "description": "Hyphenated federal account code (agency_identifier-main_account_code)."
+        },
+        "account_title": {
+          "type": "string",
+          "description": "Human-readable federal account title."
+        },
+        "parent_agency_toptier_code": {
+          "type": "string",
+          "description": "Top-tier (parent) agency code."
+        },
+        "parent_agency_name": {
+          "type": "string",
+          "description": "Top-tier (parent) agency name."
+        },
+        "bureau_name": {
+          "type": "string",
+          "description": "Bureau name associated with the federal account."
+        },
+        "bureau_slug": {
+          "type": "string",
+          "description": "URL slug for bureau."
+        },
+        "total_obligated_amount": {
+          "type": "number|null",
+          "description": "Sum of child Treasury Account `obligated_amount` values; `null` when there are no child Treasury Accounts for the selected fiscal year."
+        },
+        "total_gross_outlay_amount": {
+          "type": "number|null",
+          "description": "Sum of child Treasury Account `gross_outlay_amount` values; `null` when there are no child Treasury Accounts for the selected fiscal year."
+        },
+        "total_budgetary_resources": {
+          "type": "number|null",
+          "description": "Sum of child Treasury Account `budgetary_resources_amount` values; `null` when there are no child Treasury Accounts for the selected fiscal year."
+        },
+        "children": {
+          "type": "array",
+          "description": "List of Treasury Accounts applicable to the federal account and fiscal year. Empty when there are no child Treasury Accounts for the selected year.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "obligated_amount": {
+                "type": "number"
+              },
+              "gross_outlay_amount": {
+                "type": "number"
+              },
+              "budgetary_resources_amount": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "budgetary_resources_amount",
+              "code",
+              "gross_outlay_amount",
+              "name",
+              "obligated_amount"
+            ]
+          }
+        }
+      },
+      "required": [
+        "account_title",
+        "agency_identifier",
+        "bureau_name",
+        "bureau_slug",
+        "children",
+        "federal_account_code",
+        "fiscal_year",
+        "id",
+        "main_account_code",
+        "parent_agency_name",
+        "parent_agency_toptier_code",
+        "total_budgetary_resources",
+        "total_gross_outlay_amount",
+        "total_obligated_amount"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/federal_accounts/011-1022/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "fiscal_year": 2026,
+            "id": 3356,
+            "agency_identifier": "011",
+            "main_account_code": "1022",
+            "account_title": "International Narcotics Control and Law Enforcement, International Security Assistance, State",
+            "federal_account_code": "011-1022",
+            "parent_agency_toptier_code": "019",
+            "parent_agency_name": "Department of State",
+            "bureau_name": "Other",
+            "bureau_slug": "other",
+            "total_obligated_amount": 3501660.13,
+            "total_gross_outlay_amount": 282429855.39,
+            "total_budgetary_resources": 1687243301.24,
+            "children": [
+              {
+                "name": "International Narcotics Control and Law Enforcement, International Security Assistance, State",
+                "code": "019-011-2016/2021-1022-000",
+                "obligated_amount": -83.16,
+                "gross_outlay_amount": 73559.38,
+                "budgetary_resources_amount": 735488.87
+              },
+              {
+                "name": "International Narcotics Control and Law Enforcement, International Security Assistance, State",
+                "code": "019-011-2017/2022-1022-000",
+                "obligated_amount": -21894.7,
+                "gross_outlay_amount": 1822314.89,
+                "budgetary_resources_amount": 1043926.26
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/federal_accounts/011-1022/",
+          "query": {
+            "fiscal_year": "2022"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "fiscal_year": "2022",
+            "id": 3356,
+            "agency_identifier": "011",
+            "main_account_code": "1022",
+            "account_title": "International Narcotics Control and Law Enforcement, International Security Assistance, State",
+            "federal_account_code": "011-1022",
+            "parent_agency_toptier_code": "019",
+            "parent_agency_name": "Department of State",
+            "bureau_name": "Other",
+            "bureau_slug": "other",
+            "total_obligated_amount": 1176729111.31,
+            "total_gross_outlay_amount": 1211702186.4,
+            "total_budgetary_resources": 3447967320.52,
+            "children": [
+              {
+                "name": "International Narcotics Control and Law Enforcement, International Security Assistance, State",
+                "code": "019-011-2012/2017-1022-000",
+                "obligated_amount": 7557592.01,
+                "gross_outlay_amount": 0.0,
+                "budgetary_resources_amount": 3162903.68
+              },
+              {
+                "name": "International Narcotics Control and Law Enforcement, International Security Assistance, State",
+                "code": "019-011-2013/2018-1022-000",
+                "obligated_amount": 6888.79,
+                "gross_outlay_amount": 7500277.94,
+                "budgetary_resources_amount": 356280.02
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/federal_accounts/011-1022/",
+          "query": {
+            "fiscal_year": "02022"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "fiscal_year": "02022",
+            "id": 3356,
+            "agency_identifier": "011",
+            "main_account_code": "1022",
+            "account_title": "International Narcotics Control and Law Enforcement, International Security Assistance, State",
+            "federal_account_code": "011-1022",
+            "parent_agency_toptier_code": "019",
+            "parent_agency_name": "Department of State",
+            "bureau_name": "Other",
+            "bureau_slug": "other",
+            "total_obligated_amount": 1176729111.31,
+            "total_gross_outlay_amount": 1211702186.4,
+            "total_budgetary_resources": 3447967320.52,
+            "children": [
+              {
+                "name": "International Narcotics Control and Law Enforcement, International Security Assistance, State",
+                "code": "019-011-2012/2017-1022-000",
+                "obligated_amount": 7557592.01,
+                "gross_outlay_amount": 0.0,
+                "budgetary_resources_amount": 3162903.68
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/federal_accounts/011-0001/",
+          "query": {
+            "fiscal_year": "1900"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "fiscal_year": "1900",
+            "id": 3313,
+            "agency_identifier": "011",
+            "main_account_code": "0001",
+            "account_title": "Compensation of the President, Executive Office of the President",
+            "federal_account_code": "011-0001",
+            "parent_agency_toptier_code": "1100",
+            "parent_agency_name": "Executive Office of the President",
+            "bureau_name": "The White House",
+            "bureau_slug": "the-white-house",
+            "total_obligated_amount": null,
+            "total_gross_outlay_amount": null,
+            "total_budgetary_resources": null,
+            "children": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/federal_accounts/000-0000/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Cannot find Federal Account with the code of '000-0000'"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/federal_accounts/011-1022/",
+          "query": {
+            "fiscal_year": "2022.0"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 500,
+          "body": "<!doctype html>\\n<html lang=\"en\">\\n<head>\\n  <title>Server Error (500)</title>\\n</head>\\n<body>\\n  <h1>Server Error (500)</h1><p></p>\\n</body>\\n</html>"
+        }
+      }
+    ],
+    "quirks": [
+      "Both `/api/v2/federal_accounts/{account_number}` and `/api/v2/federal_accounts/{account_number}/` returned `200` for valid account numbers (trailing slash is optional).",
+      "If `fiscal_year` is omitted, `response.fiscal_year` is a number (API default FY). If `fiscal_year` is provided, `response.fiscal_year` echoes the raw query string (e.g., `fiscal_year=02022` returns FY2022 data but `response.fiscal_year` is `\"02022\"`).",
+      "`fiscal_year` accepts integer-like strings such as `2022`, `02022`, `2022 `, `0`, and `-1`. Non-integer values (e.g., `2022.0`, `abcd`, empty string) can produce a `500` with an HTML response body (not JSON).",
+      "Supplying `fiscal_year` multiple times returns `200` but yields a single-year response; observed year selection was inconsistent (avoid duplicates).",
+      "For years with no child Treasury Accounts, `children` is `[]` and the `total_*` fields are `null`."
+    ],
+    "risks": [
+      "Clients should always send a canonical `fiscal_year` (e.g., `2022`), because the API echoes the raw query string in `response.fiscal_year` and accepts non-canonical integer strings (leading zeros, trailing whitespace, sign) that can confuse caching, logging, or downstream parsing.",
+      "Non-integer `fiscal_year` values can trigger `500 Server Error` with HTML content rather than a `4xx` JSON validation response; callers should validate `fiscal_year` client-side.",
+      "Error surface is inconsistent: `400`/`405` return JSON with a `detail` field, while `404` (bad `account_number` format) and `500` (bad `fiscal_year`) return HTML.",
+      "Supplying duplicate `fiscal_year` query params yields a non-obvious single-year response (avoid duplicates for determinism).",
+      "The default `fiscal_year` changes over time; specify `fiscal_year` explicitly for repeatability."
+    ],
+    "gaps": [
+      "Many invalid `fiscal_year` inputs produce a generic `500` HTML error page rather than a JSON validation error; a structured validation error schema is not observed for these cases.",
+      "The API echoes the raw `fiscal_year` query value in `response.fiscal_year`; the normalization/parsing used for data lookup is only inferable from probe comparisons (e.g., `02022` returning the same totals as `2022`)."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-15"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/011-1022/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":2026,\"id\":3356,\"agency_identifier\":\"011\",\"main_account_code\":\"1022\",\"account_title\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"federal_account_code\":\"011-1022\",\"parent_agency_toptier_code\":\"019\",\"parent_agency_name\":\"Department of State\",\"bureau_name\":\"Other\",\"bureau_slug\":\"other\",\"total_obligated_amount\":3501660.13,\"total_gross_outlay_amount\":282429855.39,\"total_budgetary_resources\":1687243301.24,\"children\":[{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2016/2021-1022-000\",\"obligated_amount\":-83.16,\"gross_outlay_amount\":73559.38,\"budgetary_resources_amount\":735488.87},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2017/2022-1022-000\",\"obligated_amount\":-21894.7,\"gross_outlay_amount\":1822314.89,\"budgetary_resources_amount\":1043926.26},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2018/2023-1022-000\",\"obligated_amount\":204.44,\"gross_outlay_amount\":2151605.31,\"budgetary_resources_amount\":1830696.06},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2019/2024-1022-000\",\"obligated_amount\":532.65,\"gross_outlay_amount\":1161121.31,\"budgetary_resources_amount\":642718.75},\"… (12 more items)\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: Minimal valid request (omit fiscal_year). response.fiscal_year=2026 (number)."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/011-1022",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":2026,\"id\":3356,\"agency_identifier\":\"011\",\"main_account_code\":\"1022\",\"account_title\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"federal_account_code\":\"011-1022\",\"parent_agency_toptier_code\":\"019\",\"parent_agency_name\":\"Department of State\",\"bureau_name\":\"Other\",\"bureau_slug\":\"other\",\"total_obligated_amount\":3501660.13,\"total_gross_outlay_amount\":282429855.39,\"total_budgetary_resources\":1687243301.24,\"children\":[{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2016/2021-1022-000\",\"obligated_amount\":-83.16,\"gross_outlay_amount\":73559.38,\"budgetary_resources_amount\":735488.87},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2017/2022-1022-000\",\"obligated_amount\":-21894.7,\"gross_outlay_amount\":1822314.89,\"budgetary_resources_amount\":1043926.26},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2018/2023-1022-000\",\"obligated_amount\":204.44,\"gross_outlay_amount\":2151605.31,\"budgetary_resources_amount\":1830696.06},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2019/2024-1022-000\",\"obligated_amount\":532.65,\"gross_outlay_amount\":1161121.31,\"budgetary_resources_amount\":642718.75},\"… (12 more items)\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: Missing trailing slash variant returned 200 with the same schema."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/011-1022/",
+        "query": {
+          "fiscal_year": "2022"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":\"2022\",\"id\":3356,\"agency_identifier\":\"011\",\"main_account_code\":\"1022\",\"account_title\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"federal_account_code\":\"011-1022\",\"parent_agency_toptier_code\":\"019\",\"parent_agency_name\":\"Department of State\",\"bureau_name\":\"Other\",\"bureau_slug\":\"other\",\"total_obligated_amount\":1176729111.31,\"total_gross_outlay_amount\":1211702186.4,\"total_budgetary_resources\":3447967320.52,\"children\":[{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2012/2017-1022-000\",\"obligated_amount\":7557592.01,\"gross_outlay_amount\":0.0,\"budgetary_resources_amount\":3162903.68},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2013/2018-1022-000\",\"obligated_amount\":6888.79,\"gross_outlay_amount\":7500277.94,\"budgetary_resources_amount\":356280.02},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2014/2019-1022-000\",\"obligated_amount\":-2473.07,\"gross_outlay_amount\":19443819.65,\"budgetary_resources_amount\":525919.01},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2015/2020-1022-000\",\"obligated_amount\":4712.8,\"gross_outlay_amount\":4621712.8,\"budgetary_resources_amount\":274724.16},\"… (12 more items)\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: Explicit fiscal_year=2022 returned 200; response.fiscal_year was a string."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/011-1022/",
+        "query": {
+          "fiscal_year": "02022"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":\"02022\",\"id\":3356,\"agency_identifier\":\"011\",\"main_account_code\":\"1022\",\"account_title\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"federal_account_code\":\"011-1022\",\"parent_agency_toptier_code\":\"019\",\"parent_agency_name\":\"Department of State\",\"bureau_name\":\"Other\",\"bureau_slug\":\"other\",\"total_obligated_amount\":1176729111.31,\"total_gross_outlay_amount\":1211702186.4,\"total_budgetary_resources\":3447967320.52,\"children\":[{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2012/2017-1022-000\",\"obligated_amount\":7557592.01,\"gross_outlay_amount\":0.0,\"budgetary_resources_amount\":3162903.68},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2013/2018-1022-000\",\"obligated_amount\":6888.79,\"gross_outlay_amount\":7500277.94,\"budgetary_resources_amount\":356280.02},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2014/2019-1022-000\",\"obligated_amount\":-2473.07,\"gross_outlay_amount\":19443819.65,\"budgetary_resources_amount\":525919.01},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2015/2020-1022-000\",\"obligated_amount\":4712.8,\"gross_outlay_amount\":4621712.8,\"budgetary_resources_amount\":274724.16},\"… (12 more items)\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: Leading zeros accepted; response.fiscal_year echoed the raw query string."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/011-1022/",
+        "query": {
+          "fiscal_year": "2022 "
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":\"2022 \",\"id\":3356,\"agency_identifier\":\"011\",\"main_account_code\":\"1022\",\"account_title\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"federal_account_code\":\"011-1022\",\"parent_agency_toptier_code\":\"019\",\"parent_agency_name\":\"Department of State\",\"bureau_name\":\"Other\",\"bureau_slug\":\"other\",\"total_obligated_amount\":1176729111.31,\"total_gross_outlay_amount\":1211702186.4,\"total_budgetary_resources\":3447967320.52,\"children\":[{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2012/2017-1022-000\",\"obligated_amount\":7557592.01,\"gross_outlay_amount\":0.0,\"budgetary_resources_amount\":3162903.68},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2013/2018-1022-000\",\"obligated_amount\":6888.79,\"gross_outlay_amount\":7500277.94,\"budgetary_resources_amount\":356280.02},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2014/2019-1022-000\",\"obligated_amount\":-2473.07,\"gross_outlay_amount\":19443819.65,\"budgetary_resources_amount\":525919.01},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2015/2020-1022-000\",\"obligated_amount\":4712.8,\"gross_outlay_amount\":4621712.8,\"budgetary_resources_amount\":274724.16},\"… (12 more items)\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: Trailing whitespace accepted; response.fiscal_year echoed the untrimmed query string."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/011-1022/",
+        "query": {
+          "fiscal_year": [
+            "2022",
+            "2023"
+          ]
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":\"2023\",\"id\":3356,\"agency_identifier\":\"011\",\"main_account_code\":\"1022\",\"account_title\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"federal_account_code\":\"011-1022\",\"parent_agency_toptier_code\":\"019\",\"parent_agency_name\":\"Department of State\",\"bureau_name\":\"Other\",\"bureau_slug\":\"other\",\"total_obligated_amount\":1779576765.88,\"total_gross_outlay_amount\":1422964713.95,\"total_budgetary_resources\":3237745808.97,\"children\":[{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2013/2018-1022-000\",\"obligated_amount\":-5978675.23,\"gross_outlay_amount\":11362326.76,\"budgetary_resources_amount\":657.65},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2014/2019-1022-000\",\"obligated_amount\":2487.19,\"gross_outlay_amount\":13485365.7,\"budgetary_resources_amount\":629642.73},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2015/2020-1022-000\",\"obligated_amount\":101447.36,\"gross_outlay_amount\":15474359.05,\"budgetary_resources_amount\":326658.52},{\"name\":\"International Narcotics Control and Law Enforcement, International Security Assistance, State\",\"code\":\"019-011-2016/2021-1022-000\",\"obligated_amount\":-37617.57,\"gross_outlay_amount\":12201037.57,\"budgetary_resources_amount\":388771.58},\"… (13 more items)\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: Duplicate fiscal_year params accepted but response returned a single year."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/011-1022/",
+        "query": {
+          "fiscal_year": "2022.0"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>\\n<html lang=\\\"en\\\">\\n<head>\\n  <title>Server Error (500)</title>\\n</head>\\n<body>\\n  <h1>Server Error (500)</h1><p></p>\\n</body>\\n</html>\\n",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: Non-integer fiscal_year produced 500 with HTML body."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/000-0000/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Cannot find Federal Account with the code of '000-0000'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: Pattern-valid but unknown account_number produced 400 JSON with detail."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/0111022/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>\\n<html lang=\\\"en\\\">\\n<head>\\n  <title>Not Found</title>\\n</head>\\n<body>\\n  <h1>Not Found</h1><p>The requested resource was not found on this server.</p>\\n</body>\\n</html>\\n",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: account_number format variant without hyphen produced 404 HTML."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/011-1022/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 405,
+        "bodyExcerpt": "{\"detail\":\"Method \\\"POST\\\" not allowed.\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: POST is not supported (405 JSON detail)."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/011-0001/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":2026,\"id\":3313,\"agency_identifier\":\"011\",\"main_account_code\":\"0001\",\"account_title\":\"Compensation of the President, Executive Office of the President\",\"federal_account_code\":\"011-0001\",\"parent_agency_toptier_code\":\"1100\",\"parent_agency_name\":\"Executive Office of the President\",\"bureau_name\":\"The White House\",\"bureau_slug\":\"the-white-house\",\"total_obligated_amount\":104271.28,\"total_gross_outlay_amount\":104271.28,\"total_budgetary_resources\":454833.3,\"children\":[{\"name\":\"Compensation of the President, Executive Office of the President\",\"code\":\"011-2025/2025-0001-000\",\"obligated_amount\":3837.92,\"gross_outlay_amount\":3837.92,\"budgetary_resources_amount\":267453.3},{\"name\":\"Compensation of the President, Executive Office of the President\",\"code\":\"011-2026/2026-0001-000\",\"obligated_amount\":100433.36,\"gross_outlay_amount\":100433.36,\"budgetary_resources_amount\":187380.0}]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: Another valid account_number returned the same top-level schema."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/011-0001/",
+        "query": {
+          "fiscal_year": "1900"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":\"1900\",\"id\":3313,\"agency_identifier\":\"011\",\"main_account_code\":\"0001\",\"account_title\":\"Compensation of the President, Executive Office of the President\",\"federal_account_code\":\"011-0001\",\"parent_agency_toptier_code\":\"1100\",\"parent_agency_name\":\"Executive Office of the President\",\"bureau_name\":\"The White House\",\"bureau_slug\":\"the-white-house\",\"total_obligated_amount\":null,\"total_gross_outlay_amount\":null,\"total_budgetary_resources\":null,\"children\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: No-children year returned children=[] and total_* null."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/097-0100/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"fiscal_year\":2026,\"id\":5965,\"agency_identifier\":\"097\",\"main_account_code\":\"0100\",\"account_title\":\"Operation and Maintenance, Defense-Wide, Defense\",\"federal_account_code\":\"097-0100\",\"parent_agency_toptier_code\":\"097\",\"parent_agency_name\":\"Department of Defense\",\"bureau_name\":\"Operation and Maintenance\",\"bureau_slug\":\"operation-and-maintenance\",\"total_obligated_amount\":11149240985.43,\"total_gross_outlay_amount\":11917496799.03,\"total_budgetary_resources\":82975035492.42,\"children\":[{\"name\":\"Operation and Maintenance, Defense Wide\",\"code\":\"097-2021/2025-0100-000\",\"obligated_amount\":132413.43,\"gross_outlay_amount\":0.0,\"budgetary_resources_amount\":264826.86},{\"name\":\"Operation and Maintenance, Defense-Wide, Defense\",\"code\":\"097-2020/2021-0100-000\",\"obligated_amount\":12980299.25,\"gross_outlay_amount\":102809.82,\"budgetary_resources_amount\":57228753.83},{\"name\":\"Operation and Maintenance, Defense-Wide, Defense\",\"code\":\"097-2021/2021-0100-000\",\"obligated_amount\":60904374.95,\"gross_outlay_amount\":12303041.31,\"budgetary_resources_amount\":925782795.48},{\"name\":\"Operation and Maintenance, Defense-Wide, Defense\",\"code\":\"097-2021/2022-0100-000\",\"obligated_amount\":0.0,\"gross_outlay_amount\":618911.28,\"budgetary_resources_amount\":329583187.62},\"… (11 more items)\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: Another valid account_number with a larger children array (truncated excerpt)."
+    }
+  ],
+  "mismatches": [
+    "Docs narrative describes a landing page listing all federal accounts, but the documented path requires {account_number} and probes show it returns a single account object.",
+    "Docs describe response.fiscal_year as a number, but probes show response.fiscal_year is a number when defaulted and a string (echo of query param) when a fiscal_year query param is provided."
+  ],
+  "gaps": [
+    "Many invalid `fiscal_year` inputs produce a generic `500` HTML error page rather than a JSON validation error; a structured validation error schema is not observed for these cases.",
+    "The API echoes the raw `fiscal_year` query value in `response.fiscal_year`; the normalization/parsing used for data lookup is only inferable from probe comparisons (e.g., `02022` returning the same totals as `2022`)."
+  ],
+  "risks": [
+    "Clients should always send a canonical `fiscal_year` (e.g., `2022`), because the API echoes the raw query string in `response.fiscal_year` and accepts non-canonical integer strings (leading zeros, trailing whitespace, sign) that can confuse caching, logging, or downstream parsing.",
+    "Non-integer `fiscal_year` values can trigger `500 Server Error` with HTML content rather than a `4xx` JSON validation response; callers should validate `fiscal_year` client-side.",
+    "Error surface is inconsistent: `400`/`405` return JSON with a `detail` field, while `404` (bad `account_number` format) and `500` (bad `fiscal_year`) return HTML.",
+    "Supplying duplicate `fiscal_year` query params yields a non-obvious single-year response (avoid duplicates for determinism).",
+    "The default `fiscal_year` changes over time; specify `fiscal_year` explicitly for repeatability."
+  ]
+}

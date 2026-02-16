@@ -14,8 +14,8 @@ This repository is a profile pipeline, not the USAspending API itself.
 ```mermaid
 flowchart LR
     A["Contract docs\nusaspending-api/.../api_contracts/contracts/v2"] --> B["Stage\npython scripts/stage_docs.py --version v2"]
-    B --> C["Probe + reconcile\nmake pipeline SLUG=<slug>"]
-    C --> D["Promote\nmake promote-profile SLUG=<slug>"]
+    B --> C["Probe + reconcile\nmake pipeline SLUG=<slug>\nor make pipeline-run-bg ..."]
+    C --> D["Promote\nmake promote-profile SLUG=<slug>\nor python scripts/full_pipeline.py promote-finals ..."]
     D --> E["Serve\nscripts/mcp/bin/stdio-server"]
     E --> F["Clients\nCodex / Cursor / Claude"]
 ```
@@ -61,6 +61,8 @@ make pipeline SLUG=v2__awards__last_updated
 ```bash
 make promote-profile SLUG=v2__awards__last_updated
 scripts/mcp/bin/validate-profiles
+# bulk option: promote every staged slug that already has a valid final artifact
+python scripts/full_pipeline.py promote-finals --version v2 --parallel 8 --json
 ```
 
 ### 7. Start MCP server
@@ -94,6 +96,7 @@ make profile SLUG=<slug>
 make discover-all PARALLEL=2
 make validate-all PARALLEL=2
 make profile-all PARALLEL=2
+make pipeline-promote-finals PIPELINE_VERSION=v2 PARALLEL=8
 
 # full gate
 make verify
@@ -125,6 +128,8 @@ At any point, compute proof-of-coverage:
 
 ```bash
 make pipeline-coverage PIPELINE_VERSION=v2
+# aggressively expand promoted coverage from already-valid finals
+make pipeline-promote-finals PIPELINE_VERSION=v2 PARALLEL=8
 ```
 
 Replay only failed slugs from a previous job and run an offline audit:
@@ -142,4 +147,5 @@ make pipeline-audit JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>
 ## Current Snapshot
 
 - Staged v2 contracts in `staging/docs/v2/index.jsonl`: 172 contracts, 1 supporting doc.
-- Promoted profile fixtures in `profiles/manifest.json`: 6 slugs.
+- Final artifacts in `runs/v2/*/final`: 83 slugs.
+- Promoted profile fixtures in `profiles/manifest.json`: 86 slugs.

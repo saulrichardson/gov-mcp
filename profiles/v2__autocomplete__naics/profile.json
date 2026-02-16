@@ -1,0 +1,395 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/naics.md",
+    "description": "Retrieves NAICS code suggestions that match the provided search text against NAICS codes and descriptions.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/naics/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "search_text": {
+          "location": "body",
+          "type": "string",
+          "description": "Search phrase to match against NAICS codes and descriptions.",
+          "constraints": "Required non-empty string. Null or empty values return HTTP 400 with 'Missing one or more required request parameters: search_text'. Non-string inputs such as numbers trigger HTTP 500 server errors. Matching is case-insensitive, but leading and trailing whitespace is preserved and affects results."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of matches to return (default 10).",
+          "constraints": "Optional non-negative integer. Defaults to 10 when omitted. Zero returns an empty list. JSON float values are truncated toward zero. Numeric strings are parsed when they represent a non-negative integer. Negative or null values trigger HTTP 500 errors, and non-numeric strings return HTTP 400 with 'Limit request parameter is not a valid, positive integer'."
+        }
+      },
+      "required": [
+        "search_text"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "List of NAICS matches limited by the evaluated limit value.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "naics": {
+                "type": "string",
+                "description": "NAICS code for the matched entry."
+              },
+              "naics_description": {
+                "type": "string",
+                "description": "Human-readable description of the NAICS code."
+              },
+              "year_retired": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Retirement year for the NAICS code, or null when active."
+              }
+            },
+            "required": [
+              "naics",
+              "naics_description",
+              "year_retired"
+            ]
+          }
+        }
+      },
+      "required": [
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/naics/",
+          "query": {},
+          "body": {
+            "search_text": "construction",
+            "limit": 3
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "naics": "212321",
+                "naics_description": "Construction Sand and Gravel Mining",
+                "year_retired": null
+              },
+              {
+                "naics": "236115",
+                "naics_description": "New Single-Family Housing Construction (except For-Sale Builders)",
+                "year_retired": null
+              },
+              {
+                "naics": "236116",
+                "naics_description": "New Multifamily Housing Construction (except For-Sale Builders)",
+                "year_retired": null
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/naics/",
+          "query": {},
+          "body": {
+            "search_text": "manifold"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "naics": "323116",
+                "naics_description": "Manifold Business Forms Printing",
+                "year_retired": 2012
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Extra keys in the request body are ignored.",
+      "Leading or trailing whitespace in search_text is treated literally, even though matching is case-insensitive.",
+      "JSON float limits are truncated toward zero before applying the cap.",
+      "String limits must parse to a non-negative integer; other strings return HTTP 400.",
+      "Large limits return up to the entire NAICS catalog (1,153 rows observed) in a single payload without pagination metadata.",
+      "Invalid types for search_text or limit often raise HTTP 500 instead of graceful validation errors."
+    ],
+    "risks": [
+      "Negative, null, or otherwise invalid limit values raise HTTP 500 errors instead of client-facing validation feedback.",
+      "Supplying a non-string search_text such as a number raises HTTP 500.",
+      "Large limits can produce very large response bodies because the API has no pagination metadata.",
+      "Untrimmed user input can change results because whitespace is significant."
+    ],
+    "gaps": [
+      "Result ordering and ranking rules for equally relevant matches remain undocumented."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": "construction"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"naics\":\"212321\",\"naics_description\":\"Construction Sand and Gravel Mining\",\"year_retired\":null},{\"naics\":\"236115\",\"naics_description\":\"New Single-Family Housing Construction (except For-Sale Builders)\",\"year_retired\":null},...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Default limit returned ten construction-related matches."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": "construction",
+          "limit": 3
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"naics\":\"212321\",\"naics_description\":\"Construction Sand and Gravel Mining\",\"year_retired\":null},...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Explicit limit reduced the result count to three."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": "construction",
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Zero limit returned an empty list without error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": "construction",
+          "limit": 2.5
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"naics\":\"212321\",\"naics_description\":\"Construction Sand and Gravel Mining\",\"year_retired\":null},{\"naics\":\"236115\",\"naics_description\":\"New Single-Family Housing Construction (except For-Sale Builders)\",\"year_retired\":null}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Float limit was truncated to two results."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": "construction",
+          "limit": -5
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html><title>Server Error (500)</title>...",
+        "contentType": "text/html"
+      },
+      "notes": "Negative limit caused an internal server error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": "1",
+          "limit": 2000
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"naics\":\"111130\",\"naics_description\":\"Dry Pea and Bean Farming\",\"year_retired\":null},...,{\"naics\":\"811219\",\"naics_description\":\"Other Electronic and Precision Equipment Repair and Maintenance\",\"year_retired\":2022}]}",
+        "contentType": "application/json"
+      },
+      "notes": "High limit returned 1,153 rows, including retired codes."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Missing one or more required request parameters: search_text\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Omitting search_text returns HTTP 400."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": "",
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Missing one or more required request parameters: search_text\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Empty string search_text is treated as missing."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": 123
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html><title>Server Error (500)</title>...",
+        "contentType": "text/html"
+      },
+      "notes": "Numeric search_text caused an internal server error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": "1",
+          "limit": "abc"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Limit request parameter is not a valid, positive integer\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Non-numeric string limit is rejected with HTTP 400."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": "construction",
+          "limit": null
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html><title>Server Error (500)</title>...",
+        "contentType": "text/html"
+      },
+      "notes": "Null limit causes an internal server error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": "manifold"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"naics\":\"323116\",\"naics_description\":\"Manifold Business Forms Printing\",\"year_retired\":2012}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Returned a retired NAICS code with year_retired 2012."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": " construction "
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"naics\":\"236115\",\"naics_description\":\"New Single-Family Housing Construction (except For-Sale Builders)\",\"year_retired\":null},...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Leading and trailing spaces changed the set of top matches."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/naics/",
+        "query": {},
+        "body": {
+          "search_text": "CONSTRUCTION",
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"naics\":\"212321\",\"naics_description\":\"Construction Sand and Gravel Mining\",\"year_retired\":null},...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Uppercase input produced the same matches as lowercase, confirming case-insensitive matching."
+    }
+  ],
+  "mismatches": [
+    "Docs describe limit as a generic numeric field, but the API requires a non-negative integer after parsing; non-numeric strings return HTTP 400 while null or negative values raise HTTP 500."
+  ],
+  "gaps": [
+    "Result ordering and ranking heuristics were not determined."
+  ],
+  "risks": [
+    "Clients must sanitize limit because invalid values trigger HTTP 500 or 400 responses.",
+    "Providing a non-string search_text raises HTTP 500 server errors instead of validation feedback.",
+    "Large limit values yield very large response payloads without pagination metadata.",
+    "Whitespace-sensitive matching can surprise users if inputs are not normalized."
+  ]
+}

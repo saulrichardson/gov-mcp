@@ -1,0 +1,391 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/city.md",
+    "description": "Returns autocomplete suggestions for city names filtered by recipient or place-of-performance scope.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/city/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "search_text": {
+          "location": "body",
+          "type": "string",
+          "description": "Free-text prefix used to match city names (case-insensitive).",
+          "constraints": "Required string with at least one character; empty string rejected with 422; whitespace-only values are accepted and return broad result sets; null rejected with 400."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of suggestions to return.",
+          "constraints": "Optional (defaults to 10 when omitted); accepts integers 0-500 inclusive; numeric strings with optional surrounding whitespace are coerced to integers; floats, null, or non-numeric strings return 400; negative integers shrink the dataset and counts, and magnitudes near or below -100 trigger 503 responses with empty bodies."
+        },
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Location constraints for the autocomplete; extra keys are ignored.",
+          "properties": {
+            "country_code": {
+              "type": "string",
+              "description": "Country code to search within.",
+              "constraints": "Required; case-insensitive; null rejected with 400; unknown codes return zero matches without error."
+            },
+            "scope": {
+              "type": "string",
+              "description": "Indicates whether to match recipient locations or primary places of performance.",
+              "constraints": "Required; must be exactly 'recipient_location' or 'primary_place_of_performance'; any other casing or value returns 400."
+            },
+            "state_code": {
+              "type": "string",
+              "description": "Optional domestic state or foreign region filter.",
+              "constraints": "Optional; null treated as omitted; empty string rejected with 422; unrecognized strings simply yield zero matches."
+            }
+          },
+          "constraints": "Required object; omitting, null, or empty filter returns 422."
+        }
+      },
+      "required": [
+        "search_text",
+        "filter"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "Total number of matching cities; negative limits can reduce this reported total due to backend offset handling."
+        },
+        "results": {
+          "type": "array",
+          "description": "Array of city matches capped by the requested limit.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "city_name": {
+                "type": "string",
+                "description": "Matched city name (uppercase in observed responses)."
+              },
+              "state_code": {
+                "type": "string",
+                "description": "State, territory, or foreign region string associated with the city; observed as uppercase text with no nulls."
+              }
+            },
+            "required": [
+              "city_name",
+              "state_code"
+            ]
+          }
+        }
+      },
+      "required": [
+        "count",
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/city/",
+          "body": {
+            "search_text": "Springfield",
+            "limit": 40,
+            "filter": {
+              "country_code": "USA",
+              "scope": "recipient_location",
+              "state_code": "VA"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 1,
+            "results": [
+              {
+                "city_name": "SPRINGFIELD",
+                "state_code": "VA"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/city/",
+          "body": {
+            "search_text": "a",
+            "filter": {
+              "country_code": "FOREIGN",
+              "scope": "primary_place_of_performance"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 47,
+            "results": [
+              {
+                "city_name": "ARGYLE",
+                "state_code": "TZA"
+              },
+              {
+                "city_name": "ASHLAND",
+                "state_code": "IND"
+              },
+              {
+                "city_name": "ARLINGTON",
+                "state_code": "COL"
+              },
+              {
+                "city_name": "ALTHEIMER",
+                "state_code": "KGZ"
+              },
+              {
+                "city_name": "AMARILLO",
+                "state_code": "DEU"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/city/",
+          "body": {
+            "search_text": "spring",
+            "limit": null,
+            "filter": {
+              "country_code": "USA",
+              "scope": "recipient_location"
+            }
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Invalid value in 'limit'. 'None' is not a valid type (integer)"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Omitting limit defaults to 10 results even though documentation labels it required.",
+      "Numeric strings for limit are coerced to integers after trimming whitespace, while floats or non-numeric strings return 400 errors.",
+      "Negative limit values shrink the returned rows and reported count; values near -100 or smaller produce 503 responses with empty bodies.",
+      "Whitespace-only search_text values are accepted and yield broad, high-volume result sets.",
+      "state_code values have only been observed as uppercase strings (including ISO-like tokens for foreign matches); no nulls have appeared in sampled results.",
+      "Additional keys in filter are ignored by the backend.",
+      "filter.scope comparisons are case-sensitive and reject values outside the two documented options."
+    ],
+    "risks": [
+      "Clamp limit to the documented 0-500 range and avoid negative values to prevent truncated data or 503 errors.",
+      "Large limits (e.g., 500) produce sizable payloads without pagination metadata, which may impact client performance.",
+      "Whitespace or very short search_text inputs can return huge generalized datasets; clients may need to trim or validate user input.",
+      "503 errors return empty bodies, so callers must handle the absence of diagnostic detail."
+    ],
+    "gaps": [
+      "Documentation allows results[].state_code to be null, but no probes observed null values; unclear if null ever occurs in practice.",
+      "Backend rationale and exact threshold for 503 responses on negative limits remain unknown beyond the observed failure near -100.",
+      "No pagination mechanism is exposed; counts above 500 imply additional matches that cannot be retrieved via this endpoint alone."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/city/",
+        "body": {
+          "search_text": "Springfield",
+          "limit": 40,
+          "filter": {
+            "country_code": "USA",
+            "scope": "recipient_location",
+            "state_code": "VA"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":1,\"results\":[{\"city_name\":\"SPRINGFIELD\",\"state_code\":\"VA\"}]}"
+      },
+      "notes": "Valid USA recipient search scoped to VA returns a single Springfield entry."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/city/",
+        "body": {
+          "search_text": "a",
+          "filter": {
+            "country_code": "FOREIGN",
+            "scope": "primary_place_of_performance"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":47,\"results\":[{\"city_name\":\"ARGYLE\",\"state_code\":\"TZA\"},{\"city_name\":\"ASHLAND\",\"state_code\":\"IND\"},{\"city_name\":\"ARLINGTON\",\"state_code\":\"COL\"},{\"city_name\":\"ALTHEIMER\",\"state_code\":\"KGZ\"},{\"city_name\":\"AMARILLO\",\"state_code\":\"DEU\"}...]}"
+      },
+      "notes": "Omitting limit defaults to 10 returned rows while count reports all 47 foreign matches."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/city/",
+        "body": {
+          "search_text": "   ",
+          "limit": 10,
+          "filter": {
+            "country_code": "USA",
+            "scope": "recipient_location"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":1378,\"results\":[{\"city_name\":\"CHESTERBROOK\",\"state_code\":\"PA\"},{\"city_name\":\"WAUKEGAN\",\"state_code\":\"IL\"},{\"city_name\":\"FAIRFIELD\",\"state_code\":\"NJ\"}...]}"
+      },
+      "notes": "Whitespace-only search text is accepted and returns broad nationwide results."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/city/",
+        "body": {
+          "search_text": "a",
+          "limit": 500,
+          "filter": {
+            "country_code": "USA",
+            "scope": "recipient_location"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":1722,\"results\":[{\"city_name\":\"ALEXANDRIA\",\"state_code\":\"VA\"},{\"city_name\":\"ATLANTA\",\"state_code\":\"GA\"},{\"city_name\":\"ARLINGTON\",\"state_code\":\"VA\"}...]}"
+      },
+      "notes": "Limit 500 is accepted and returns the maximum observed page while count remains higher than the returned rows."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/city/",
+        "body": {
+          "search_text": "spring",
+          "limit": -90,
+          "filter": {
+            "country_code": "USA",
+            "scope": "recipient_location"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":89,\"results\":[]}"
+      },
+      "notes": "Large negative limit shrinks the reported count and yields an empty result set."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/city/",
+        "body": {
+          "search_text": "spring",
+          "limit": -120,
+          "filter": {
+            "country_code": "USA",
+            "scope": "recipient_location"
+          }
+        }
+      },
+      "response": {
+        "status": 503,
+        "bodyExcerpt": ""
+      },
+      "notes": "Negative limit near -120 triggers a 503 with no response body."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/city/",
+        "body": {
+          "search_text": "spring",
+          "limit": null,
+          "filter": {
+            "country_code": "USA",
+            "scope": "recipient_location"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. 'None' is not a valid type (integer)\"}"
+      },
+      "notes": "Null limit is rejected with a 400 type error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/city/",
+        "body": {
+          "search_text": "spring",
+          "limit": 10,
+          "filter": {
+            "country_code": "USA",
+            "scope": "Recipient_Location"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|scope' is outside valid values ['recipient_location', 'primary_place_of_performance']\"}"
+      },
+      "notes": "Scope comparisons are case-sensitive; mixed-case value returns 400."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/city/",
+        "body": {
+          "search_text": "spring",
+          "filter": {}
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Missing value: 'filter|country_code' is a required field\"}"
+      },
+      "notes": "Empty filter object produces 422 requiring country_code and scope."
+    }
+  ],
+  "mismatches": [
+    "Docs say filter is optional, but the API requires filter.country_code and filter.scope (empty filter returns 422).",
+    "Docs require limit, yet the API accepts missing limit and defaults to 10.",
+    "Docs describe limit as a number, but the API enforces an integer, rejecting floats while coercing numeric strings.",
+    "Docs omit any maximum for limit, yet the API enforces an upper bound of 500."
+  ],
+  "gaps": [
+    "Documentation allows results[].state_code to be null, but no probes observed null values; unclear if null ever occurs in practice.",
+    "Backend rationale and exact threshold for 503 responses on negative limits remain unknown beyond the observed failure near -100.",
+    "No pagination mechanism is exposed; counts above 500 imply additional matches that cannot be retrieved via this endpoint alone."
+  ],
+  "risks": [
+    "Clamp limit to the documented 0-500 range and avoid negative values to prevent truncated data or 503 errors.",
+    "Large limits (e.g., 500) produce sizable payloads without pagination metadata, which may impact client performance.",
+    "Whitespace or very short search_text inputs can return huge generalized datasets; clients may need to trim or validate user input.",
+    "503 errors return empty bodies, so callers must handle the absence of diagnostic detail."
+  ]
+}

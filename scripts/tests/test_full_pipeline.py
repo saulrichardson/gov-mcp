@@ -4,6 +4,7 @@ import importlib.util
 import json
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 
@@ -160,3 +161,42 @@ def test_failed_slugs_from_status_returns_sorted_slugs():
         }
     }
     assert mod.failed_slugs_from_status(status) == ["v2__a", "v2__b"]
+
+
+def test_cmd_promote_finals_dry_run_reports_promotable_slug(tmp_path: Path, capsys):
+    slug = "v2__awards__last_updated"
+
+    # staged index with one contract slug
+    idx = tmp_path / "staging" / "docs" / "v2" / "index.jsonl"
+    idx.parent.mkdir(parents=True, exist_ok=True)
+    idx.write_text(json.dumps({"kind": "contract", "slug": slug}) + "\n", encoding="utf-8")
+
+    # final artifact set that passes offline profile validation
+    final_dir = tmp_path / "runs" / "v2" / slug / "final"
+    final_dir.mkdir(parents=True, exist_ok=True)
+    payload = _base_report()
+    payload["contract"]["description"] = "Fixture profile description long enough for planner metadata checks."
+    payload["contract"]["confidence"] = "confirmed"
+    payload["contract"]["lifecycle"] = "active"
+    payload["contract"]["lastVerified"] = "2026-02-13"
+    _write_json(final_dir / "profile.json", payload)
+    (final_dir / "prompt.md").write_text("# prompt\n", encoding="utf-8")
+    (final_dir / "response.txt").write_text("DONE\n", encoding="utf-8")
+
+    args = SimpleNamespace(
+        version="v2",
+        slugs=None,
+        slugs_file=None,
+        dry_run=True,
+        json=True,
+        parallel=2,
+        skip_manifest_validate=False,
+    )
+    rc = mod.cmd_promote_finals(args, tmp_path)
+    assert rc == 0
+
+    out = capsys.readouterr().out
+    data = json.loads(out)
+    assert data["promotableCount"] == 1
+    assert data["promotableSlugs"] == [slug]
+    assert data["invalidFinalCount"] == 0

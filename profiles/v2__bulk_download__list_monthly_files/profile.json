@@ -1,0 +1,369 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/bulk_download/list_monthly_files.md",
+    "description": "Returns metadata for pre-generated monthly bulk download archives for a supplied fiscal year and agency, filtered by file type.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/bulk_download/list_monthly_files/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "agency": {
+          "location": "body",
+          "type": "string|number",
+          "description": "Agency selector for the archive set.",
+          "constraints": "Accepts numeric toptier agency IDs or the literal 'all'. Unknown numeric IDs return HTTP 400; other strings return HTML 500. Omission unverified."
+        },
+        "fiscal_year": {
+          "location": "body",
+          "type": "string|number",
+          "description": "Fiscal year to list archive files for.",
+          "constraints": "Numeric values or numeric strings are echoed in responses. Other text is accepted but only FY(All) delta files are returned with fiscal_year null. Omission unverified."
+        },
+        "type": {
+          "location": "body",
+          "type": "string",
+          "description": "Archive category filter.",
+          "constraints": "Required. Observed values include 'assistance' and 'contracts'. Unrecognized strings return 200 with an empty monthly_files array. Null or missing triggers HTTP 400 with detail 'Missing one or more required body parameters: type'."
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "monthly_files": {
+          "type": "array",
+          "description": "List of available archive file descriptors.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "agency_name": {
+                "type": "string",
+                "description": "Human-readable agency name; 'All' for consolidated files."
+              },
+              "agency_acronym": {
+                "type": "string|null",
+                "description": "Agency acronym when available; null for consolidated files."
+              },
+              "fiscal_year": {
+                "type": "number|string|null",
+                "description": "Fiscal year associated with the file. Null for FY(All) delta rows."
+              },
+              "type": {
+                "type": "string",
+                "description": "Archive category echoed from the request."
+              },
+              "updated_date": {
+                "type": "string",
+                "description": "Last generated date in YYYY-MM-DD format."
+              },
+              "file_name": {
+                "type": "string",
+                "description": "Archive filename including fiscal year, scope, and generation date."
+              },
+              "url": {
+                "type": "string",
+                "description": "Direct download URL for the archive."
+              }
+            },
+            "required": [
+              "agency_name",
+              "agency_acronym",
+              "fiscal_year",
+              "type",
+              "updated_date",
+              "file_name",
+              "url"
+            ]
+          }
+        }
+      },
+      "required": [
+        "monthly_files"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/bulk_download/list_monthly_files/",
+          "query": {},
+          "body": {
+            "agency": "all",
+            "fiscal_year": 2023,
+            "type": "assistance"
+          }
+        },
+        "response": {
+          "status": 200,
+          "contentType": "application/json",
+          "body": {
+            "monthly_files": [
+              {
+                "agency_name": "All",
+                "agency_acronym": null,
+                "fiscal_year": 2023,
+                "type": "assistance",
+                "updated_date": "2026-02-06",
+                "file_name": "FY2023_All_Assistance_Full_20260206.zip",
+                "url": "https://files.usaspending.gov/award_data_archive/FY2023_All_Assistance_Full_20260206.zip"
+              },
+              {
+                "agency_name": "All",
+                "agency_acronym": null,
+                "fiscal_year": null,
+                "type": "assistance",
+                "updated_date": "2026-02-06",
+                "file_name": "FY(All)_All_Assistance_Delta_20260206.zip",
+                "url": "https://files.usaspending.gov/award_data_archive/FY(All)_All_Assistance_Delta_20260206.zip"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/bulk_download/list_monthly_files/",
+          "query": {},
+          "body": {
+            "agency": "all",
+            "fiscal_year": 2023
+          }
+        },
+        "response": {
+          "status": 400,
+          "contentType": "application/json",
+          "body": {
+            "detail": "Missing one or more required body parameters: type"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "GET requests to this path return HTTP 405 with a JSON error body instead of listing files.",
+      "Unrecognized type strings are accepted but return a 200 response with an empty monthly_files array."
+    ],
+    "risks": [
+      "Connections occasionally close without an HTTP response; clients should implement retries/backoff.",
+      "Invalid string agency values return HTML 500 pages, which can break JSON parsing in clients.",
+      "Loose validation of type and fiscal_year allows typos to succeed while returning empty or FY(All) results."
+    ],
+    "gaps": [
+      "Did not confirm whether agency or fiscal_year can be omitted; attempts without them ended before a definitive response.",
+      "Unknown whether additional metadata fields are emitted in monthly_files beyond the observed keys."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_monthly_files/",
+        "query": {},
+        "body": {
+          "agency": "all",
+          "fiscal_year": 2023,
+          "type": "assistance"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "monthly_files": [
+            {
+              "agency_name": "All",
+              "agency_acronym": null,
+              "fiscal_year": 2023,
+              "type": "assistance",
+              "updated_date": "2026-02-06",
+              "file_name": "FY2023_All_Assistance_Full_20260206.zip",
+              "url": "https://files.usaspending.gov/award_data_archive/FY2023_All_Assistance_Full_20260206.zip"
+            },
+            {
+              "agency_name": "All",
+              "agency_acronym": null,
+              "fiscal_year": null,
+              "type": "assistance",
+              "updated_date": "2026-02-06",
+              "file_name": "FY(All)_All_Assistance_Delta_20260206.zip",
+              "url": "https://files.usaspending.gov/award_data_archive/FY(All)_All_Assistance_Delta_20260206.zip"
+            }
+          ]
+        }
+      },
+      "notes": "200 OK with full and delta entries for all agencies."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_monthly_files/",
+        "query": {},
+        "body": {
+          "agency": "all",
+          "fiscal_year": 2023
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "detail": "Missing one or more required body parameters: type"
+        }
+      },
+      "notes": "Missing type parameter yields HTTP 400." 
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_monthly_files/",
+        "query": {},
+        "body": {
+          "agency": 97,
+          "fiscal_year": 2023,
+          "type": "contracts"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"monthly_files\":[{\"fiscal_year\":2023,\"agency_name\":\"Election Assistance Commission\"..."
+      },
+      "notes": "Numeric toptier agency ID 97 returns contracts metadata."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_monthly_files/",
+        "query": {},
+        "body": {
+          "agency": "all",
+          "fiscal_year": 2023,
+          "type": "bogus"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "monthly_files": []
+        }
+      },
+      "notes": "Unrecognized type string accepted but returns empty results." 
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_monthly_files/",
+        "query": {},
+        "body": {
+          "agency": 9999,
+          "fiscal_year": 2023,
+          "type": "assistance"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "detail": "9999 agency not found"
+        }
+      },
+      "notes": "Unknown numeric agency ID rejected with JSON 400."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_monthly_files/",
+        "query": {},
+        "body": {
+          "agency": "notreal",
+          "fiscal_year": 2023,
+          "type": "assistance"
+        }
+      },
+      "response": {
+        "status": 500,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head><title>Server Error (500)</title>..."
+      },
+      "notes": "Non-'all' string agency triggers HTML 500 error page."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_monthly_files/",
+        "query": {},
+        "body": {
+          "agency": "all",
+          "fiscal_year": "2023",
+          "type": "assistance"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"monthly_files\":[{\"fiscal_year\":\"2023\",\"agency_name\":\"All\"..."
+      },
+      "notes": "Fiscal year accepted as a string and echoed back as string values."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_monthly_files/",
+        "query": {},
+        "body": {
+          "agency": "all",
+          "fiscal_year": "notayear",
+          "type": "assistance"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"monthly_files\":[{\"fiscal_year\":null,\"agency_name\":\"All\"..."
+      },
+      "notes": "Non-numeric fiscal_year text returns FY(All) delta with fiscal_year null."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/bulk_download/list_monthly_files/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 405,
+        "contentType": "application/json",
+        "body": {
+          "detail": "Method GET not allowed."
+        }
+      },
+      "notes": "GET calls are rejected with HTTP 405." 
+    }
+  ],
+  "mismatches": [
+    "Documentation marks type as optional, but the API returns HTTP 400 'Missing one or more required body parameters: type' when it is omitted.",
+    "Documentation requires MonthlyFile.fiscal_year to be a number, yet responses include null values and echo string fiscal_year inputs."
+  ],
+  "gaps": [
+    "Did not confirm whether agency or fiscal_year can be omitted; attempts without them ended before a definitive response.",
+    "Unknown whether additional metadata fields are emitted in monthly_files beyond the observed keys."
+  ],
+  "risks": [
+    "Connections occasionally close without an HTTP response; clients should implement retries/backoff.",
+    "Invalid string agency values return HTML 500 pages, which can break JSON parsing in clients.",
+    "Loose validation of type and fiscal_year allows typos to succeed while returning empty or FY(All) results."
+  ]
+}

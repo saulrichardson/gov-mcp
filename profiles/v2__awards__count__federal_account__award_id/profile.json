@@ -1,0 +1,220 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/awards/count/federal_account/award_id.md",
+    "description": "Returns the number of federal accounts linked to an award when you provide USAspending's internal digit-only award identifier.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/awards/count/federal_account/{award_id}/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "award_id": {
+          "location": "path",
+          "type": "string",
+          "description": "Digit-only path parameter that identifies the award in USAspending's internal award dataset.",
+          "constraints": "Required. Provide decimal digits only. Unknown numeric ids return a JSON 404. Any non-digit character triggers an HTML 404. Omit the trailing slash and the server issues a 301 redirect.",
+          "pattern": "^[0-9]+$"
+        }
+      },
+      "required": [
+        "award_id"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "federal_accounts": {
+          "type": "integer",
+          "description": "Non-negative count of distinct federal accounts linked to the award.",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "federal_accounts"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/awards/count/federal_account/222624544/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "federal_accounts": 12
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/awards/count/federal_account/200000000/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "federal_accounts": 0
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/awards/count/federal_account/999999999999/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 404,
+          "body": {
+            "detail": "No Award found with: '999999999999'"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/awards/count/federal_account/foo/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 404,
+          "body": "<!doctype html>..."
+        }
+      }
+    ],
+    "quirks": [
+      "Trailing slash is mandatory; otherwise the service responds with HTTP 301 redirect to the slash-suffixed path.",
+      "Non-numeric award ids return HTML 404 pages instead of JSON error payloads.",
+      "Digit-only ids that are not present in the dataset return JSON 404 responses with a detail message.",
+      "POST requests receive HTTP 405 Method Not Allowed."
+    ],
+    "risks": [
+      "Clients must resolve the internal numeric award id via another endpoint before calling this route; public award identifiers fail.",
+      "Error handling must accommodate both JSON and HTML 404 payloads depending on whether the award id matches the digit-only pattern.",
+      "Clients that do not automatically follow redirects will fail if they omit the trailing slash."
+    ],
+    "gaps": [
+      "Exact numeric award id domain remains unclear; only sampled ids between roughly 200,000,000 and 350,239,000 were verified."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/federal_account/222624544/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"federal_accounts\":12}",
+        "contentType": "application/json"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/federal_account/200000000/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"federal_accounts\":0}",
+        "contentType": "application/json"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/federal_account/999999999999/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "{\"detail\":\"No Award found with: '999999999999'\"}",
+        "contentType": "application/json"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/federal_account/foo/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>...",
+        "contentType": "text/html; charset=utf-8"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/federal_account/ASST_NON_NNX17AJ96A_8000/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "{\"detail\":\"No Award found with: 'ASST_NON_NNX17AJ96A_8000'\"}",
+        "contentType": "application/json"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/federal_account/ASST_NON_NNX17AJ96A_8000",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 301,
+        "bodyExcerpt": "",
+        "contentType": "text/html; charset=utf-8"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/count/federal_account/200000000/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 405,
+        "bodyExcerpt": "{\"detail\":\"Method \"POST\" not allowed.\"}",
+        "contentType": "application/json"
+      }
+    }
+  ],
+  "mismatches": [
+    "Documentation claims the `award_id` accepts assistance identifiers such as 'ASST_NON_NNX17AJ96A_8000', but the live API returns 404 for that value.",
+    "Docs describe `award_id` as an assistance or contract identifier string, yet probes show only digit-only internal award ids succeed."
+  ],
+  "gaps": [
+    "Exact numeric award id domain remains unclear; only sampled ids between roughly 200,000,000 and 350,239,000 were verified."
+  ],
+  "risks": [
+    "Clients must resolve the internal numeric award id via another endpoint before calling this route; public award identifiers fail.",
+    "Error handling must accommodate both JSON and HTML 404 payloads depending on whether the award id matches the digit-only pattern.",
+    "Clients that do not automatically follow redirects will fail if they omit the trailing slash."
+  ]
+}

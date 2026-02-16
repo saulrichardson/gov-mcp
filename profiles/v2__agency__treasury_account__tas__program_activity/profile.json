@@ -1,0 +1,393 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/treasury_account/tas/program_activity.md",
+    "description": "Returns aggregated program activity totals and their object class breakdowns for a treasury account symbol in a given fiscal year.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/treasury_account/{tas}/program_activity/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "tas": {
+          "location": "path",
+          "type": "string",
+          "description": "Treasury Account Symbol identifying the account to query; echoed verbatim in the response even when unknown.",
+          "constraints": "Required. Case-sensitive. Supports symbols with optional 'X' segment and at most one slash. Unknown values return 200 with empty results."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Appropriations fiscal year to report.",
+          "constraints": "Optional. Defaults to the current fiscal year (observed 2026). Accepts integers from 2008 through the current year inclusive. Requests before FY2017 return 200 with empty results plus a warning message. Values below 2008 or above the current year return 422; non-integers return 400."
+        },
+        "filter": {
+          "location": "query",
+          "type": "string",
+          "description": "Documented textual filter for object class names; observed to suppress all results when present.",
+          "constraints": "Optional. Any supplied value returned 200 with empty results/messages in probes, so callers should not rely on it for filtering."
+        },
+        "order": {
+          "location": "query",
+          "type": "string",
+          "description": "Controls sort direction when a sort field is applied.",
+          "constraints": "Optional. Enum ['asc', 'desc']; default 'desc'. Case-sensitive; invalid values return 400."
+        },
+        "sort": {
+          "location": "query",
+          "type": "string",
+          "description": "Field used for ordering results.",
+          "constraints": "Optional. Enum ['name', 'obligated_amount', 'gross_outlay_amount']; default 'obligated_amount'. 'type' is rejected with 400 despite documentation."
+        },
+        "page": {
+          "location": "query",
+          "type": "integer",
+          "description": "1-based results page to return.",
+          "constraints": "Optional. Integer \u2265 1; default 1. Values beyond available pages return 200 with empty results while echoing the requested page."
+        },
+        "limit": {
+          "location": "query",
+          "type": "integer",
+          "description": "Maximum number of program activities per page.",
+          "constraints": "Optional. Integer between 1 and 100 inclusive; default 10. Values outside the range return 422 and non-integers return 400."
+        }
+      },
+      "required": [
+        "tas"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "treasury_account_symbol": {
+          "type": "string",
+          "description": "Echo of the requested TAS string."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Fiscal year actually served (defaults to current year when omitted)."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata mirroring request inputs and dataset totals.",
+          "properties": {
+            "page": { "type": "integer" },
+            "total": { "type": "integer" },
+            "limit": { "type": "integer" },
+            "next": { "type": ["integer", "null"] },
+            "previous": { "type": ["integer", "null"] },
+            "hasNext": { "type": "boolean" },
+            "hasPrevious": { "type": "boolean" }
+          }
+        },
+        "results": {
+          "type": "array",
+          "description": "List of program activities for the TAS/year.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "obligated_amount": { "type": "number" },
+              "gross_outlay_amount": { "type": "number" },
+              "type": { "type": "string", "description": "Observed values 'PARK' and 'PAC/PAN' depending on fiscal year." },
+              "children": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "obligated_amount": { "type": "number" },
+                    "gross_outlay_amount": { "type": "number" }
+                  }
+                }
+              }
+            },
+            "required": ["name", "obligated_amount", "gross_outlay_amount", "type", "children"]
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Warning strings; observed populated when requesting fiscal years without available data.",
+          "items": { "type": "string" }
+        }
+      },
+      "required": [
+        "treasury_account_symbol",
+        "fiscal_year",
+        "page_metadata",
+        "results",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/treasury_account/075-X-0512-000/program_activity/",
+          "query": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "treasury_account_symbol": "075-X-0512-000",
+            "fiscal_year": 2026,
+            "page_metadata": {
+              "page": 1,
+              "total": 3,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "name": "MEDICAID VENDOR PAYMENTS",
+                "obligated_amount": 188798039926.4,
+                "gross_outlay_amount": 170933184201.12,
+                "type": "PARK",
+                "children": [
+                  {
+                    "name": "Grants and fixed charges",
+                    "obligated_amount": 188797859709.37,
+                    "gross_outlay_amount": 170933174900.98
+                  },
+                  {
+                    "name": "Personnel compensation and benefits",
+                    "obligated_amount": 180217.03,
+                    "gross_outlay_amount": 9300.14
+                  }
+                ]
+              }
+            ],
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/treasury_account/075-X-0512-000/program_activity/",
+          "query": {
+            "fiscal_year": "2023"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "treasury_account_symbol": "075-X-0512-000",
+            "fiscal_year": 2023,
+            "page_metadata": {
+              "page": 1,
+              "total": 2,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "name": "MEDICAID VENDOR PAYMENTS",
+                "obligated_amount": 635707857879.7,
+                "gross_outlay_amount": 610198073565.86,
+                "type": "PAC/PAN",
+                "children": [
+                  {
+                    "name": "Grants and fixed charges",
+                    "obligated_amount": 635707857879.7,
+                    "gross_outlay_amount": 610198073565.86
+                  }
+                ]
+              },
+              {
+                "name": "STATE AND LOCAL ADMINISTRATION",
+                "obligated_amount": 24458403727.41,
+                "gross_outlay_amount": 21873011542.17,
+                "type": "PAC/PAN",
+                "children": [
+                  {
+                    "name": "Grants and fixed charges",
+                    "obligated_amount": 24458403727.41,
+                    "gross_outlay_amount": 21873011542.17
+                  }
+                ]
+              }
+            ],
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/treasury_account/075-X-0512-000/program_activity/",
+          "query": {
+            "sort": "type"
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Field 'sort' is outside valid values ['name', 'obligated_amount', 'gross_outlay_amount']"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/treasury_account/075-X-0512-000/program_activity/",
+          "query": {
+            "fiscal_year": "2008"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "treasury_account_symbol": "075-X-0512-000",
+            "fiscal_year": 2008,
+            "page_metadata": {
+              "page": 1,
+              "total": 0,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "results": [],
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Unknown or case-mismatched TAS values return 200 with empty results, so callers must validate symbols externally.",
+      "Requested pages beyond available totals return empty results while `page_metadata.page` echoes the requested value and `hasNext` is false.",
+      "Sort order is case-sensitive; 'ASC' is rejected with 400.",
+      "Program activity `type` toggles between 'PARK' and 'PAC/PAN' depending on fiscal year.",
+      "Requests for fiscal years before FY2017 return 200 with empty results and a warning message.",
+      "Supplying the `filter` parameter currently suppresses all results."
+    ],
+    "risks": [
+      "Clients must distinguish 400 versus 422 validation errors to provide accurate feedback to callers.",
+      "Successful responses can contain empty `results` when TAS values or page numbers are invalid, so downstream logic must inspect totals before assuming data is present.",
+      "Financial totals are large and may include negative child values; use high-precision numeric handling.",
+      "Ignoring `messages` can hide data-availability warnings for older fiscal years.",
+      "Depending on `filter` for narrowing results will silently produce empty payloads."
+    ],
+    "gaps": [],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/075-X-0512-000/program_activity/",
+        "query": {}
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"treasury_account_symbol\":\"075-X-0512-000\",\"fiscal_year\":2026,\"page_metadata\":{\"page\":1,\"total\":3,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[{\"name\":\"MEDICAID VENDOR PAYMENTS\",\"obligated_amount\":188798039926.4,\"gross_outlay_amount\":170933184201.12,\"type\":\"PARK\",\"children\":[{\"name\":\"Grants and fixed charges\",\"obligated_amount\":188797859709.37,\"gross_outlay_amount\":170933174900.98},{\"name\":\"Personnel compensation and benefits\",\"obligated_amount\":180217.03,\"gross_outlay_amount\":9300.14}]},..."
+      },
+      "notes": "pass: default call returns three program activities for FY 2026"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/075-X-0512-000/program_activity/",
+        "query": {
+          "fiscal_year": "2023"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"treasury_account_symbol\":\"075-X-0512-000\",\"fiscal_year\":2023,\"page_metadata\":{\"page\":1,\"total\":2,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[{\"name\":\"MEDICAID VENDOR PAYMENTS\",\"obligated_amount\":635707857879.7,\"gross_outlay_amount\":610198073565.86,\"type\":\"PAC/PAN\",..."
+      },
+      "notes": "pass: fiscal_year=2023 succeeds and flips program activity type to PAC/PAN"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/075-X-0512-000/program_activity/",
+        "query": {
+          "limit": "1",
+          "page": "4"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"treasury_account_symbol\":\"075-X-0512-000\",\"fiscal_year\":2026,\"page_metadata\":{\"page\":4,\"total\":3,\"limit\":1,\"next\":null,\"previous\":3,\"hasNext\":false,\"hasPrevious\":true},\"results\":[],\"messages\":[]}" 
+      },
+      "notes": "pass: page beyond total yields empty results but metadata echoes requested page"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/075-X-0512-000/program_activity/",
+        "query": {
+          "sort": "type"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'sort' is outside valid values ['name', 'obligated_amount', 'gross_outlay_amount']\"}"
+      },
+      "notes": "fail: API rejects sort=type despite docs listing it"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/075-X-0512-000/program_activity/",
+        "query": {
+          "filter": "Grants"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"treasury_account_symbol\":\"075-X-0512-000\",\"fiscal_year\":2026,\"page_metadata\":{\"page\":1,\"total\":0,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[],\"messages\":[]}" 
+      },
+      "notes": "fail: `filter` parameter returned empty data in all trials"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/treasury_account/075-X-0512-000/program_activity/",
+        "query": {
+          "fiscal_year": "2008"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"treasury_account_symbol\":\"075-X-0512-000\",\"fiscal_year\":2008,\"page_metadata\":{\"page\":1,\"total\":0,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[],\"messages\":[\"Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years.\"]}"
+      },
+      "notes": "pass: fiscal_year=2008 returns empty results with a warning message"
+    }
+  ],
+  "mismatches": [
+    "Documentation lists 'type' as a valid `sort` option, but the API returns 400 with the valid set ['name','obligated_amount','gross_outlay_amount'].",
+    "Documentation describes `filter` as narrowing by object class name, yet every tested value returned 200 with empty results."
+  ],
+  "gaps": [],
+  "risks": [
+    "Differentiating 400 versus 422 responses is necessary to expose accurate validation feedback to users.",
+    "Empty `results` payloads occur for bad TAS, suppressed filters, or out-of-range pages even when the HTTP status is 200.",
+    "Numeric fields can exceed typical 32-bit ranges and include negatives, requiring high-precision handling.",
+    "Warning messages communicate data gaps for older fiscal years; ignoring them can mislead reporting.",
+    "Depending on the `filter` parameter will silently drop all data until the service restores its intended behavior."
+  ]
+}

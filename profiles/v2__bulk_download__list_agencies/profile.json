@@ -1,0 +1,395 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/bulk_download/list_agencies.md",
+    "description": "Lists bulk download agencies and returns either aggregated toptier agency groups or the subtier agencies for a selected toptier identifier.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/bulk_download/list_agencies/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "type": {
+          "location": "body",
+          "type": "string",
+          "description": "Selects which agency collection to return (accounts vs awards).",
+          "constraints": "Required. Case-sensitive; must be either 'account_agencies' or 'award_agencies'. Any other value, including null or uppercase variants, yields a 400 detail error."
+        },
+        "agency": {
+          "location": "body",
+          "type": [
+            "number",
+            "string",
+            "null"
+          ],
+          "description": "Optional toptier agency identifier used to request its subtier agencies instead of the aggregated toptier lists.",
+          "constraints": "Optional. JSON numbers are truncated to integers (e.g., 63.1 -> 63) and 0 behaves like omission. Digit-only strings are accepted (\"63\"), but the string '0', decimal strings (e.g., '63.0'), whitespace-only strings, or non-digit strings cause 400 or 500 errors. Null or an empty string act like omission. Unknown or negative ids return 400 'Agency ID not found'."
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "agencies": {
+          "type": [
+            "object",
+            "array"
+          ],
+          "description": "Aggregated toptier response: object with 'cfo_agencies' and 'other_agencies' arrays containing name, toptier_agency_id, and toptier_code. When an agency filter is supplied or the selected toptier lacks flagged sub agencies, this field is the literal empty array [].",
+          "properties": {
+            "cfo_agencies": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "toptier_agency_id": {
+                    "type": "number"
+                  },
+                  "toptier_code": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "other_agencies": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "toptier_agency_id": {
+                    "type": "number"
+                  },
+                  "toptier_code": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "sub_agencies": {
+          "type": "array",
+          "description": "List of subtier agencies returned when a valid agency id is provided; otherwise empty.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "subtier_agency_name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "agencies",
+        "sub_agencies"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/bulk_download/list_agencies/",
+          "query": {},
+          "body": {
+            "type": "account_agencies"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "agencies": {
+              "cfo_agencies": [
+                {
+                  "name": "Department of Agriculture",
+                  "toptier_agency_id": 14,
+                  "toptier_code": "012"
+                },
+                {
+                  "name": "Department of Commerce",
+                  "toptier_agency_id": 15,
+                  "toptier_code": "013"
+                }
+              ],
+              "other_agencies": [
+                {
+                  "name": "Access Board",
+                  "toptier_agency_id": 102,
+                  "toptier_code": "310"
+                },
+                {
+                  "name": "Administrative Conference of the U.S.",
+                  "toptier_agency_id": 92,
+                  "toptier_code": "302"
+                }
+              ]
+            },
+            "sub_agencies": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/bulk_download/list_agencies/",
+          "query": {},
+          "body": {
+            "type": "award_agencies",
+            "agency": 63.1
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "agencies": [],
+            "sub_agencies": [
+              {
+                "subtier_agency_name": "Countering Weapons of Mass Destruction"
+              },
+              {
+                "subtier_agency_name": "Cybersecurity and Infrastructure Security Agency"
+              },
+              {
+                "subtier_agency_name": "Domestic Nuclear Detection Office"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/bulk_download/list_agencies/",
+          "query": {},
+          "body": {
+            "type": "award_agencies",
+            "agency": "63.0"
+          }
+        },
+        "response": {
+          "status": 500,
+          "body": "<!doctype html><html lang=\"en\"><head><title>Server Error (500)</title></head><body><h1>Server Error (500)</h1><p></p></body></html>"
+        }
+      }
+    ],
+    "quirks": [
+      "Requests resolving to the service's IPv6 address return empty replies; forcing IPv4 avoids consistent connection drops.",
+      "Response field 'agencies' alternates between an object (with cfo_agencies/other_agencies) and the literal empty array [].",
+      "application/x-www-form-urlencoded payloads (e.g., 'type=account_agencies') are accepted alongside JSON bodies.",
+      "Numeric 0 in the agency field behaves like omission, while the string '0' is rejected with 'Agency ID not found'."
+    ],
+    "risks": [
+      "Load balancer occasionally closes connections without a response, especially over IPv6; clients should retry over IPv4.",
+      "Non-digit agency strings (including decimal or whitespace-only strings) trigger HTML 500 responses and require client-side validation.",
+      "Consumers must handle the 'agencies' field as either an object or an empty array depending on request context."
+    ],
+    "gaps": [],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_agencies/",
+        "query": {},
+        "body": {
+          "type": "account_agencies"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"agencies\":{\"cfo_agencies\":[{\"name\":\"Department of Agriculture\",\"toptier_agency_id\":14,\"toptier_code\":\"012\"},{\"name\":\"Department of Commerce\",\"toptier_agency_id\":15,\"toptier_code\":\"013\"}],\"other_agencies\":[{\"name\":\"Access Board\"...}]},\"sub_agencies\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Base account agency list with cfo/other groups."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_agencies/",
+        "query": {},
+        "body": {
+          "type": "award_agencies"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"agencies\":{\"cfo_agencies\":[{\"name\":\"Department of Agriculture\"...}],\"other_agencies\":[{\"name\":\"Library of Congress\"...}]},\"sub_agencies\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Award agency list mirrors aggregated toptier response."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_agencies/",
+        "query": {},
+        "body": {
+          "type": "award_agencies",
+          "agency": 63.1
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"agencies\":[],\"sub_agencies\":[{\"subtier_agency_name\":\"Countering Weapons of Mass Destruction\"},{\"subtier_agency_name\":\"Cybersecurity and Infrastructure Security Agency\"},...]}",
+        "contentType": "application/json"
+      },
+      "notes": "JSON float agency truncates to 63 and returns Homeland Security sub-agencies."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_agencies/",
+        "query": {},
+        "body": {
+          "agency": 63
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"type must be one of: ('account_agencies', 'award_agencies')\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Missing required type field is rejected."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_agencies/",
+        "query": {},
+        "body": {
+          "type": "ACCOUNT_AGENCIES"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"type must be one of: ('account_agencies', 'award_agencies')\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Type value is case-sensitive."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_agencies/",
+        "query": {},
+        "body": {
+          "type": "award_agencies",
+          "agency": "63"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"agencies\":[],\"sub_agencies\":[{\"subtier_agency_name\":\"Countering Weapons of Mass Destruction\"},...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Digit-only string agency id succeeds."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_agencies/",
+        "query": {},
+        "body": {
+          "type": "award_agencies",
+          "agency": "63.0"
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head><title>Server Error (500)</title></head><body><h1>Server Error (500)</h1><p></p></body></html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Decimal string for agency crashes the server."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_agencies/",
+        "query": {},
+        "body": {
+          "type": "award_agencies",
+          "agency": "   "
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head><title>Server Error (500)</title></head><body><h1>Server Error (500)</h1><p></p></body></html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Whitespace-only agency string triggers HTML 500."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_agencies/",
+        "query": {},
+        "body": {
+          "type": "award_agencies",
+          "agency": "0"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Agency ID not found\"}",
+        "contentType": "application/json"
+      },
+      "notes": "String '0' is rejected even though numeric 0 is treated as omission."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_agencies/",
+        "query": {},
+        "body": "type=account_agencies"
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"agencies\":{\"cfo_agencies\":[{\"name\":\"Department of Agriculture\"...}]...},\"sub_agencies\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Form-encoded payload accepted."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/bulk_download/list_agencies/",
+        "query": {},
+        "body": {
+          "type": "account_agencies"
+        }
+      },
+      "response": {
+        "status": 0,
+        "bodyExcerpt": "[no response]",
+        "contentType": ""
+      },
+      "notes": "AAAA/IPv6 connection closed with empty reply."
+    }
+  ],
+  "mismatches": [
+    "Docs describe 'agencies' as an object with cfo_agencies and other_agencies, but sub-agency responses and some filtered calls return an empty array instead.",
+    "Docs imply agency: 0 requests subtier agencies, whereas the live API treats numeric 0 as omission and only string '0' errors."
+  ],
+  "gaps": [],
+  "risks": [
+    "Load balancer occasionally closes connections without a response, especially over IPv6; clients should retry over IPv4.",
+    "Non-digit agency strings (including decimal or whitespace-only strings) trigger HTML 500 responses and require client-side validation.",
+    "Consumers must handle the 'agencies' field as either an object or an empty array depending on request context."
+  ]
+}

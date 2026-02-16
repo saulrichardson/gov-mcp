@@ -1,0 +1,373 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/download/awards.md",
+    "description": "Starts an awards download job and returns absolute links for polling status and retrieving the generated ZIP.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/download/awards/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "columns": {
+          "location": "body",
+          "type": "array",
+          "description": "Optional list of column identifiers to request in the export.",
+          "constraints": "Optional; array of strings. Server echoes unknown column names without validation."
+        },
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Search filters determining which awards are exported, following the Search Filters v2 structures (agencies, keywords, time_period, etc.).",
+          "constraints": "Required; must be a non-empty object. Valid combinations are flexible, but the API silently drops unrecognized keys and injects a comprehensive award_type_codes list when absent. Specific nested validations apply (e.g., time_period arrays must contain at least one entry, agency objects require type and tier, recipient_search_text must be an array)."
+        },
+        "file_format": {
+          "location": "body",
+          "type": "string",
+          "description": "Controls the generated file format for each dataset in the download.",
+          "constraints": "Optional; defaults to 'csv'. Observed valid values are 'csv', 'tsv', and 'pstxt'. Other values are rejected with HTTP 400."
+        },
+        "limit": {
+          "location": "body",
+          "type": "number",
+          "description": "Maximum number of records to include in the generated files.",
+          "constraints": "Optional; defaults to 500000. Values above 500000 return HTTP 422. Zero or negative numbers are accepted without server-side enforcement, so clients should guard against unintended results."
+        }
+      },
+      "required": [
+        "filters"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "status_url": {
+          "type": "string",
+          "description": "Absolute HTTPS URL for polling the download job's status."
+        },
+        "file_name": {
+          "type": "string",
+          "description": "Generated ZIP filename (PrimeAwardSummariesAndSubawards_YYYY-MM-DD_HHMMSSXXXXXXXX.zip)."
+        },
+        "file_url": {
+          "type": "string",
+          "description": "Absolute HTTPS URL for the generated ZIP once ready."
+        },
+        "download_request": {
+          "type": "object",
+          "description": "Echo of the processed request, including server defaults such as download_types=['elasticsearch_awards','elasticsearch_sub_awards'], injected award_type_codes, and the effective filters, limit, file_format, columns, and request_type."
+        }
+      },
+      "required": [
+        "status_url",
+        "file_name",
+        "file_url",
+        "download_request"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/awards/",
+          "query": {},
+          "body": {
+            "filters": {
+              "keywords": [
+                "forest"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "status_url": "https://api.usaspending.gov/api/v2/download/status?file_name=PrimeAwardSummariesAndSubawards_2026-02-13_H22M40S33025871.zip",
+            "file_name": "PrimeAwardSummariesAndSubawards_2026-02-13_H22M40S33025871.zip",
+            "file_url": "https://files.usaspending.gov/generated_downloads/PrimeAwardSummariesAndSubawards_2026-02-13_H22M40S33025871.zip",
+            "download_request": {
+              "download_types": [
+                "elasticsearch_awards",
+                "elasticsearch_sub_awards"
+              ],
+              "file_format": "csv",
+              "filters": {
+                "award_type_codes": [
+                  "-1",
+                  "02",
+                  "03",
+                  "04",
+                  "05",
+                  "06",
+                  "07",
+                  "08",
+                  "09",
+                  "10",
+                  "11",
+                  "A",
+                  "B",
+                  "C",
+                  "D",
+                  "IDV_A",
+                  "IDV_B",
+                  "IDV_B_A",
+                  "IDV_B_B",
+                  "IDV_B_C",
+                  "IDV_C",
+                  "IDV_D",
+                  "IDV_E"
+                ],
+                "keywords": [
+                  "forest"
+                ]
+              },
+              "limit": 500000,
+              "request_type": "award"
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/awards/",
+          "query": {},
+          "body": {
+            "filters": {
+              "time_period": [
+                {
+                  "start_date": "2023-01-01",
+                  "end_date": "2023-12-31"
+                }
+              ]
+            },
+            "limit": 1000001
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'limit' value '1000001' is above max '500000'"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/awards/",
+          "query": {},
+          "body": {
+            "filters": {}
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "At least one filter is required."
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "download_request.download_types are always ['elasticsearch_awards', 'elasticsearch_sub_awards'] regardless of requested data set labels.",
+      "The API injects a comprehensive award_type_codes list into download_request.filters even when the client omits it.",
+      "transaction_keyword_search inputs are accepted in the request but omitted from download_request.filters.",
+      "file_url values are always absolute HTTPS URLs, not relative paths as shown in documentation examples.",
+      "filters must be present and non-empty, yet any unrecognized keys inside filters are silently dropped rather than producing validation errors.",
+      "columns are not validated server-side; unknown column identifiers are echoed back."
+    ],
+    "risks": [
+      "API connections over IPv6 have returned empty replies; callers should force IPv4 or retry with alternate DNS resolution.",
+      "Silently dropping unknown filter keys can lead to broader downloads than intended if typos go unnoticed.",
+      "Lack of column name validation may produce downstream processing errors when typos slip through.",
+      "The default limit of 500000 combined with injected award_type_codes can create very large exports unless callers actively constrain filters and limits."
+    ],
+    "gaps": [
+      "Impact of zero or negative limit values on the generated dataset remains unverified because resulting files were not downloaded.",
+      "Download job lifecycle beyond the initial POST (status polling and file retrieval) was not validated.",
+      "Exact server-side handling of unfamiliar filter structures is unclear beyond the observed silent drops."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/awards/",
+        "query": {},
+        "body": {
+          "filters": {
+            "keywords": [
+              "forest"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"file_name\": \"PrimeAwardSummariesAndSubawards_2026-02-13_H22M40S33025871.zip\", \"download_request\": {\"filters\": {\"keywords\": [\"forest\"], \"award_type_codes\": [\"-1\", \"02\", \"03\", \"04\", \"05\", \"06\", \"07\", \"08\", \"09\", \"10\", \"11\", \"A\", \"B\", \"C\", \"D\", \"IDV_A\", \"IDV_B\", \"IDV_B_A\", \"IDV_B_B\", \"IDV_B_C\", \"IDV_C\", \"IDV_D\", \"IDV_E\"]}}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – filters can omit time_period entirely; server still injects award_type_codes and defaults."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/awards/",
+        "query": {},
+        "body": {
+          "filters": {
+            "time_period": []
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'filters|time_period' value '[]' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail – time_period must contain at least one object when present."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/awards/",
+        "query": {},
+        "body": {
+          "filters": {}
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"At least one filter is required.\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail – filters field must be a non-empty object."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/awards/",
+        "query": {},
+        "body": {
+          "columns": [
+            "assistance_award_unique_key",
+            "total_funding_amount"
+          ],
+          "filters": {
+            "award_type_codes": [
+              "A",
+              "B"
+            ],
+            "time_period": [
+              {
+                "start_date": "2022-10-01",
+                "end_date": "2023-09-30"
+              }
+            ]
+          },
+          "file_format": "tsv",
+          "limit": 10
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"download_request\": {\"columns\": [\"assistance_award_unique_key\", \"total_funding_amount\"], \"file_format\": \"tsv\", \"limit\": 10, \"filters\": {\"award_type_codes\": [\"A\", \"B\"], \"time_period\": [{\"start_date\": \"2022-10-01\", \"end_date\": \"2023-09-30\"}]}}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – custom columns, TSV format, and small limit were honored."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/awards/",
+        "query": {},
+        "body": {
+          "filters": {
+            "time_period": [
+              {
+                "start_date": "2023-01-01",
+                "end_date": "2023-12-31"
+              }
+            ]
+          },
+          "file_format": "xls"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'file_format' is outside valid values ['csv', 'tsv', 'pstxt']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail – invalid file_format rejected with explicit enum list."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/awards/",
+        "query": {},
+        "body": {
+          "filters": {
+            "recipient_search_text": [
+              "D12345678",
+              "Department of Defense"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"download_request\": {\"filters\": {\"recipient_search_text\": [\"D12345678\", \"Department of Defense\"], \"award_type_codes\": [\"-1\", \"02\", \"03\", \"04\", \"05\", \"06\", \"07\", \"08\", \"09\", \"10\", \"11\", \"A\", \"B\", \"C\", \"D\", \"IDV_A\", \"IDV_B\", \"IDV_B_A\", \"IDV_B_B\", \"IDV_B_C\", \"IDV_C\", \"IDV_D\", \"IDV_E\"]}}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass – recipient_search_text accepts multi-value arrays despite documentation limits."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/download/awards/",
+        "query": {},
+        "body": {
+          "filters": {
+            "time_period": [
+              {
+                "start_date": "2023-01-01",
+                "end_date": "2023-12-31"
+              }
+            ]
+          },
+          "limit": 1000001
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '1000001' is above max '500000'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail – server enforces an upper limit of 500000."
+    }
+  ],
+  "mismatches": [
+    "Documentation lists download_types as ['awards', 'sub_awards'], but responses return ['elasticsearch_awards', 'elasticsearch_sub_awards'].",
+    "Documentation depicts file_url as a relative path, yet production responses return absolute HTTPS URLs.",
+    "Documentation constrains recipient_search_text to a single value, while the API accepts multi-entry arrays.",
+    "Documentation treats transaction_keyword_search as a persisted filter, but the API drops it from download_request.filters."
+  ],
+  "gaps": [
+    "Impact of zero or negative limit values on the generated dataset remains unverified because resulting files were not downloaded.",
+    "Download job lifecycle beyond the initial POST (status polling and file retrieval) was not validated.",
+    "Exact server-side handling of unfamiliar filter structures is unclear beyond the observed silent drops."
+  ],
+  "risks": [
+    "API connections over IPv6 have returned empty replies; callers should force IPv4 or retry with alternate DNS resolution.",
+    "Silently dropping unknown filter keys can lead to broader downloads than intended if typos go unnoticed.",
+    "Lack of column name validation may produce downstream processing errors when typos slip through.",
+    "The default limit of 500000 combined with injected award_type_codes can create very large exports unless callers actively constrain filters and limits."
+  ]
+}

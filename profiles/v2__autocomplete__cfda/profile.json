@@ -1,0 +1,244 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/cfda.md",
+    "description": "Returns CFDA program autocomplete suggestions based on a search string with an optional result cap.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "\u002fapi\u002fv2\u002fautocomplete\u002fcfda\u002f"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "search_text": {
+          "location": "body",
+          "type": "string",
+          "description": "Substring used to match CFDA program numbers, titles, or popular names (matching is case-insensitive).",
+          "constraints": "Required JSON string with length \u003e 0. Missing, null, or empty strings return 400 (detail: 'Missing one or more required request parameters: search_text'). Non-string primitives (for example numbers) surface HTML 500 errors, while arrays are treated as missing and return the same 400 message. Input is not trimmed; whitespace-only strings are accepted verbatim and yield matches based on the literal spaces."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of matches to return. Defaults to 10 when omitted.",
+          "constraints": "Optional. Values \u003e= 0 are honored after integer coercion (numeric strings, decimals, booleans). 0 returns an empty result set. Non-numeric strings (including empty string) return 400 with detail 'Limit request parameter is not a valid, positive integer'. Values that coerce to negative integers, null, or arrays trigger HTML 500 errors instead of JSON."
+        }
+      },
+      "required": [
+        "search_text"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Array of CFDA matches sorted lexicographically by program_number, capped by the effective limit. Each element is an object with string fields program_number, program_title, and popular_name (popular_name may be an empty string). Empty array indicates no matches.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "program_number": {
+                "type": "string"
+              },
+              "program_title": {
+                "type": "string"
+              },
+              "popular_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "program_number",
+              "program_title",
+              "popular_name"
+            ]
+          }
+        }
+      },
+      "required": [
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "\u002fapi\u002fv2\u002fautocomplete\u002fcfda\u002f",
+          "query": {},
+          "body": {
+            "search_text": "education",
+            "limit": 5
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "program_number": "12.550",
+                "program_title": "The Language Flagship Grants to Institutions of Higher Education",
+                "popular_name": "The Language Flagship"
+              },
+              {
+                "program_number": "20.215",
+                "program_title": "Highway Training and Education",
+                "popular_name": "NHI, LTAP, DDETFP, TETDDP, GAMTTEP"
+              },
+              {
+                "program_number": "20.293",
+                "program_title": "Garrett A. Morgan Technology and Transportation Education Program (GAMTTEP)",
+                "popular_name": ""
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "\u002fapi\u002fv2\u002fautocomplete\u002fcfda\u002f",
+          "query": {},
+          "body": {
+            "search_text": "education",
+            "limit": "abc"
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Limit request parameter is not a valid, positive integer"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Negative limits (including numeric strings) and null or array values yield HTML 500 responses instead of structured JSON errors.",
+      "search_text is not trimmed; leading or trailing whitespace changes matching and even space-only strings return results.",
+      "Boolean, decimal, and numeric-string limit values are coerced to integers (true=1, false=0).",
+      "Large limit requests (for example 20000) return the entire CFDA catalog (~3.8k records) in one payload with no pagination metadata."
+    ],
+    "risks": [
+      "Clients must guard against unparseable HTML 500 responses by validating limit inputs client-side.",
+      "Requesting very large limits can pull the full dataset into memory and impact latency or client parsing.",
+      "popular_name often comes through empty or with irregular spacing; callers should tolerate blank display values."
+    ],
+    "gaps": [],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "\u002fapi\u002fv2\u002fautocomplete\u002fcfda\u002f",
+        "query": {},
+        "body": {
+          "search_text": "education"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"program_number\":\"12.330\",\"program_title\":\"Science, Technology, Engineering & Mathematics (STEM) Education, Outreach and Workforce Program\",\"popular_name\":\"\"}, ...]}",
+        "contentType": "application\u002fjson"
+      },
+      "notes": "Default request returned 10 matches sorted by program_number, confirming the implicit limit of 10."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\u002fapi\u002fv2\u002fautocomplete\u002fcfda\u002f",
+        "query": {},
+        "body": {
+          "search_text": "education",
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"program_number\":\"12.550\",\"program_title\":\"The Language Flagship Grants to Institutions of Higher Education\"}, ...]}",
+        "contentType": "application\u002fjson"
+      },
+      "notes": "Honors limit=5 and returns both populated and empty popular_name values."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\u002fapi\u002fv2\u002fautocomplete\u002fcfda\u002f",
+        "query": {},
+        "body": {
+          "search_text": "a",
+          "limit": 20000
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"program_number\":\"10.001\",\"program_title\":\"Agricultural Research Basic and Applied Research\"}, ... 3767 items]}",
+        "contentType": "application\u002fjson"
+      },
+      "notes": "Large limit returned the full dataset (~3,767 programs) sorted by program_number."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\u002fapi\u002fv2\u002fautocomplete\u002fcfda\u002f",
+        "query": {},
+        "body": {
+          "search_text": "education",
+          "limit": "-5"
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "\u003chtml\u003e...Server Error (500)...\u003c\u002fhtml\u003e",
+        "contentType": "text\u002fhtml; charset=utf-8"
+      },
+      "notes": "Negative limit supplied as a string causes an HTML 500 instead of a JSON validation message."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\u002fapi\u002fv2\u002fautocomplete\u002fcfda\u002f",
+        "query": {},
+        "body": {
+          "search_text": "education",
+          "limit": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"program_number\":\"20.215\",\"program_title\":\"Highway Training and Education\"}]}",
+        "contentType": "application\u002fjson"
+      },
+      "notes": "Boolean true is coerced to limit=1."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\u002fapi\u002fv2\u002fautocomplete\u002fcfda\u002f",
+        "query": {},
+        "body": {
+          "search_text": []
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Missing one or more required request parameters: search_text\"}",
+        "contentType": "application\u002fjson"
+      },
+      "notes": "Array value for search_text is rejected with the same 400 message used for missing input."
+    }
+  ],
+  "mismatches": [
+    "Docs describe limit as a simple number, but negative, null, or array values produce HTML 500 errors instead of typed validation feedback.",
+    "Docs imply invalid search_text types should be handled by schema validation, yet numeric inputs trigger HTML 500 responses."
+  ],
+  "gaps": [],
+  "risks": [
+    "Clients must guard against unparseable HTML 500 responses by validating limit inputs client-side.",
+    "Requesting very large limits can pull the full dataset into memory and impact latency or client parsing.",
+    "popular_name often comes through empty or with irregular spacing; callers should tolerate blank display values."
+  ]
+}

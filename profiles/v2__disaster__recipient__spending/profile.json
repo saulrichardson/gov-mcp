@@ -1,0 +1,490 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/recipient/spending.md",
+    "description": "Aggregates disaster and emergency supplemental spending by recipient with optional sorting and filters.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/recipient/spending/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [
+        "filter"
+      ],
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Primary filter object. The only mandatory key is def_codes; other shared filters are accepted but may have no effect if the dataset lacks matching records.",
+          "constraints": "required"
+        },
+        "filter.def_codes": {
+          "location": "body",
+          "type": "array",
+          "description": "List of Disaster Emergency Fund (DEFC) codes to aggregate over.",
+          "constraints": "required; minItems=1; accepts uppercase codes from the enumerated list (digits 1-9, single letters A-Z, multi-letter codes such as AAA-AAL and QQQ); must be sent as an array; empty array -> 422; invalid code -> 400 with allowed list"
+        },
+        "filter.award_type_codes": {
+          "location": "body",
+          "type": "array",
+          "description": "Optional award type filter limiting the aggregated recipients.",
+          "constraints": "optional; minItems=1; allowed values ['-1','02','03','04','05','06','07','08','09','10','11','A','B','C','D','IDV_A','IDV_B','IDV_B_A','IDV_B_B','IDV_B_C','IDV_C','IDV_D','IDV_E']; empty array -> 422; other codes -> 400"
+        },
+        "filter.query": {
+          "location": "body",
+          "type": "string",
+          "description": "Keyword search applied to recipient text fields.",
+          "constraints": "optional; must be non-empty; empty string -> 422; unmatched terms return 200 with zero totals"
+        },
+        "filter.time_period": {
+          "location": "body",
+          "type": "array",
+          "description": "Accepted list of Search v2 time_period objects (start_date/end_date/date_type).",
+          "constraints": "optional; payloads are accepted but observed responses ignore the supplied bounds"
+        },
+        "pagination": {
+          "location": "body",
+          "type": "object",
+          "description": "Paging and sorting controls.",
+          "constraints": "optional; defaults to page=1, limit=10, order='desc', sort='id' (which immediately falls back to description and emits a warning)"
+        },
+        "pagination.limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Number of recipient rows per page.",
+          "constraints": "optional; accepts integers 1-100 inclusive; numeric strings are coerced; floats trigger 400; values outside range trigger 422"
+        },
+        "pagination.page": {
+          "location": "body",
+          "type": "integer",
+          "description": "Requested page number (1-indexed).",
+          "constraints": "optional; minimum 1; zero or negative values return 422; high pages return empty results with metadata"
+        },
+        "pagination.sort": {
+          "location": "body",
+          "type": "string",
+          "description": "Field used to order recipients.",
+          "constraints": "optional; allowed values ['award_count','description','code','id','obligation','outlay']; default 'id' triggers a warning and sorts by description"
+        },
+        "pagination.order": {
+          "location": "body",
+          "type": "string",
+          "description": "Sort direction for the selected field.",
+          "constraints": "optional; allowed values ['asc','desc']; invalid strings return 400"
+        },
+        "spending_type": {
+          "location": "body",
+          "type": "string",
+          "description": "Determines which metric drives the ranking and totals.",
+          "constraints": "optional; observed values ['total','obligation','outlay','award_count']; null or unknown strings silently revert to 'total'"
+        }
+      }
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [
+        "totals",
+        "results",
+        "page_metadata"
+      ],
+      "properties": {
+        "totals": {
+          "type": "object",
+          "description": "Aggregate sums across all recipients that match the filters.",
+          "required": [
+            "obligation",
+            "outlay",
+            "award_count"
+          ],
+          "properties": {
+            "obligation": {
+              "type": "number",
+              "description": "Total obligations for matching recipients (can be negative)."
+            },
+            "outlay": {
+              "type": "number",
+              "description": "Total outlays for matching recipients (can be negative)."
+            },
+            "award_count": {
+              "type": "number",
+              "description": "Number of awards included in the aggregate."
+            }
+          }
+        },
+        "results": {
+          "type": "array",
+          "description": "Recipient rollups for the requested page; may be empty when no records match.",
+          "items": {
+            "type": "object",
+            "required": [
+              "code",
+              "description",
+              "award_count",
+              "obligation",
+              "outlay"
+            ],
+            "properties": {
+              "id": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "description": "Array of award identifiers backing the row; null for aggregated pseudo-recipients in award_count mode."
+              },
+              "code": {
+                "type": "string",
+                "description": "Recipient identifier (UEI/DUNS or synthetic bucket code)."
+              },
+              "description": {
+                "type": "string",
+                "description": "Recipient name or bucket label."
+              },
+              "award_count": {
+                "type": "number",
+                "description": "Number of awards included in this recipient grouping."
+              },
+              "obligation": {
+                "type": "number",
+                "description": "Total obligations attributed to the recipient in the selected view."
+              },
+              "outlay": {
+                "type": "number",
+                "description": "Total outlays attributed to the recipient in the selected view."
+              }
+            }
+          }
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata for the current request.",
+          "required": [
+            "page",
+            "total",
+            "limit",
+            "next",
+            "previous",
+            "hasNext",
+            "hasPrevious"
+          ],
+          "properties": {
+            "page": {
+              "type": "number",
+              "description": "Requested page number."
+            },
+            "total": {
+              "type": "number",
+              "description": "Total number of recipient rows available for the query."
+            },
+            "limit": {
+              "type": "number",
+              "description": "Page size used in this response."
+            },
+            "next": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Next page number when additional results exist, otherwise null."
+            },
+            "previous": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Previous page number when available, otherwise null."
+            },
+            "hasNext": {
+              "type": "boolean",
+              "description": "True when more results follow the current page."
+            },
+            "hasPrevious": {
+              "type": "boolean",
+              "description": "True when earlier pages exist."
+            }
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Optional warning strings (commonly surfaced when sort='id' falls back to description).",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/recipient/spending/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            },
+            "pagination": {
+              "sort": "description",
+              "order": "asc",
+              "limit": 3
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "totals": {
+              "obligation": 4291442486.72,
+              "outlay": 6192693427.16,
+              "award_count": 5403
+            },
+            "results": [
+              {
+                "id": [
+                  "0007e670-d7d4-4312-d81c-7ab3ea17a981-C"
+                ],
+                "code": "175970748",
+                "description": "STATESIDE PROCUREMENT SERVICES, INC.",
+                "award_count": 2,
+                "obligation": 21845.0,
+                "outlay": 19407.0
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 3045,
+              "limit": 3,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/recipient/spending/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            },
+            "pagination": {
+              "limit": 5,
+              "sort": "bad_field"
+            }
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Field 'sort' is outside valid values ['award_count', 'description', 'code', 'id', 'obligation', 'outlay']"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/recipient/spending/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ],
+              "query": "zzzzzzzzz"
+            },
+            "pagination": {
+              "limit": 5
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "totals": {
+              "obligation": 0.0,
+              "outlay": 0.0,
+              "award_count": 0
+            },
+            "results": [],
+            "page_metadata": {
+              "page": 1,
+              "total": 0,
+              "limit": 5,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "messages": [
+              "Notice! API Request to sort on 'id' field isn't fully implemented. Results were actually sorted using 'description' field."
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Default pagination.sort of 'id' falls back to description ordering and emits a warning message.",
+      "Result id values become null for aggregated pseudo-recipients when spending_type='award_count'.",
+      "time_period filters are accepted but ignored in observed responses.",
+      "Invalid or null spending_type values silently revert to 'total'."
+    ],
+    "risks": [
+      "Clients that rely on default sorting must handle warning messages and implicit description ordering.",
+      "Downstream consumers must tolerate null result ids in award_count mode.",
+      "Date-constrained analyses can be misleading because time_period filters do not affect the dataset."
+    ],
+    "gaps": [
+      "Unknown which recipient fields the query filter searches across.",
+      "Unclear whether additional shared filters (e.g., recipient_type_names, agencies) have any effect beyond being syntactically accepted.",
+      "Possible additional spending_type values beyond the four observed remain undocumented."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\": {\"obligation\": 4291442486.72, \"outlay\": 6192693427.16, \"award_count\": 5403}, \"results\": [{\"id\": [\"fff8e22a-ecad-1885-d9a5-ae95e8c6fa27-C\"...}] , \"messages\": [\"Notice! API Request to sort on 'id' field isn't fully implemented. Results were actually sorted using 'description' field.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Baseline request succeeds but triggers the id-sort fallback warning."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "pagination": {
+            "sort": "description",
+            "order": "asc",
+            "limit": 3
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\":{\"obligation\":4291442486.72,\"outlay\":6192693427.16,\"award_count\":5403},\"results\":[{\"id\":[\"0007e670-d7d4-4312-d81c-7ab3ea17a981-C\"],\"code\":\"175970748\",\"description\":[...] }],\"page_metadata\":{\"page\":1,\"total\":3045,\"limit\":3,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false}}",
+        "contentType": "application/json"
+      },
+      "notes": "Explicit sort=description removes the warning and enforces alphabetical ordering."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "spending_type": "award_count",
+          "pagination": {
+            "limit": 5,
+            "sort": "award_count",
+            "order": "desc"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\": [{\"id\": null, \"code\": \"123456787\", \"description\": \"MISCELLANEOUS FOREIGN AWARDEES\", \"award_count\": 135, ...}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Award_count mode returns aggregated rows with id=null, contradicting doc schema."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "pagination": {
+            "limit": 5,
+            "sort": "bad_field"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\": \"Field 'sort' is outside valid values ['award_count', 'description', 'code', 'id', 'obligation', 'outlay']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Invalid sort values are rejected with a 400 error listing the accepted options."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "query": "zzzzzzzzz"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\":{\"obligation\":0.0,\"outlay\":0.0,\"award_count\":0},\"results\":[],\"page_metadata\":{\"total\":0,...},\"messages\":[\"Notice! API Request to sort on 'id' field isn't fully implemented...\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Unmatched keywords return an empty result set but still emit the id-sort warning when sort is not overridden."
+    }
+  ],
+  "mismatches": [
+    "Docs require Result.id to be an array of strings, but award_count responses return null for aggregated recipients.",
+    "Docs list pagination.sort options as description/award_count/obligation/outlay, yet the API also accepts code and id (id emits a warning and sorts by description).",
+    "Docs do not mention the spending_type parameter even though the endpoint accepts 'total', 'obligation', 'outlay', and 'award_count'.",
+    "Shared filter docs imply time_period constrains results, but observed responses ignore the supplied ranges."
+  ],
+  "gaps": [
+    "Unknown which recipient fields the query filter searches across.",
+    "Unclear whether additional shared filters (e.g., recipient_type_names, agencies) have any effect beyond being syntactically accepted.",
+    "Possible additional spending_type values beyond the four observed remain undocumented."
+  ],
+  "risks": [
+    "Clients that rely on default sorting must handle warning messages and implicit description ordering.",
+    "Downstream consumers must tolerate null result ids in award_count mode.",
+    "Date-constrained analyses can be misleading because time_period filters do not affect the dataset."
+  ]
+}

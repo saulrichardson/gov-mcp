@@ -12,7 +12,7 @@ function profileDoc(name = "v2/awards/last_updated.md") {
     schemaVersion: SCHEMA_VERSION,
     contract: {
       name,
-      description: "fixture",
+      description: "Fixture profile used for promoteProfile integration tests.",
       endpoint: {
         method: "GET",
         host: "https://api.usaspending.gov",

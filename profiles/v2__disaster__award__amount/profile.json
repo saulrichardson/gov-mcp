@@ -1,0 +1,292 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/award/amount.md",
+    "description": "Aggregates obligation, outlay, and related totals for disaster/emergency funded awards by Disaster Emergency Fund codes and optional award filters.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/award/amount/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Primary filter object. Must include at least one Disaster Emergency Fund code and may include other tolerated search filters.",
+          "properties": {
+            "def_codes": {
+              "type": "array",
+              "description": "List of Disaster Emergency Fund (DEFC) codes to aggregate against.",
+              "constraints": "Required; minimum 1 item; values must match the uppercase set ['1','2','3','4','5','6','7','8','9','A','AAA','AAB','AAC','AAD','AAE','AAF','AAG','AAH','AAI','AAJ','AAK','AAL','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','QQQ','R','S','T','U','V','W','X','Y','Z']; duplicates tolerated; case-sensitive; wrong type or empty array returns 400/422 errors."
+            },
+            "award_type_codes": {
+              "type": "array",
+              "description": "Procurement and assistance award type codes from the USAspending taxonomy.",
+              "constraints": "Optional; minimum 1 item; allowed values ['-1','02','03','04','05','06','07','08','09','10','11','A','B','C','D','IDV_A','IDV_B','IDV_B_A','IDV_B_B','IDV_B_C','IDV_C','IDV_D','IDV_E']; mutually exclusive with award_type; invalid values or empty array return 400/422 errors."
+            },
+            "award_type": {
+              "type": "string",
+              "description": "High-level award category aggregated from financial account data.",
+              "constraints": "Optional; allowed values 'assistance' or 'procurement' (case-sensitive); mutually exclusive with award_type_codes; invalid values return 400 errors."
+            },
+            "time_period": {
+              "type": ["array", "object", "string", "null"],
+              "description": "Date range filter structure per shared search filters.",
+              "constraints": "Optional; server accepts arrays, single objects, strings, and null without validation and returns unchanged aggregates, indicating the filter is currently ignored."
+            },
+            "keywords": {
+              "type": ["array", "string"],
+              "description": "Keyword search terms per shared filter documentation.",
+              "constraints": "Optional; accepts string lists or single strings; observed requests returned unchanged aggregates, implying the filter is ignored."
+            },
+            "recipient_scope": {
+              "type": "string",
+              "description": "Recipient location scope indicator.",
+              "constraints": "Optional; documented values include 'domestic' and 'foreign', but arbitrary strings are accepted and ignored."
+            }
+          },
+          "required": [
+            "def_codes"
+          ]
+        },
+        "pagination": {
+          "location": "body",
+          "type": "object",
+          "description": "Optional pagination-style payload carried from historical contracts.",
+          "constraints": "Optional; accepts numeric or string values for keys such as limit/page/sort/order but is ignored because the endpoint always returns a single aggregate object."
+        },
+        "spending_type": {
+          "location": "body",
+          "type": ["string", "null"],
+          "description": "Touted selector for total/obligation/outlay aggregations.",
+          "constraints": "Optional; accepts any string or null without affecting results, indicating the field is ignored."
+        }
+      },
+      "required": [
+        "filter"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "award_count": {
+          "type": "number",
+          "description": "Count of awards contributing to the aggregate (returned as whole numbers)."
+        },
+        "obligation": {
+          "type": "number",
+          "description": "Total obligations for matching awards."
+        },
+        "outlay": {
+          "type": "number",
+          "description": "Total outlays for matching awards."
+        },
+        "face_value_of_loan": {
+          "type": "number",
+          "description": "Total face value of loans; only present when loan awards are included."
+        }
+      },
+      "required": [
+        "award_count",
+        "obligation",
+        "outlay"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/award/amount/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": ["M"]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "award_count": 1995,
+            "obligation": 12011426052.27,
+            "outlay": 14836290775.33
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/award/amount/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": ["L"],
+              "award_type_codes": ["08"]
+            },
+            "spending_type": "total"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "award_count": 1,
+            "obligation": 99043.63,
+            "outlay": 99043.63,
+            "face_value_of_loan": 24486834.0
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Endpoint always returns a single aggregate object and ignores provided pagination controls.",
+      "'spending_type' accepts any string or null and does not alter the response totals.",
+      "Shared filter fields such as time_period, keywords, and recipient_scope are accepted even with unexpected values but had no observable effect, indicating silent ignore logic.",
+      "Validation errors reference fields using 'filter|<field>' notation with 400 responses for invalid values and 422 for missing or empty required structures."
+    ],
+    "risks": [
+      "Silently ignored filters can mislead clients into assuming constraints were applied when they were not.",
+      "Aggregated monetary values are large floating-point numbers that may require high-precision handling.",
+      "'face_value_of_loan' appears only when loan awards are present, so clients must tolerate its absence."
+    ],
+    "gaps": [
+      "Impact of other shared filters (agencies, locations, TAS, etc.) remains unverified.",
+      "Maximum effective size of def_codes lists or related performance limits are unknown."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/award/amount/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": ["M"]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"award_count\":1995,\"obligation\":12011426052.27,\"outlay\":14836290775.33}",
+        "contentType": "application/json"
+      },
+      "notes": "Minimal request with def_codes only returned aggregate totals."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/award/amount/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Missing value: 'filter|def_codes' is a required field\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Missing filter rejected with required-field error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/award/amount/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": ["ZZ"]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' is outside valid values ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Enumerated DEFC list enforced for def_codes values."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/award/amount/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": ["M"],
+            "award_type": "assistance"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"award_count\":1002,\"obligation\":11934733597.6,\"outlay\":13349106480.13}",
+        "contentType": "application/json"
+      },
+      "notes": "award_type selector changes aggregates when valid."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/award/amount/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": ["M"],
+            "award_type_codes": ["A"],
+            "award_type": "procurement"
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Cannot provide both 'award_type_codes' and 'award_type'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Mutual exclusivity between award_type and award_type_codes enforced."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/award/amount/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": ["M"],
+            "time_period": [
+              {
+                "start_date": "not-a-date",
+                "end_date": "also-bad"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"award_count\":1995,\"obligation\":12011426052.27,\"outlay\":14836290775.33}",
+        "contentType": "application/json"
+      },
+      "notes": "Invalid time_period content was accepted and ignored."
+    }
+  ],
+  "mismatches": [
+    "Documentation advertises pagination controls, but the live API always returns a single aggregate object and ignores them.",
+    "Docs imply spending_type changes the aggregation focus, yet the live API ignores every value provided.",
+    "Docs constrain filters like recipient_scope and time_period, but the live API accepts arbitrary values without applying them."
+  ],
+  "gaps": [
+    "Impact of other shared filters (agencies, locations, TAS, etc.) remains unverified.",
+    "Maximum effective size of def_codes lists or related performance limits are unknown."
+  ],
+  "risks": [
+    "Silently ignored filters can mislead clients into assuming constraints were applied when they were not.",
+    "Aggregated monetary values are large floating-point numbers that may require high-precision handling.",
+    "'face_value_of_loan' appears only when loan awards are present, so clients must tolerate its absence."
+  ]
+}

@@ -1,0 +1,375 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/object_class/count.md",
+    "description": "Counts the number of object classes that received disaster/emergency funding for the provided Disaster Emergency Fund Code filters.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/object_class/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Top-level request filter; must supply a def_codes array. Additional keys (shared search filters or arbitrary fields) are accepted but ignored.",
+          "constraints": "Required object containing def_codes; server ignores unknown fields but enforces the def_codes array.",
+          "properties": {
+            "def_codes": {
+              "location": "body",
+              "type": "array",
+              "description": "Disaster Emergency Fund Codes whose union determines the counted object classes.",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7",
+                  "8",
+                  "9",
+                  "A",
+                  "AAA",
+                  "AAB",
+                  "AAC",
+                  "AAD",
+                  "AAE",
+                  "AAF",
+                  "AAG",
+                  "AAH",
+                  "AAI",
+                  "AAJ",
+                  "AAK",
+                  "AAL",
+                  "B",
+                  "C",
+                  "D",
+                  "E",
+                  "F",
+                  "G",
+                  "H",
+                  "I",
+                  "J",
+                  "K",
+                  "L",
+                  "M",
+                  "N",
+                  "O",
+                  "P",
+                  "Q",
+                  "QQQ",
+                  "R",
+                  "S",
+                  "T",
+                  "U",
+                  "V",
+                  "W",
+                  "X",
+                  "Y",
+                  "Z"
+                ]
+              },
+              "minItems": 1,
+              "constraints": "Required; duplicates allowed. 400 if an item falls outside the allow-list or is not a string. 422 when the array is empty or missing. Mixing valid codes with nulls or numbers triggers a 500 HTML error response."
+            },
+            "time_period": {
+              "location": "body",
+              "type": [
+                "array",
+                "null"
+              ],
+              "description": "Optional shared filter accepted without effect on the count.",
+              "constraints": "Optional; accepts empty arrays, partial ranges, malformed dates, or null and still returns the same count."
+            },
+            "award_type_codes": {
+              "location": "body",
+              "type": "array",
+              "description": "Optional shared filter accepted without effect on the count.",
+              "items": {
+                "type": "string"
+              },
+              "constraints": "Optional; accepts empty arrays and invalid codes without changing results or raising errors."
+            }
+          },
+          "required": [
+            "def_codes"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "filter"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of object classes that match the provided DEFC filters; zero indicates no qualifying object classes."
+        }
+      },
+      "required": [
+        "count"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/object_class/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L",
+                "M",
+                "N"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 35
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/object_class/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "QQQ"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 0
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/object_class/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "ZZ"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Field 'filter|def_codes' is outside valid values ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/object_class/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L",
+                null
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 500,
+          "body": "<!doctype html>...Server Error (500)..."
+        }
+      }
+    ],
+    "quirks": [
+      "Only filter.def_codes is enforced; other filter fields or arbitrary keys are accepted without affecting the count.",
+      "Shared filters such as time_period and award_type_codes are ignored even when null, empty, malformed, or containing invalid values.",
+      "Validation returns 400 for disallowed values or types and 422 for missing or empty def_codes, but mixing valid codes with nulls or numbers yields a 500 HTML response."
+    ],
+    "risks": [
+      "Consumers may assume supplemental filters (time_period, award_type_codes, etc.) work even though the API ignores them, leading to misinterpreted analytics.",
+      "The DEFC allow-list is hard-coded; newly introduced codes may be rejected until the backend is updated.",
+      "Malformed def_codes arrays that mix valid strings with nulls or numbers can trigger a 500 HTML response, so clients must sanitize lists before submission."
+    ],
+    "gaps": [],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L",
+              "M",
+              "N"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":35}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - baseline request with DEFC L/M/N returns combined count 35."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":31}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - single DEFC 'L' returns count 31."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "QQQ"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":0}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - DEFC 'QQQ' returns zero object classes."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "ZZ"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' is outside valid values ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - invalid DEFC 'ZZ' rejected with enumerated allow-list."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": []
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' value '[]' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - empty def_codes array rejected with 422 requiring at least one entry."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L",
+              null
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>...Server Error (500)...",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail - mixing a valid DEFC with null causes a 500 HTML error page."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "time_period": null
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":31}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - time_period set to null is accepted and ignored."
+    }
+  ],
+  "mismatches": [
+    "Docs describe the filter as fixed-type, but the live endpoint accepts additional properties within filter without error while ignoring them."
+  ],
+  "gaps": [],
+  "risks": [
+    "Consumers may assume supplemental filters (time_period, award_type_codes, etc.) work even though the API ignores them, leading to misinterpreted analytics.",
+    "The DEFC allow-list is hard-coded; newly introduced codes may be rejected until the backend is updated.",
+    "Malformed def_codes arrays that mix valid strings with nulls or numbers can trigger a 500 HTML response, so clients must sanitize lists before submission."
+  ]
+}

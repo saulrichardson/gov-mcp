@@ -1,0 +1,283 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/award/count.md",
+    "description": "Returns the count of awards that received disaster or emergency funding, filtered by required DEF codes and optional award type restrictions.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/award/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Required wrapper for all filters. Must be a JSON object; null, arrays, or scalars trigger 422 missing-field errors. Backend ignores unrecognized keys both inside and outside this object.",
+          "constraints": "required; treat non-object values as missing; accepts additional properties without effect.",
+          "properties": {
+            "def_codes": {
+              "location": "body",
+              "type": "array",
+              "description": "Array of uppercase Disaster Emergency Fund codes. Validator accepts digits '1'-'9', single letters 'A'-'Z', and multi-letter codes surfaced in errors (e.g., AAA, AAB, AAL, QQQ).",
+              "constraints": "required; minItems=1; array members must be uppercase strings from the enumerated set; invalid or lowercase values return 400 with an allowed-values list."
+            },
+            "award_type_codes": {
+              "location": "body",
+              "type": "array",
+              "description": "Optional array restricting results to awards linked through File D. Accepted values include the documented procurement and assistance codes plus the sentinel '-1' (which alone returns zero results).",
+              "constraints": "optional; null treated as absent; when provided must be a non-empty array whose members are within ['-1','02','03','04','05','06','07','08','09','10','11','A','B','C','D','IDV_A','IDV_B','IDV_B_A','IDV_B_B','IDV_B_C','IDV_C','IDV_D','IDV_E']; empty arrays return 422; invalid members return 400."
+            }
+          },
+          "required": [
+            "def_codes"
+          ]
+        }
+      },
+      "required": [
+        "filter"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "Total number of awards matching the supplied filters."
+        }
+      },
+      "required": [
+        "count"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/award/count/",
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 5518
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/award/count/",
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ],
+              "award_type_codes": [
+                "A"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 183
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/award/count/",
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ],
+              "award_type_codes": [
+                "-1"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 0
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Endpoint only accepts POST; GET attempts return 405 with a method-not-allowed message.",
+      "Validation distinguishes between structural issues (422) and invalid values (400) using pipe-delimited field paths in error details.",
+      "Unrecognized keys at the request root or inside filter are silently ignored without affecting the count.",
+      "Award type sentinel '-1' is accepted despite being undocumented; combining it with other codes yields the other codes' results.",
+      "Shared filters such as time_period, keywords, and agencies are accepted but observed to have no effect on the returned count."
+    ],
+    "risks": [
+      "Silent acceptance of unsupported filters can mislead clients into assuming filters were applied when results are unchanged.",
+      "Clients must handle both 422 (missing/bad structure) and 400 (invalid value) errors depending on the validation failure mode.",
+      "Reliance on the undocumented '-1' award type or assuming ignored filters have effect can lead to misinterpretation of zero or static counts."
+    ],
+    "gaps": [
+      "The complete authoritative list of permitted DEF codes is inferred from error messages and may include additional values.",
+      "Documentation does not clarify whether ignoring shared filters like time_period is intentional or a defect."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/award/count/",
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":5518}"
+      },
+      "notes": "Baseline request with required def_codes succeeds."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/award/count/",
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "award_type_codes": [
+              "A"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":183}"
+      },
+      "notes": "Award type filter narrows results."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/award/count/",
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "time_period": [
+              {
+                "start_date": "2100-01-01",
+                "end_date": "2100-12-31"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":5518}"
+      },
+      "notes": "Future time_period accepted but count unchanged, indicating filter is ignored."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/award/count/",
+        "body": {
+          "filter": {
+            "def_codes": [
+              "ZZ"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' is outside valid values ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']\"}"
+      },
+      "notes": "Invalid DEF code reveals the enumerated allowed set and triggers 400."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/award/count/",
+        "body": {
+          "filter": {}
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Missing value: 'filter|def_codes' is a required field\"}"
+      },
+      "notes": "Missing def_codes yields 422 missing-field error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/award/count/",
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "award_type_codes": [
+              "-1"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":0}"
+      },
+      "notes": "Undocumented '-1' award type is accepted but returns zero."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/disaster/award/count/"
+      },
+      "response": {
+        "status": 405,
+        "bodyExcerpt": "{\"detail\":\"Method \"GET\" not allowed.\"}"
+      },
+      "notes": "Confirms only POST is supported."
+    }
+  ],
+  "mismatches": [
+    "Docs limit DEF codes to CARES entries, but validation accepts a broader set including digits and multi-letter codes such as AAA and QQQ.",
+    "Docs list award_type_codes without '-1', yet the API accepts '-1' (and even ignores null) for this filter."
+  ],
+  "gaps": [
+    "The complete authoritative list of DEF codes may extend beyond those exposed via error messaging.",
+    "Documentation does not clarify whether ignoring shared filters like time_period or keywords is intentional."
+  ],
+  "risks": [
+    "Silent acceptance of unsupported filters can mask configuration mistakes because counts remain unchanged.",
+    "Clients must branch on both 422 and 400 responses when handling validation failures.",
+    "Undocumented handling of award type '-1' can produce zero counts if relied upon incorrectly."
+  ]
+}

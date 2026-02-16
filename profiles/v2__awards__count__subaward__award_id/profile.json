@@ -1,0 +1,183 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/awards/count/subaward/award_id.md",
+    "description": "Returns the number of subawards linked to a specific generated_unique_award_id; observed responses include zero and non-zero counts as integers.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/awards/count/subaward/{award_id}/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "award_id": {
+          "location": "path",
+          "type": "string",
+          "description": "Generated unique award identifier used by USAspending (e.g., CONT_AWD_7200AA23F50027_7200_7200AA22A00006_7200).",
+          "constraints": "Required path segment; must exactly match the casing of an existing generated_unique_award_id. Unknown values respond with JSON 404 detail."
+        }
+      },
+      "required": [
+        "award_id"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "subawards": {
+          "type": "integer",
+          "description": "Non-negative count of subawards associated with the prime award.",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "subawards"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/awards/count/subaward/CONT_AWD_7200AA23F50027_7200_7200AA22A00006_7200/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "subawards": 3
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/awards/count/subaward/CONT_AWD_ZZ71_9700_W91RUS11A0007_9700/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "subawards": 0
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/awards/count/subaward/ASST_NON_NNX17AJ96A_8000/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 404,
+          "body": {
+            "detail": "No Award found with: 'ASST_NON_NNX17AJ96A_8000'"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "award_id must be provided as the generated_unique_award_id; other identifier formats return JSON 404 detail.",
+      "Path matching is case-sensitive; casing mismatches return HTML 404 payloads instead of JSON.",
+      "A trailing slash is required to avoid a 301 redirect with text/html content.",
+      "OPTIONS requests expose metadata about accepted parsers and renders."
+    ],
+    "risks": [
+      "Callers must handle non-JSON responses (HTML 404 or 301 redirect) when the URL casing or trailing slash is incorrect.",
+      "Integrations must resolve the exact generated_unique_award_id up front; nearby permutations return 404 without recovery hints."
+    ],
+    "gaps": [
+      "Assistance-type generated_unique_award_ids have not been validated with successful responses."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/subaward/CONT_AWD_7200AA23F50027_7200_7200AA22A00006_7200/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"subawards\":3}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: confirmed non-zero subaward count for a contract award."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/subaward/CONT_AWD_ZZ71_9700_W91RUS11A0007_9700/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"subawards\":0}",
+        "contentType": "application/json"
+      },
+      "notes": "pass: verifies zero-count response keeps subawards field present."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/subaward/ASST_NON_NNX17AJ96A_8000/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "{\"detail\":\"No Award found with: 'ASST_NON_NNX17AJ96A_8000'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail: documented sample award_id not found."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/subaward/cont_awd_7200aa23f50027_7200_7200aa22a00006_7200/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html><html><head><title>Not Found</title></head><body><h1>Not Found</h1><p>The requested resource was not found on this server.</p></body></html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: casing mismatch falls through to HTML 404."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/subaward/CONT_AWD_7200AA23F50027_7200_7200AA22A00006_7200",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 301,
+        "bodyExcerpt": "",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail: missing trailing slash triggers redirect to slash-terminated URL."
+    }
+  ],
+  "mismatches": [
+    "Documentation sample award_id 'ASST_NON_NNX17AJ96A_8000' is documented as valid but returns JSON 404 detail in production."
+  ],
+  "gaps": [
+    "Assistance-type generated_unique_award_ids have not been validated with successful responses."
+  ],
+  "risks": [
+    "Non-JSON error payloads (HTML 404, redirect) can break strict JSON clients if trailing slash or casing deviates.",
+    "Integrations must pre-resolve generated_unique_award_ids; unresolved identifiers yield hard 404 errors."
+  ]
+}

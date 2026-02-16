@@ -152,7 +152,12 @@ Guardrails:
 - Timeout enforcement (`USASPENDING_REQUEST_TIMEOUT_MS`, default `15000`).
 - Deterministic User-Agent (`gov-gpt-mcp/1.0.0` default).
 
-Failure modes are explicit (`HOST_NOT_ALLOWED`, `REQUEST_TIMEOUT`, validation failures).
+Tool failures are standardized in MCP responses:
+
+- `isError: true`
+- `structuredContent.error.code` (for example: `INVALID_INPUT`, `REQUEST_TIMEOUT`, `NETWORK_ERROR`, `UNKNOWN_ENDPOINT`)
+- `structuredContent.error.retryable` for automatic agent retry policy
+- `structuredContent.error.category` for planner strategy (`validation`, `timeout`, `network`, etc.)
 
 ## CI and Release
 
@@ -182,6 +187,7 @@ Failure modes are explicit (`HOST_NOT_ALLOWED`, `REQUEST_TIMEOUT`, validation fa
 2. `make pipeline-run-bg PARALLEL=4 PIPELINE_VERSION=v2`
 3. `make pipeline-status-watch JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>`
 4. `make pipeline-coverage PIPELINE_VERSION=v2`
+5. `python scripts/full_pipeline.py promote-finals --version v2 --parallel 8 --json`
 
 ### Add stricter constraints
 

@@ -1,0 +1,415 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/object_class.md",
+    "description": "Returns aggregated spending by major object class for a specified agency and fiscal year with optional substring filtering, sorting, and pagination.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/object_class/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Identifier for the agency whose object class data to return.",
+          "constraints": "Required; must be a three- or four-digit CGAC/FREC code string with leading zeros preserved. Codes that fail this numeric pattern return an HTML 404, while well-formed but unknown codes return a JSON 404 detail message."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Fiscal year to query.",
+          "constraints": "Optional; accepts integers from 2008 through 2026 inclusive. Defaults to the current fiscal year (2026). Values before 2017 return empty results with a DATA Act coverage warning in 'messages'. Out-of-range values yield 422 errors and non-integer inputs return 400."
+        },
+        "filter": {
+          "location": "query",
+          "type": "string",
+          "description": "Case-insensitive substring filter applied to the object class name.",
+          "constraints": "Optional; empty strings behave the same as omitting the parameter. Unmatched filters return 200 with empty results."
+        },
+        "order": {
+          "location": "query",
+          "type": "string",
+          "description": "Sort direction for the selected sort field.",
+          "constraints": "Optional; accepts only 'asc' or 'desc' (lowercase). Defaults to 'desc'. Other values produce 400 errors."
+        },
+        "sort": {
+          "location": "query",
+          "type": "string",
+          "description": "Field used to order results.",
+          "constraints": "Optional; accepts 'obligated_amount', 'gross_outlay_amount', or 'name'. Defaults to 'obligated_amount'. Values outside this set produce 400 errors."
+        },
+        "page": {
+          "location": "query",
+          "type": "integer",
+          "description": "Page of results to return (1-indexed).",
+          "constraints": "Optional; integer values must be \u2265 1. Defaults to 1. Pages beyond the available range return 200 with empty results and hasNext=false. Non-integer or <1 values produce 400/422 errors."
+        },
+        "limit": {
+          "location": "query",
+          "type": "integer",
+          "description": "Maximum number of records per page.",
+          "constraints": "Optional; accepts integers from 1 to 100 inclusive. Defaults to 10. Values outside this range return 422 errors. Non-integer inputs return 400."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echo of the requested toptier agency code."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Fiscal year associated with the response payload."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata for the current slice of results.",
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "1-indexed page number returned."
+            },
+            "total": {
+              "type": "integer",
+              "description": "Total number of records matching the request filters."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum records per page used for this response."
+            },
+            "next": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Next page number when additional pages exist; otherwise null."
+            },
+            "previous": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Previous page number when available; otherwise null."
+            },
+            "hasNext": {
+              "type": "boolean",
+              "description": "True when additional pages exist."
+            },
+            "hasPrevious": {
+              "type": "boolean",
+              "description": "True when a prior page exists."
+            }
+          }
+        },
+        "results": {
+          "type": "array",
+          "description": "List of object class aggregates.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Object class name."
+              },
+              "obligated_amount": {
+                "type": "number",
+                "description": "Total obligated amount for the object class."
+              },
+              "gross_outlay_amount": {
+                "type": "number",
+                "description": "Total gross outlay amount for the object class."
+              }
+            }
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Array of warning or informational strings. Empty when data is available; pre-FY2017 requests return a fixed DATA Act coverage warning.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "page_metadata",
+        "results",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/object_class/",
+          "query": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2026,
+            "page_metadata": {
+              "page": 1,
+              "total": 26,
+              "limit": 10,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "name": "Grants, subsidies, and contributions",
+                "obligated_amount": 23182984971.49,
+                "gross_outlay_amount": 20636855966.21
+              }
+            ],
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/object_class/",
+          "query": {
+            "fiscal_year": 2015
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2015,
+            "page_metadata": {
+              "page": 1,
+              "total": 0,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "results": [],
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/object_class/",
+          "query": {
+            "limit": 5,
+            "page": 6
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2026,
+            "page_metadata": {
+              "page": 6,
+              "total": 26,
+              "limit": 5,
+              "next": null,
+              "previous": 5,
+              "hasNext": false,
+              "hasPrevious": true
+            },
+            "results": [
+              {
+                "name": "Rental payments to others",
+                "obligated_amount": 0.31,
+                "gross_outlay_amount": 6813.23
+              }
+            ],
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/086/object_class/",
+          "query": {
+            "limit": 1000
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'limit' value '1000' is above max '100'"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Successful responses omit the documented 'totals' object and never include nested 'children'; results are flat aggregates.",
+      "Pagination metadata uses a 'total' field in place of the documented 'count'.",
+      "Requests for fiscal years before 2017 return 200 with empty results and a fixed DATA Act coverage warning in 'messages'.",
+      "Path segments that are not zero-padded numeric CGAC/FREC codes (for example, '86' or alphabetic values) return HTML 404 pages instead of JSON.",
+      "When fiscal_year is omitted in February 2026 captures, the API defaults to FY2026."
+    ],
+    "risks": [
+      "Clients must handle both JSON and HTML 404 responses depending on whether the toptier_code matches the expected numeric pattern.",
+      "Consumers should inspect the 'messages' array to detect empty datasets (for pre-2017 fiscal years) because HTTP status remains 200.",
+      "Large object class lists can require pagination; the service caps 'limit' at 100 records per page."
+    ],
+    "gaps": [
+      "Valid CGAC/FREC codes beyond the sampled set remain undocumented; availability for each code must be confirmed empirically.",
+      "Public documentation still omits the FY2017 data availability cutoff communicated via the warning message."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/object_class/",
+        "query": {}
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2026,\"page_metadata\":{\"page\":1,\"total\":26,\"limit\":10,...},\"results\":[{\"name\":\"Grants, subsidies, and contributions\",...}],\"messages\":[]}"
+      },
+      "notes": "Baseline response confirms flat results without totals/children and default FY2026."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/object_class/",
+        "query": {
+          "filter": "benefits"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"page_metadata\":{\"total\":3,...},\"results\":[{\"name\":\"Civilian personnel benefits\",...}],\"messages\":[]}"
+      },
+      "notes": "Filter performs case-insensitive substring matching."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/object_class/",
+        "query": {
+          "limit": 5,
+          "page": 6
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"page_metadata\":{\"page\":6,\"next\":null,\"hasNext\":false,...},\"results\":[{\"name\":\"Rental payments to others\",...}],\"messages\":[]}"
+      },
+      "notes": "Last page shows next=null and hasNext=false while retaining results."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/object_class/",
+        "query": {
+          "fiscal_year": 2015
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"fiscal_year\":2015,\"results\":[],\"messages\":[\"Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act;...\"]}"
+      },
+      "notes": "Pre-FY2017 request returns empty results with the DATA Act warning."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/object_class/",
+        "query": {
+          "limit": 100
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"page_metadata\":{\"limit\":100,\"hasNext\":false,...},\"results\":[...],\"messages\":[]}"
+      },
+      "notes": "Limit of 100 is accepted and returns the full list."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/object_class/",
+        "query": {
+          "limit": 1000
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '1000' is above max '100'\"}"
+      },
+      "notes": "Validation error reveals the enforced limit ceiling."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/086/object_class/",
+        "query": {
+          "order": "foo"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'order' is outside valid values ['asc', 'desc']\"}"
+      },
+      "notes": "Order parameter enforces lowercase enum values."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/86/object_class/",
+        "query": {}
+      },
+      "response": {
+        "status": 404,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<!doctype html><html><head><title>Not Found</title></head>..."
+      },
+      "notes": "Two-digit toptier code lacking leading zero returns an HTML 404 page."
+    }
+  ],
+  "mismatches": [
+    "Docs require a 'totals' object in the response, but live responses never include it.",
+    "Docs describe 'results' items with nested 'children', while live responses only expose name, obligated_amount, and gross_outlay_amount.",
+    "Docs reference 'page_metadata.count', but the service returns 'page_metadata.total' and omits 'count'."
+  ],
+  "gaps": [
+    "Valid CGAC/FREC codes beyond the sampled set remain undocumented; availability for each code must be confirmed empirically.",
+    "Public documentation still omits the FY2017 data availability cutoff communicated via the warning message."
+  ],
+  "risks": [
+    "Clients must handle both JSON and HTML 404 responses depending on whether the toptier_code matches the expected numeric pattern.",
+    "Consumers should inspect the 'messages' array to detect empty datasets (for pre-2017 fiscal years) because HTTP status remains 200.",
+    "Large object class lists can require pagination; the service caps 'limit' at 100 records per page."
+  ]
+}

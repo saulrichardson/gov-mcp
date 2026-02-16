@@ -1,0 +1,328 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/federal_account/count.md",
+    "description": "Counts the unique federal and treasury accounts for a given agency and fiscal year.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/federal_account/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Numeric CGAC or FREC identifier for the agency; observed values are 3 or 4 digits.",
+          "constraints": "Required. Route only matches numeric segments of length 3-4. Extra digits are trimmed to the last four before validation. Non-numeric segments return an HTML 404. Requests without the trailing slash receive a 301 redirect to the canonical path."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Optional appropriations fiscal year; defaults to the current fiscal year (2026 observed) when omitted or sent as an empty value.",
+          "constraints": "Must parse to an integer between 2008 and 2026 inclusive. Leading zeros are accepted. Empty query values default to the current year, while whitespace or other non-digit characters trigger a 400 type error. Values outside the range return 422 with explicit bounds messaging."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echoes the requested agency code as a zero-padded string."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Fiscal year actually used to compute the counts."
+        },
+        "federal_account_count": {
+          "type": "integer",
+          "description": "Distinct federal accounts linked to the agency in the fiscal year."
+        },
+        "treasury_account_count": {
+          "type": "integer",
+          "description": "Distinct treasury account symbols (TAS) for the agency in the fiscal year."
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Always present array of warning or info strings; FY 2008-2016 return a DATA Act notice while FY 2017+ are typically empty."
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "federal_account_count",
+        "treasury_account_count",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/012/federal_account/count/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "012",
+            "fiscal_year": 2026,
+            "federal_account_count": 140,
+            "treasury_account_count": 773,
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/012/federal_account/count/",
+          "query": {
+            "fiscal_year": "2010"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "012",
+            "fiscal_year": 2010,
+            "federal_account_count": 0,
+            "treasury_account_count": 0,
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Omitting fiscal_year or sending it empty defaults to the current fiscal year (2026 observed); whitespace characters fail validation with a 400 type error.",
+      "Fiscal years 2008-2016 return zero counts accompanied by a DATA Act warning message, while 2017 and later generally provide populated data with an empty messages array.",
+      "Leading zeros in the fiscal_year query parameter are accepted and normalized before processing.",
+      "Unknown query parameters are ignored rather than rejected.",
+      "Non-numeric path segments for toptier_code return an HTML 404 page, but numeric values that fail validation return JSON error payloads.",
+      "Supplying more than four digits in toptier_code results in the last four digits being validated (e.g., '12345' is treated as '2345').",
+      "Requests without the trailing slash receive a 301 redirect to the canonical slash-terminated URL."
+    ],
+    "risks": [
+      "Endpoint has exhibited empty responses over IPv6, necessitating IPv4 fallback during testing.",
+      "Error payload formats vary between HTML and JSON depending on how the route fails to match."
+    ],
+    "gaps": [
+      "Maximum accepted fiscal_year is 2026 as of 2026-02-13; behavior once newer fiscal years become available remains unverified."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/federal_account/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2026,\"federal_account_count\":140,\"treasury_account_count\":773,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Default fiscal year applies when the query parameter is omitted."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/federal_account/count/",
+        "query": {
+          "fiscal_year": "2024"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2024,\"federal_account_count\":157,\"treasury_account_count\":778,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Valid historical fiscal year returns populated counts."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/federal_account/count/",
+        "query": {
+          "fiscal_year": "2010"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2010,\"federal_account_count\":0,\"treasury_account_count\":0,\"messages\":[\"Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Pre-2017 fiscal years return zero counts with a DATA Act warning."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/federal_account/count/",
+        "query": {
+          "fiscal_year": "02024"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2024,\"federal_account_count\":157,\"treasury_account_count\":778,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Leading zeros in fiscal_year are accepted and normalized."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/federal_account/count/",
+        "query": {
+          "fiscal_year": ""
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2026,\"federal_account_count\":140,\"treasury_account_count\":773,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Empty fiscal_year query value defaults to the current fiscal year."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/federal_account/count/",
+        "query": {
+          "fiscal_year": " "
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'fiscal_year'. ' ' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Whitespace fails type validation for fiscal_year."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/federal_account/count/",
+        "query": {
+          "fiscal_year": "2007"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2007' is below min '2008'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Values below the minimum fiscal year return 422 with bounds messaging."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/federal_account/count/",
+        "query": {
+          "fiscal_year": "2028"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2028' is above max '2026'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Values above the maximum fiscal year return 422 with bounds messaging."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/999/federal_account/count/",
+        "query": {
+          "fiscal_year": "2024"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "{\"detail\":\"Agency with a toptier code of '999' does not exist\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Unknown numeric toptier_code returns JSON 404 detail."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/ABC/federal_account/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<html><head><title>Not Found</title></head><body><h1>Not Found</h1><p>The requested resource was not found on this server.</p></body></html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Non-numeric toptier_code path segments return HTML 404 responses."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/12345/federal_account/count/",
+        "query": {
+          "fiscal_year": "2024"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "{\"detail\":\"Agency with a toptier code of '2345' does not exist\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Five-digit toptier_code values are truncated to the last four digits before validation."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/federal_account/count",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 301,
+        "bodyExcerpt": "",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Requests without the trailing slash receive a 301 redirect to the canonical path."
+    }
+  ],
+  "mismatches": [
+    "Documentation advertises a numeric request body schema, but the live endpoint relies solely on the path parameter and ignores request bodies."
+  ],
+  "gaps": [
+    "Maximum accepted fiscal_year is 2026 as of 2026-02-13; behavior once newer fiscal years become available remains unverified."
+  ],
+  "risks": [
+    "Endpoint has exhibited empty responses over IPv6, necessitating IPv4 fallback during testing.",
+    "Error payload formats vary between HTML and JSON depending on how the route fails to match."
+  ]
+}

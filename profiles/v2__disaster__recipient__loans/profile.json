@@ -1,0 +1,588 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/recipient/loans.md",
+    "description": "Aggregates disaster loan recipients and totals filtered by Disaster Emergency Fund (DEFC) codes with optional keyword and loan-type constraints.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/recipient/loans/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [
+        "filter"
+      ],
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Required DEFC filter object with optional loan award type and keyword refinements.",
+          "required": [
+            "def_codes"
+          ],
+          "properties": {
+            "def_codes": {
+              "type": "array",
+              "description": "List of Disaster Emergency Fund codes to include (uppercase tokens).",
+              "constraints": "Required; array must contain at least one value; allowed values ['1','2','3','4','5','6','7','8','9','A','AAA','AAB','AAC','AAD','AAE','AAF','AAG','AAH','AAI','AAJ','AAK','AAL','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','QQQ','R','S','T','U','V','W','X','Y','Z']; non-array inputs or unlisted codes return 400; empty arrays return 422."
+            },
+            "award_type_codes": {
+              "type": "array",
+              "description": "Optional loan award type filter restricted to loan codes.",
+              "constraints": "Optional; when provided must be a non-empty array containing only '07' and/or '08'; invalid codes return 400; empty arrays return 422."
+            },
+            "query": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional keyword matched against recipient names/descriptions.",
+              "constraints": "Optional; accepts null or non-empty strings; empty strings return 422; non-text inputs (arrays, numbers) return 400."
+            }
+          }
+        },
+        "pagination": {
+          "location": "body",
+          "type": "object",
+          "description": "Optional pagination and sorting controls.",
+          "properties": {
+            "page": {
+              "type": "integer",
+              "description": "1-indexed results page number.",
+              "constraints": "Optional; defaults to 1; must be an integer >= 1; zero returns 422; non-integer values return 400."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Number of recipients returned per page.",
+              "constraints": "Optional; defaults to 10; must be between 1 and 100 inclusive; zero or negatives return 422; values above 100 return 422; non-integer values return 400."
+            },
+            "order": {
+              "type": "string",
+              "description": "Sort direction for the selected field.",
+              "constraints": "Optional; accepts only lowercase 'asc' or 'desc'; defaults to 'desc'; other casings (e.g., 'ASC') return 400."
+            },
+            "sort": {
+              "type": "string",
+              "description": "Field used to order the results.",
+              "constraints": "Optional; valid values ['award_count','description','code','id','obligation','outlay','face_value_of_loan']; omitting this field or requesting 'id' yields a warning and the backend actually sorts by 'description'."
+            }
+          }
+        },
+        "spending_type": {
+          "location": "body",
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional label parameter accepted but ignored by the backend.",
+          "constraints": "Any string or null succeeds without changing the response."
+        }
+      }
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [
+        "totals",
+        "results",
+        "page_metadata"
+      ],
+      "properties": {
+        "totals": {
+          "type": "object",
+          "description": "Aggregate metrics for the filtered dataset.",
+          "required": [
+            "obligation",
+            "outlay",
+            "face_value_of_loan",
+            "award_count"
+          ],
+          "properties": {
+            "obligation": {
+              "type": "number"
+            },
+            "outlay": {
+              "type": "number"
+            },
+            "face_value_of_loan": {
+              "type": "number"
+            },
+            "award_count": {
+              "type": "number",
+              "description": "Total loan award count; observed to report 0 for DEFC Q even when individual rows show positive counts."
+            }
+          }
+        },
+        "results": {
+          "type": "array",
+          "description": "Per-recipient loan aggregates that match the filter criteria.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "code",
+              "description",
+              "award_count",
+              "obligation",
+              "outlay",
+              "face_value_of_loan"
+            ],
+            "properties": {
+              "id": {
+                "type": "array",
+                "description": "List of contributing award identifiers (observed lengths 1-2; IDs carry '-R'/'-C' suffixes)."
+              },
+              "code": {
+                "type": "string",
+                "description": "Recipient identifier such as DUNS or the literal 'DUNS Number not provided'."
+              },
+              "description": {
+                "type": "string",
+                "description": "Recipient name."
+              },
+              "award_count": {
+                "type": "number"
+              },
+              "obligation": {
+                "type": "number"
+              },
+              "outlay": {
+                "type": "number"
+              },
+              "face_value_of_loan": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata for the current response page.",
+          "required": [
+            "page",
+            "total",
+            "limit",
+            "next",
+            "previous",
+            "hasNext",
+            "hasPrevious"
+          ],
+          "properties": {
+            "page": {
+              "type": "number"
+            },
+            "total": {
+              "type": "number",
+              "description": "Total recipients returned by the backend; observed to cap at 10000 for large result sets."
+            },
+            "limit": {
+              "type": "number"
+            },
+            "next": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "previous": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "hasNext": {
+              "type": "boolean"
+            },
+            "hasPrevious": {
+              "type": "boolean"
+            }
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Optional warning messages, currently emitted when the backend falls back from an unsupported sort.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/recipient/loans/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "N"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "totals": {
+              "obligation": 2491594.33,
+              "outlay": 507500.0,
+              "face_value_of_loan": 138539123.0,
+              "award_count": 57
+            },
+            "results": [
+              {
+                "id": [
+                  "f9ec70d8-5dc1-2fe8-bf38-4c1b919a4b0d-R"
+                ],
+                "code": "DUNS Number not provided",
+                "description": "QUASIUS CONSTRUCTION INC",
+                "award_count": 1,
+                "obligation": 31350.0,
+                "outlay": 0.0,
+                "face_value_of_loan": 1500000.0
+              },
+              {
+                "id": [
+                  "f2e4034e-5ec8-5223-3a0f-40a968fc2a5d-R"
+                ],
+                "code": "DUNS Number not provided",
+                "description": "MAHER BROTHERS, INC.",
+                "award_count": 1,
+                "obligation": 45980.0,
+                "outlay": 0.0,
+                "face_value_of_loan": 2200000.0
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 57,
+              "limit": 10,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "messages": [
+              "Notice! API Request to sort on 'id' field isn't fully implemented. Results were actually sorted using 'description' field."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/recipient/loans/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "N"
+              ]
+            },
+            "pagination": {
+              "limit": 5,
+              "sort": "obligation",
+              "order": "desc"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "id": [
+                  "79b4a0f1-f5e3-9fae-1662-3d7c557116a1-R"
+                ],
+                "code": "DUNS Number not provided",
+                "description": "BLAKE INTERNATIONAL RIGS, LLC",
+                "award_count": 1,
+                "obligation": 316135.91,
+                "outlay": 0.0,
+                "face_value_of_loan": 15126120.0
+              },
+              {
+                "id": [
+                  "59e01bd3-9c7e-a430-920d-0dccd7546602-R"
+                ],
+                "code": "DUNS Number not provided",
+                "description": "EASTERN ENERGY SERVICES, INC.",
+                "award_count": 1,
+                "obligation": 209000.0,
+                "outlay": 0.0,
+                "face_value_of_loan": 10000000.0
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 57,
+              "limit": 5,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/recipient/loans/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "Q"
+              ]
+            },
+            "pagination": {
+              "limit": 2
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "totals": {
+              "obligation": 0.0,
+              "outlay": 0.0,
+              "face_value_of_loan": 0.0,
+              "award_count": 0
+            },
+            "results": [
+              {
+                "id": [
+                  "fffbc731-3639-cc3b-c4d1-ed6c84bcdca0-R"
+                ],
+                "code": "DUNS Number not provided",
+                "description": "ANIMATED COLOR LLC",
+                "award_count": 1,
+                "obligation": 0.0,
+                "outlay": 0.0,
+                "face_value_of_loan": 0.0
+              },
+              {
+                "id": [
+                  "fff82474-5357-02a0-6f3b-1a57cfdb80ac-R"
+                ],
+                "code": "DUNS Number not provided",
+                "description": "P&D AUTO BODY LLC",
+                "award_count": 1,
+                "obligation": 0.0,
+                "outlay": 0.0,
+                "face_value_of_loan": 0.0
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 10000,
+              "limit": 2,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            }
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Omitting sort or requesting sort='id' triggers a warning and the backend sorts by description instead.",
+      "String-based sort fields such as 'description' or 'code' do not consistently honor the requested order.",
+      "totals.award_count can report 0 while individual result rows show positive counts (observed with DEFC Q).",
+      "page_metadata.total is capped at 10,000 for large result sets, limiting accessible recipients.",
+      "spending_type is accepted but ignored by the backend."
+    ],
+    "risks": [
+      "Clients relying on string sorting (description/code) may receive unsorted data and should re-order client-side.",
+      "Aggregate counts in totals may conflict with per-recipient award_count values, which can mislead downstream summaries.",
+      "The 10,000 record ceiling in page_metadata.total can hide additional recipients unless callers refine their filters.",
+      "Default requests emit warning messages; callers should explicitly choose a supported sort field to avoid fallback behavior."
+    ],
+    "gaps": [
+      "The optional 'children' array documented for results was not observed; hierarchical responses remain unverified."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "N"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\":{\"obligation\":2491594.33,\"outlay\":507500.0,\"face_value_of_loan\":138539123.0,\"award_count\":57},\"results\":[{\"id\":[\"f9ec70d8-5dc1-2fe8-bf38-4c1b919a4b0d-R\"],\"code\":\"DUNS Number not provided\",\"description\":\"QUASIUS CONSTRUCTION INC\",\"award_count\":1,..."
+      },
+      "notes": "pass – DEFC N default page returns warning about id sort fallback."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/loans/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Missing value: 'filter|def_codes' is a required field\"}"
+      },
+      "notes": "fail – omitting filter triggers 422 missing def_codes."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "ZZ"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' is outside valid values ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']\"}"
+      },
+      "notes": "fail – unrecognized DEFC value rejected with 400."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "N"
+            ]
+          },
+          "pagination": {
+            "limit": 0
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}"
+      },
+      "notes": "fail – limit must be >=1 (422)."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "N"
+            ]
+          },
+          "pagination": {
+            "sort": "invalid"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'sort' is outside valid values ['award_count', 'description', 'code', 'id', 'obligation', 'outlay', 'face_value_of_loan']\"}"
+      },
+      "notes": "fail – unsupported sort value returns 400."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "N"
+            ],
+            "query": null
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\":{\"obligation\":2491594.33,\"outlay\":507500.0,\"face_value_of_loan\":138539123.0,\"award_count\":57},\"results\":[{\"id\":[\"f9ec70d8-5dc1-2fe8-bf38-4c1b919a4b0d-R\"],\"code\":\"DUNS Number not provided\",..."
+      },
+      "notes": "pass – query=null accepted and treated like no keyword."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "N"
+            ]
+          },
+          "pagination": {
+            "page": 1.5
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'page'. '1.5' is not a valid type (integer)\"}"
+      },
+      "notes": "fail – page must be integer; float rejected."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "Q"
+            ]
+          },
+          "pagination": {
+            "limit": 2
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\":{\"obligation\":0.0,\"outlay\":0.0,\"face_value_of_loan\":0.0,\"award_count\":0},\"results\":[{\"id\":[\"fffbc731-3639-cc3b-c4d1-ed6c84bcdca0-R\"],\"code\":\"DUNS Number not provided\",\"description\":\"ANIMATED COLOR LLC\",..."
+      },
+      "notes": "pass – DEFC Q demonstrates 10,000 total cap and zero totals with populated rows."
+    }
+  ],
+  "mismatches": [
+    "Documentation spells the totals field 'face_value_of_laon' and implies string values, but the API responds with numeric 'face_value_of_loan'.",
+    "Docs list sort options ['description','award_count','face_value_of_loan','obligation','outlay']; the live API also accepts 'code' and 'id' (with id emitting a warning).",
+    "Documentation states description is the default sort, yet the backend attempts sort='id' and falls back to description with a warning when sort is omitted."
+  ],
+  "gaps": [
+    "Unable to confirm presence or shape of the optional 'children' array described in the docs."
+  ],
+  "risks": [
+    "String sorting on 'description' or 'code' may not reflect the requested order; clients should re-sort locally.",
+    "Totals.award_count can disagree with per-recipient award_count values, risking misleading aggregate displays.",
+    "page_metadata.total stops at 10,000, so callers must filter further to access deeper records.",
+    "Default sort fallback generates warnings; integrations should always set a supported sort field."
+  ]
+}

@@ -1,0 +1,332 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/glossary.md",
+    "description": "Returns glossary autocomplete suggestions for a submitted term fragment.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/glossary/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "search_text": {
+          "location": "body",
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object"
+          ],
+          "description": "Term fragment to search for; matching occurs only when provided as a non-empty string.",
+          "constraints": "Required. Field must be present and truthy: empty string or null trigger the documented 400 error, boolean false is rejected, and missing whitespace is not trimmed. Strings search case-insensitively; other truthy JSON types are echoed in the response but yield no matches."
+        },
+        "limit": {
+          "location": "body",
+          "type": [
+            "number",
+            "string",
+            "boolean"
+          ],
+          "description": "Optional maximum number of suggestions to return.",
+          "constraints": "Defaults to 10 when omitted. Value is coerced with int() semantics: decimals truncate toward zero, numeric strings parse to integers, and booleans map to 1 or 0. Coerced values \u2264 0 return empty arrays. Negative numbers and null produce a 500 HTML error; non-numeric strings return a 400 validation error; objects or other non-scalar JSON values also raise 500."
+        }
+      },
+      "required": [
+        "search_text"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "search_text": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object"
+          ],
+          "description": "Echo of the provided search_text, preserving the original JSON type for truthy inputs."
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ordered glossary term titles; length matches count and matched_terms."
+        },
+        "count": {
+          "type": "integer",
+          "description": "Number of entries returned in results and matched_terms."
+        },
+        "matched_terms": {
+          "type": "array",
+          "description": "Array of glossary detail objects aligned with results.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "term": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "data_act_term": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "plain": {
+                "type": "string"
+              },
+              "official": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "resources": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "term",
+              "slug",
+              "data_act_term",
+              "plain",
+              "official",
+              "resources"
+            ]
+          }
+        }
+      },
+      "required": [
+        "search_text",
+        "results",
+        "count",
+        "matched_terms"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/glossary/",
+          "query": {},
+          "body": {
+            "search_text": "award",
+            "limit": 2
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "search_text": "award",
+            "count": 2,
+            "results": [
+              "Account Breakdown by Award (File C)",
+              "Award"
+            ],
+            "matched_terms": [
+              {
+                "term": "Account Breakdown by Award (File C)",
+                "slug": "account-breakdown-by-award-file-c",
+                "data_act_term": null,
+                "plain": "Account Breakdown by Award (File C) is one of the three files that each agency publishes to USAspending.gov in its financial data submission each month (or quarter for some agencies). The file stems from the agency's audited financial system and includes data on award spending only (i.e., excludes non-award spending). Account Breakdown by Award (File C) provides details such as the timing, type, and recipient for each award. \nWhen you see a reference to Account Breakdown by Award (File C) on the site, the reference is to the dataset comprising all agency Files C and not one specific agency file.",
+                "official": null,
+                "resources": "See also:\n\n- [Account Balance (File A)](?glossary=account-balance-file-a)\n- [Account Breakdown by Program Activity & Object Class (File B)](?glossary=account-breakdown-by-program-activity-object-class-file-b)\n- [Awards Data (File D)](?glossary=awards-data-file-d)\n\nFor more information on data elements within each Account File, see our [Data Dictionary](https://www.usaspending.gov/data-dictionary)"
+              },
+              {
+                "term": "Award",
+                "slug": "award",
+                "data_act_term": null,
+                "plain": "Money the federal government has promised to pay a recipient. Funding may be awarded to a company, organization, government entity (i.e., state, local, tribal, federal, or foreign), or individual. It may be obligated (promised) in the form of a contract, grant, loan, insurance, direct payment, etc.",
+                "official": null,
+                "resources": null
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/glossary/",
+          "query": {},
+          "body": {
+            "search_text": {
+              "foo": "bar"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "search_text": {
+              "foo": "bar"
+            },
+            "results": [],
+            "count": 0,
+            "matched_terms": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/glossary/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Missing one or more required request parameters: search_text"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/glossary/",
+          "query": {},
+          "body": {
+            "search_text": "award",
+            "limit": {}
+          }
+        },
+        "response": {
+          "status": 500,
+          "body": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>"
+        }
+      }
+    ],
+    "quirks": [
+      "search_text must be present and truthy; null, empty string, or boolean false trigger the documented 400 missing-parameter error.",
+      "Matching is case-insensitive for string inputs, but whitespace is preserved-leading spaces block matches without raising an error.",
+      "Non-string truthy search_text values are accepted but only echoed back; they do not produce glossary matches.",
+      "limit is coerced through int() semantics; decimals truncate toward zero, numeric strings parse, and booleans map to 1 or 0, so callers should validate before sending."
+    ],
+    "risks": [
+      "Invalid limit values such as negatives, null, or non-scalar JSON objects yield 500 HTML responses instead of JSON, so integrations must defend against non-JSON payloads.",
+      "Glossary text fields (plain, official, resources) contain Markdown links and newlines that may require downstream sanitization.",
+      "The response echoes search_text using the caller's JSON type, which can surprise consumers assuming a string."
+    ],
+    "gaps": [
+      "Search ranking or ordering rules beyond the observed alphabetical results remain undocumented.",
+      "Behavior when search_text is provided as an array has not been validated."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/glossary/",
+        "query": {},
+        "body": {
+          "search_text": "award"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"search_text\":\"award\",\"count\":10,\"results\":[\"Account Breakdown by Award (File C)\",\"Award\",\"Award Amount\",\"Award ID\",\"Award Type\",...],\"matched_terms\":[{\"term\":\"Account Breakdown by Award (File C)\",\"slug\":\"account-breakdown-by-award-file-c\",...}]}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/glossary/",
+        "query": {},
+        "body": {
+          "search_text": "award",
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"search_text\":\"award\",\"results\":[],\"count\":0,\"matched_terms\":[] }"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/glossary/",
+        "query": {},
+        "body": {
+          "search_text": "award",
+          "limit": -1
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>...Server Error (500)..."
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/glossary/",
+        "query": {},
+        "body": {
+          "search_text": ""
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Missing one or more required request parameters: search_text\" }"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/glossary/",
+        "query": {},
+        "body": {
+          "search_text": false
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Missing one or more required request parameters: search_text\"}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/glossary/",
+        "query": {},
+        "body": {
+          "search_text": "award",
+          "limit": {}
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>...Server Error (500)..."
+      }
+    }
+  ],
+  "mismatches": [
+    "Docs describe limit as an optional number, but the API coerces numeric strings, booleans, and decimals and emits 500 HTML errors for null, negative, or non-scalar values instead of JSON validation.",
+    "Docs require search_text to be a string, yet the API accepts any truthy JSON value and only rejects falsy inputs with the missing-parameter error."
+  ],
+  "gaps": [
+    "Search ranking or ordering rules beyond the observed alphabetical results remain undocumented.",
+    "Behavior when search_text is provided as an array has not been validated."
+  ],
+  "risks": [
+    "Invalid limit values such as negatives, null, or non-scalar JSON objects yield 500 HTML responses instead of JSON, so integrations must defend against non-JSON payloads.",
+    "Glossary text fields (plain, official, resources) contain Markdown links and newlines that may require downstream sanitization.",
+    "The response echoes search_text using the caller's JSON type, which can surprise consumers assuming a string."
+  ]
+}

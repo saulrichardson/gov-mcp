@@ -1,0 +1,618 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/federal_account/spending.md",
+    "description": "Returns aggregated disaster and emergency spending totals grouped by federal account and nested treasury account symbols for the supplied DEFC filters.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/federal_account/spending/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Filter object that must include disaster emergency fund (DEFC) codes. A query string key is accepted but produced no observable change in results.",
+          "required": [
+            "def_codes"
+          ],
+          "properties": {
+            "def_codes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7",
+                  "8",
+                  "9",
+                  "A",
+                  "AAA",
+                  "AAB",
+                  "AAC",
+                  "AAD",
+                  "AAE",
+                  "AAF",
+                  "AAG",
+                  "AAH",
+                  "AAI",
+                  "AAJ",
+                  "AAK",
+                  "AAL",
+                  "B",
+                  "C",
+                  "D",
+                  "E",
+                  "F",
+                  "G",
+                  "H",
+                  "I",
+                  "J",
+                  "K",
+                  "L",
+                  "M",
+                  "N",
+                  "O",
+                  "P",
+                  "Q",
+                  "QQQ",
+                  "R",
+                  "S",
+                  "T",
+                  "U",
+                  "V",
+                  "W",
+                  "X",
+                  "Y",
+                  "Z"
+                ]
+              },
+              "minItems": 1,
+              "description": "Uppercase DEFC codes; empty arrays or lowercase strings are rejected."
+            },
+            "query": {
+              "type": "string",
+              "description": "Optional keyword string accepted by the API but ignored in all observed responses."
+            }
+          },
+          "constraints": "Must include def_codes with at least one uppercase value from the server allowlist; missing or empty arrays return 422, invalid values return 400."
+        },
+        "spending_type": {
+          "location": "body",
+          "type": "string",
+          "description": "Selects whether obligation and outlay amounts represent total resources or award-derived values.",
+          "enum": [
+            "total",
+            "award"
+          ],
+          "constraints": "Required. Any value outside ['total','award'] returns 400.",
+          "effects": "Mode controls which response fields are populated versus null (see output schema)."
+        },
+        "pagination": {
+          "location": "body",
+          "type": "object",
+          "description": "Optional pagination and sorting controls applied to the account list.",
+          "properties": {
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "description": "Page number (integers only). Zero or negatives return 422; decimals return 400."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "description": "Page size. Values below 1 or above 100 return 422."
+            },
+            "order": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc",
+              "description": "Sort direction. Unsupported values return 400."
+            },
+            "sort": {
+              "type": "string",
+              "enum": [
+                "id",
+                "code",
+                "description",
+                "award_count",
+                "obligation",
+                "outlay",
+                "total_budgetary_resources"
+              ],
+              "default": "id",
+              "description": "Sort field. Unsupported values return 400."
+            }
+          },
+          "constraints": "Numeric strings such as \"1\" are coerced, but non-integer numbers (e.g., 1.5) are rejected with 400 errors."
+        }
+      },
+      "required": [
+        "filter",
+        "spending_type"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Federal account rows matching the DEFC filters. Each row includes nested TAS children with the same shape.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number"
+              },
+              "code": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "award_count": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "obligation": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Obligation totals for the row; may be negative in award mode."
+              },
+              "outlay": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "total_budgetary_resources": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "children": {
+                "type": "array",
+                "description": "Nested TAS entries mirroring the parent fields and nullability rules.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "award_count": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "obligation": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "outlay": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "total_budgetary_resources": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "description": "When spending_type='total', award_count values are null and total_budgetary_resources is populated; when spending_type='award', award_count is numeric and total_budgetary_resources is null."
+          }
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata; total reflects all matches even when the current page is empty.",
+          "properties": {
+            "page": {
+              "type": "number"
+            },
+            "total": {
+              "type": "number"
+            },
+            "limit": {
+              "type": "number"
+            },
+            "next": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "previous": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "hasNext": {
+              "type": "boolean"
+            },
+            "hasPrevious": {
+              "type": "boolean"
+            }
+          }
+        },
+        "totals": {
+          "type": "object",
+          "description": "Aggregate obligations and outlays across the filtered dataset. total_budgetary_resources appears only in total mode; award_count appears only in award mode.",
+          "properties": {
+            "obligation": {
+              "type": "number"
+            },
+            "outlay": {
+              "type": "number"
+            },
+            "total_budgetary_resources": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "award_count": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "results",
+        "page_metadata",
+        "totals"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/federal_account/spending/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            },
+            "spending_type": "total",
+            "pagination": {
+              "limit": 2
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "id": 6310,
+                "code": "077-0110",
+                "description": "Program Account, United States International Development Finance Corporation",
+                "award_count": null,
+                "obligation": 99043.63,
+                "outlay": 99043.63,
+                "total_budgetary_resources": 100000,
+                "children": [
+                  {
+                    "id": 80383,
+                    "code": "077-2020/2023-0110-000",
+                    "description": "Program Account, United States International Development Finance Corporation",
+                    "award_count": null,
+                    "obligation": 99043.63,
+                    "outlay": 99043.63,
+                    "total_budgetary_resources": 100000
+                  }
+                ]
+              },
+              {
+                "id": 6282,
+                "code": "075-0945",
+                "description": "Infectious Diseases Rapid Response Reserve Fund, Centers for Disease Control, Health and Human Services",
+                "award_count": null,
+                "obligation": 202525822.56,
+                "outlay": 154257741.92,
+                "total_budgetary_resources": 300000000,
+                "children": [
+                  {
+                    "id": 75749,
+                    "code": "075-X-0945-000",
+                    "description": "Infectious Diseases Rapid Response Reserve Fund, Centers for Disease Control, Health and Human Services",
+                    "award_count": null,
+                    "obligation": 202525822.56,
+                    "outlay": 154257741.92,
+                    "total_budgetary_resources": 300000000
+                  }
+                ]
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 18,
+              "limit": 2,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "totals": {
+              "obligation": 7210622269.71,
+              "outlay": 6953937862.19,
+              "total_budgetary_resources": 7707863149.53
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/federal_account/spending/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            },
+            "spending_type": "award"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "totals": {
+              "obligation": 4310785072.75,
+              "outlay": 6218381045.21,
+              "award_count": 5700
+            },
+            "results": [
+              {
+                "id": 6310,
+                "code": "077-0110",
+                "description": "Program Account, United States International Development Finance Corporation",
+                "award_count": 1,
+                "obligation": 99043.63,
+                "outlay": 99043.63,
+                "total_budgetary_resources": null,
+                "children": [
+                  {
+                    "id": 80383,
+                    "code": "077-2020/2023-0110-000",
+                    "description": "Program Account, United States International Development Finance Corporation",
+                    "award_count": 1,
+                    "obligation": 99043.63,
+                    "outlay": 99043.63,
+                    "total_budgetary_resources": null
+                  }
+                ]
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 16,
+              "limit": 10,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/federal_account/spending/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            },
+            "spending_type": "total",
+            "pagination": {
+              "page": 0
+            }
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'page' value '0' is below min '1'"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "filter.query is accepted but has no observable impact on totals or result sets.",
+      "Response fields flip between numeric and null depending on spending_type (award_count null in total mode; total_budgetary_resources null in award mode) for both accounts and their children.",
+      "Numeric pagination inputs must be integers: decimal values raise 400 errors even when numeric strings are accepted."
+    ],
+    "risks": [
+      "Clients assuming server-side keyword filtering will be disappointed until the query parameter behavior is clarified.",
+      "Integrators must tolerate nulls for award_count or total_budgetary_resources depending on spending_type to avoid type errors.",
+      "User-supplied pagination values should be sanitized to avoid 400/422 validation errors (e.g., page <1, limit>100, decimal inputs)."
+    ],
+    "gaps": [
+      "Still unclear what backend fields filter.query is intended to search; it produced no effect in any probe."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/federal_account/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"id\":6310,\"code\":\"077-0110\",\"description\":\"Program Account, United States International Development Finance Corporation\",\"award_count\":null,\"obligation\":99043.63,\"outlay\":99043.63,\"total_budgetary_resources\":100000.0}...],\"page_metadata\":{\"page\":1,\"total\":18,\"limit\":10,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"totals\":{\"obligation\":7210622269.71,\"outlay\":6953937862.19,\"total_budgetary_resources\":7707863149.53}}"
+      },
+      "notes": "pass - minimal valid request; defaults page 1 and limit 10."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/federal_account/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "spending_type": "award"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\":{\"obligation\":4310785072.75,\"outlay\":6218381045.21,\"award_count\":5700},\"results\":[{\"id\":6310,\"code\":\"077-0110\",\"award_count\":1,\"obligation\":99043.63,\"outlay\":99043.63,\"total_budgetary_resources\":null}...],\"page_metadata\":{\"page\":1,\"total\":16,\"limit\":10,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false}}"
+      },
+      "notes": "pass - award mode returns populated award counts and null budgetary resources."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/federal_account/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "query": "CDC"
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Missing value: 'filter|def_codes' is a required field\"}"
+      },
+      "notes": "pass - confirms def_codes is required inside filter."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/federal_account/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "spending_type": "total",
+          "pagination": {
+            "limit": 200
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '200' is above max '100'\"}"
+      },
+      "notes": "pass - limit must be between 1 and 100 inclusive."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/federal_account/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "spending_type": "total",
+          "pagination": {
+            "page": 1.5
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'page'. '1.5' is not a valid type (integer)\"}"
+      },
+      "notes": "fail - decimal page values are rejected with 400."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/federal_account/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "l"
+            ]
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' is outside valid values ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']\"}"
+      },
+      "notes": "fail - lowercase def_codes are rejected against the uppercase allowlist."
+    }
+  ],
+  "mismatches": [
+    "Docs describe filter.query as a keyword filter, but every tested value (including nonsense strings) produced identical totals and rows, implying the implementation ignores the parameter."
+  ],
+  "gaps": [
+    "Still unclear what backend fields filter.query is intended to search; it produced no effect in any probe."
+  ],
+  "risks": [
+    "Consumers expecting server-side keyword filtering may need to implement client filtering until the query parameter behavior is clarified.",
+    "Clients must handle totals and row fields that switch between null and numeric based on spending_type to avoid type errors.",
+    "Pagination inputs must be coerced to integers; decimal or out-of-range values surface 400/422 errors that callers must catch."
+  ]
+}

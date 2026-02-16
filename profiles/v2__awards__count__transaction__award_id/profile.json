@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/awards/count/transaction/award_id.md",
+    "description": "Counts transactions recorded against a specific generated_unique_award_id; returns 404 when the award ID cannot be resolved.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/awards/count/transaction/{award_id}/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "award_id": {
+          "location": "path",
+          "type": "string",
+          "description": "Generated unique award identifier emitted by USAspending search/list APIs; path segment is case-sensitive.",
+          "constraints": "Required path parameter. Value must match a current generated_unique_award_id; invalid or stale values return 404. Requests without the trailing slash are redirected with HTTP 301."
+        }
+      },
+      "required": [
+        "award_id"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "transactions": {
+          "type": "integer",
+          "description": "Number of transactions associated with the provided award_id. Observed values include 2 and 22."
+        }
+      },
+      "required": [
+        "transactions"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/awards/count/transaction/CONT_AWD_HC108424F0023_9700_N6600121A0083_9700/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "transactions": 2
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/awards/count/transaction/ASST_NON_NNX17AJ96A_8000/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 404,
+          "body": {
+            "detail": "No Award found with: 'ASST_NON_NNX17AJ96A_8000'"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Requests without the trailing slash receive a 301 redirect to the slash-terminated path.",
+      "Award IDs must be the generated_unique_award_id strings; truncated or base award identifiers are rejected with 404.",
+      "Invalid or retired award_id values return 404 with a JSON detail message rather than an empty count.",
+      "Lowercasing the award_id segment bypasses routing and yields an HTML 404 page.",
+      "Non-GET methods return HTTP 405 with a JSON detail error."
+    ],
+    "risks": [
+      "Clients must source and maintain accurate generated_unique_award_id values; stale IDs respond with 404 errors and no count data.",
+      "Case sensitivity and trailing-slash enforcement can surface unexpected 404s or redirects if clients transform the path."
+    ],
+    "gaps": [
+      "Behavior for awards that currently have zero transactions has not been observed; response may be 0 or an error.",
+      "Acceptable award_id formats are undocumented in this contract; integrators still need another endpoint or dataset to discover valid IDs."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/transaction/CONT_AWD_HC108424F0023_9700_N6600121A0083_9700/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"transactions\":2}",
+        "contentType": "application/json"
+      },
+      "notes": "Contract award generated_unique_award_id returned an integer count."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/transaction/ASST_NON_2405CA5MAP_075/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"transactions\":22}",
+        "contentType": "application/json"
+      },
+      "notes": "Assistance award generated_unique_award_id returned an integer count."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/transaction/ASST_NON_NNX17AJ96A_8000/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "{\"detail\":\"No Award found with: 'ASST_NON_NNX17AJ96A_8000'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Documented sample award now returns 404."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/awards/count/transaction/ASST_NON_NNX17AJ96A_8000",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 301,
+        "bodyExcerpt": "",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Missing trailing slash triggers redirect to slash-terminated URL."
+    }
+  ],
+  "mismatches": [
+    "Docs claim award_id ASST_NON_NNX17AJ96A_8000 returns 32 transactions, but the live API returns HTTP 404 with 'No Award found'.",
+    "Documentation does not mention that unknown award_id values produce 404 errors instead of a zero count response."
+  ],
+  "gaps": [
+    "Behavior for awards that currently have zero transactions has not been observed; response may be 0 or an error.",
+    "Acceptable award_id formats are undocumented in this contract; integrators still need another endpoint or dataset to discover valid IDs."
+  ],
+  "risks": [
+    "Clients must source and maintain accurate generated_unique_award_id values; stale IDs respond with 404 errors and no count data.",
+    "Case sensitivity and trailing-slash enforcement can surface unexpected 404s or redirects if clients transform the path."
+  ]
+}

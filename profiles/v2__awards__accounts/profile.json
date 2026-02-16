@@ -1,0 +1,339 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/awards/accounts.md",
+    "description": "Returns federal accounts associated with a specific award including obligated amounts and funding agency metadata.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/awards/accounts/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "award_id": {
+          "location": "body",
+          "type": [
+            "string",
+            "integer"
+          ],
+          "description": "Unique award identifier to scope the lookup.",
+          "constraints": "Required; accepts strings or integers. Empty strings, null, and boolean inputs return 422 errors. Unknown identifiers return 200 with empty results."
+        },
+        "page": {
+          "location": "body",
+          "type": "integer",
+          "description": "1-indexed results page.",
+          "constraints": "Optional; defaults to 1. Must be an integer greater than or equal to 1. Non-integer values return 400; integers below 1 return 422."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum results per page.",
+          "constraints": "Optional; defaults to 5. Must be an integer between 1 and 100 inclusive. Non-integers return 400; values outside the range return 422."
+        },
+        "order": {
+          "location": "body",
+          "type": "string",
+          "description": "Sort direction applied to the selected sort field.",
+          "constraints": "Optional; defaults to 'desc'. Allowed values are 'asc' and 'desc' (case-sensitive). Other inputs, including null, return 400."
+        },
+        "sort": {
+          "location": "body",
+          "type": "string",
+          "description": "Field used to order results.",
+          "constraints": "Optional; defaults to 'federal_account'. Allowed values are 'federal_account', 'total_transaction_obligated_amount', 'agency', and 'account_title'. Other inputs, including null, return 400."
+        }
+      },
+      "required": [
+        "award_id"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "List of federal accounts associated with the specified award.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "total_transaction_obligated_amount": {
+                "type": "number"
+              },
+              "federal_account": {
+                "type": "string"
+              },
+              "account_title": {
+                "type": "string"
+              },
+              "funding_agency_abbreviation": {
+                "type": "string"
+              },
+              "funding_agency_name": {
+                "type": "string"
+              },
+              "funding_agency_id": {
+                "type": "integer"
+              },
+              "funding_toptier_agency_id": {
+                "type": "integer"
+              },
+              "funding_agency_slug": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "total_transaction_obligated_amount",
+              "federal_account",
+              "account_title",
+              "funding_agency_abbreviation",
+              "funding_agency_name",
+              "funding_agency_id",
+              "funding_toptier_agency_id",
+              "funding_agency_slug"
+            ]
+          }
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata for the result set.",
+          "properties": {
+            "page": {
+              "type": "integer"
+            },
+            "count": {
+              "type": "integer"
+            },
+            "next": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "previous": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "hasNext": {
+              "type": "boolean"
+            },
+            "hasPrevious": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "page",
+            "count",
+            "next",
+            "previous",
+            "hasNext",
+            "hasPrevious"
+          ]
+        }
+      },
+      "required": [
+        "results",
+        "page_metadata"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/awards/accounts/",
+          "query": {},
+          "body": {
+            "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "total_transaction_obligated_amount": 11234642.22,
+                "federal_account": "057-3600",
+                "account_title": "Research, Development, Test, and Evaluation, Air Force",
+                "funding_agency_abbreviation": "DOD",
+                "funding_agency_name": "Department of Defense",
+                "funding_agency_id": 1174,
+                "funding_toptier_agency_id": 126,
+                "funding_agency_slug": "department-of-defense"
+              },
+              {
+                "total_transaction_obligated_amount": 8738570466.81,
+                "federal_account": "057-3010",
+                "account_title": "Aircraft Procurement, Air Force",
+                "funding_agency_abbreviation": "DOD",
+                "funding_agency_name": "Department of Defense",
+                "funding_agency_id": 1174,
+                "funding_toptier_agency_id": 126,
+                "funding_agency_slug": "department-of-defense"
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "count": 5,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/awards/accounts/",
+          "query": {},
+          "body": {
+            "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+            "sort": "invalid"
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Field 'sort' is outside valid values ['federal_account', 'total_transaction_obligated_amount', 'agency', 'account_title']"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Default page size is 5 results despite documentation examples showing 10.",
+      "Sort defaults to 'federal_account' descending; providing only 'order' flips the direction while retaining the default sort field.",
+      "Validation errors mix HTTP 400 for type issues and 422 for missing or out-of-range values.",
+      "Unknown award identifiers return 200 with empty results instead of an error."
+    ],
+    "risks": [
+      "Clients must handle both 400 and 422 validation responses depending on the failure type.",
+      "Pagination continues to return 200 with empty pages, so stop conditions should rely on page_metadata.hasNext/hasPrevious.",
+      "Inputs that validate syntactically (e.g., numeric award IDs) can still return empty results, so integrations should confirm non-empty payloads."
+    ],
+    "gaps": [
+      "Unverified whether funding agency fields in results can be null despite documentation marking them nullable."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/accounts/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"federal_account\":\"057-3600\",\"total_transaction_obligated_amount\":11234642.22},{\"...\":\"...\"}],\"page_metadata\":{\"page\":1,\"count\":5,\"next\":null}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - defaults produce 5 results sorted by federal_account desc with complete metadata."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/accounts/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+          "limit": 2,
+          "page": 2
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"federal_account\":\"017-1506\"},{\"federal_account\":\"017-1319\"}],\"page_metadata\":{\"page\":2,\"count\":5,\"previous\":1,\"next\":3}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - pagination advances with expected previous/next pointers."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/accounts/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+          "sort": "invalid"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'sort' is outside valid values ['federal_account', 'total_transaction_obligated_amount', 'agency', 'account_title']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - invalid sort rejected with 400 and enumerated allowlist."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/accounts/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0001917C0001_9700_-NONE-_-NONE-",
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - lower bound enforced with 422."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/accounts/",
+        "query": {},
+        "body": {
+          "award_id": 12345
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[],\"page_metadata\":{\"page\":1,\"count\":0,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - numeric award_id is accepted but yields empty results, so clients must validate non-empty payloads themselves."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/accounts/",
+        "query": {},
+        "body": {
+          "award_id": true
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'award_id'. 'True' is not a valid type (integer, text)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - boolean award_id rejected with 422, clarifying the accepted type set."
+    }
+  ],
+  "mismatches": [
+    "Documentation labels 'page' and 'limit' as generic numbers, but the API only accepts integers and rejects floats with 400 errors."
+  ],
+  "gaps": [
+    "Unverified whether funding agency fields in results can be null despite documentation marking them nullable."
+  ],
+  "risks": [
+    "Clients must handle both 400 and 422 validation responses depending on the failure type.",
+    "Pagination continues to return 200 with empty pages, so stop conditions should rely on page_metadata.hasNext/hasPrevious.",
+    "Inputs that validate syntactically (e.g., numeric award IDs) can still return empty results, so integrations should confirm non-empty payloads."
+  ]
+}

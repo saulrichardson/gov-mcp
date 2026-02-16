@@ -8,6 +8,30 @@ export const CANONICAL_SCHEMA_VERSION = SCHEMA_VERSION as string;
 
 export type ProfileReport = z.infer<typeof ProfileReportSchema>;
 
+export type ParamLocation = "query" | "body" | "path";
+
+export type PlannerParameter = {
+  name: string;
+  location: ParamLocation;
+  required: boolean;
+  description: string;
+  types: string[];
+};
+
+export type PlannerMetadata = {
+  parameterCount: number;
+  requiredParams: string[];
+  optionalParams: string[];
+  queryParams: string[];
+  bodyParams: string[];
+  pathParams: string[];
+  supportsPagination: boolean;
+  supportsSorting: boolean;
+  supportsFiltering: boolean;
+  supportsDateRange: boolean;
+  parameters: PlannerParameter[];
+};
+
 export type Profile = {
   schemaVersion: string;
   slug: string;
@@ -30,6 +54,7 @@ export type Profile = {
   supports?: string[];
   status?: string;
   provenance?: any;
+  planner?: PlannerMetadata;
   lifecycle: "active" | "deprecated" | "unknown";
   lastVerified: string;
   confidence: "confirmed";
@@ -41,6 +66,7 @@ export type EndpointSummary = {
   path: string;
   method: string;
   tags?: string[];
+  planner?: PlannerMetadata;
 };
 
 export type CallResult = {

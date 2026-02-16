@@ -1,0 +1,311 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/recipient/count.md",
+    "description": "Counts distinct recipients receiving disaster or emergency funding that satisfy the provided filters.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/recipient/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Filter object controlling which disaster/emergency recipients are counted.",
+          "constraints": "Required. Must include def_codes array with at least one allowed DEF code. Additional keys are tolerated; only award_type_codes changed counts in probes.",
+          "properties": {
+            "def_codes": {
+              "type": "array",
+              "description": "List of Disaster Emergency Fund codes to include in the aggregation.",
+              "items": {
+                "type": "string"
+              },
+              "constraints": "Required. Minimum 1 item. Each entry must exactly match one of ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']. Lowercase and whitespace variants are rejected (HTTP 400)."
+            },
+            "award_type_codes": {
+              "type": "array",
+              "description": "Optional filter restricting results to specific procurement or assistance award types.",
+              "items": {
+                "type": "string"
+              },
+              "constraints": "Optional. When provided, must contain at least one value selected from ['-1','02','03','04','05','06','07','08','09','10','11','A','B','C','D','IDV_A','IDV_B','IDV_B_A','IDV_B_B','IDV_B_C','IDV_C','IDV_D','IDV_E']. Empty arrays and non-array payloads return validation errors."
+            },
+            "time_period": {
+              "type": "array",
+              "description": "Optional list of date range objects following the shared time_period filter schema.",
+              "constraints": "Optional. Arrays of {start_date,end_date} objects are accepted, and even stray strings were tolerated; all observed payloads left the count unchanged, implying the filter is ignored."
+            },
+            "recipient_scope": {
+              "type": "string",
+              "description": "Optional shared filter indicating recipient scope (e.g., 'domestic', 'foreign').",
+              "constraints": "Optional. Accepted values behaved as no-ops in probes."
+            },
+            "recipient_locations": {
+              "type": "array",
+              "description": "Optional list of recipient location objects using the shared standard location shape.",
+              "constraints": "Optional. Accepted payloads left the count unchanged in probes."
+            },
+            "keywords": {
+              "type": "array",
+              "description": "Optional list of keyword strings from the shared filters set.",
+              "constraints": "Optional. Accepted payloads did not affect the count in observed probes."
+            }
+          },
+          "required": [
+            "def_codes"
+          ]
+        }
+      },
+      "required": [
+        "filter"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "Number of unique recipients matching the applied filters.",
+          "constraints": "Non-negative integer. Always present in successful responses."
+        }
+      },
+      "required": [
+        "count"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/recipient/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L",
+                "M"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 3692
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/recipient/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ],
+              "award_type_codes": [
+                "04",
+                "05"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 2102
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/recipient/count/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L",
+                "ZZ"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Field 'filter|def_codes' is outside valid values ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Validation exposes a broad, uppercase-only DEF code list; lowercase or whitespace-variant codes are rejected with HTTP 400.",
+      "award_type_codes accepts procurement, assistance, and '-1' codes but enforces a non-empty array when present.",
+      "Shared filters such as time_period, recipient_scope, recipient_locations, and keywords were accepted yet produced no observable change in counts, implying they are ignored.",
+      "Unknown filter keys are silently ignored, while missing def_codes produces HTTP 422 and other validation issues return HTTP 400 with field-specific detail messages."
+    ],
+    "risks": [
+      "Clients expecting shared filters (time_period, recipient_scope, recipient_locations, keywords) to narrow results may be misled because probes showed no effect.",
+      "Integrators must handle both 400 and 422 validation error shapes depending on the failure mode.",
+      "Relying on the enumerated DEF code list could break if USAspending updates the allowed values; prefer fetching the list dynamically."
+    ],
+    "gaps": [
+      "Unclear whether additional shared filters (e.g., agencies, award amounts) are supported or ignored because they were not probed.",
+      "Impact of very large filter combinations on performance and response time remains untested."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L",
+              "M"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "count": 3692
+        }
+      },
+      "notes": "pass - baseline multi-code request returned aggregate recipient count"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": "Missing value: 'filter|def_codes' is a required field"
+        }
+      },
+      "notes": "fail - body without filter rejected with 422 and explicit field path"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L",
+              "ZZ"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "detail": "Field 'filter|def_codes' is outside valid values ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'AAA', 'AAB', 'AAC', 'AAD', 'AAE', 'AAF', 'AAG', 'AAH', 'AAI', 'AAJ', 'AAK', 'AAL', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'QQQ', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']"
+        }
+      },
+      "notes": "fail - invalid DEFC value surfaces full enumeration list"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "award_type_codes": [
+              "04",
+              "05"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "count": 2102
+        }
+      },
+      "notes": "pass - combining assistance award type codes reduced the recipient count"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "time_period": "2020"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "count": 3045
+        }
+      },
+      "notes": "pass - time_period sent as a string was tolerated but left the count unchanged"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/recipient/count/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "recipient_scope": "foreign"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "count": 3045
+        }
+      },
+      "notes": "pass - recipient_scope accepted but behaved as a no-op"
+    }
+  ],
+  "mismatches": [
+    "Docs restrict def_codes to CARES codes [L,M,N,O,P,U], but live validation accepts a much larger uppercase list including numeric and AAx codes.",
+    "Docs list award_type_codes without '-1', yet the API validator includes '-1' as an allowed value."
+  ],
+  "gaps": [
+    "Unclear whether additional shared filters (e.g., agencies, award amounts) are supported or ignored because they were not probed.",
+    "Impact of very large filter combinations on performance and response time remains untested."
+  ],
+  "risks": [
+    "Clients expecting shared filters (time_period, recipient_scope, recipient_locations, keywords) to narrow results may be misled because probes showed no effect.",
+    "Integrators must handle both 400 and 422 validation error shapes depending on the failure mode.",
+    "Relying on the enumerated DEF code list could break if USAspending updates the allowed values; prefer fetching the list dynamically."
+  ]
+}

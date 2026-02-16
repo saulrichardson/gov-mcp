@@ -1,0 +1,411 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/award_spending/recipient.md",
+    "description": "Aggregates prime award obligations by recipient for a given fiscal year and awarding toptier agency, returning recipients ordered by total obligated amount.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/award_spending/recipient/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "awarding_agency_id": {
+          "location": "query",
+          "type": "integer",
+          "description": "Identifier for the awarding toptier agency whose recipient spending should be summarized.",
+          "constraints": "Required. Must be an integer that maps to a valid awarding toptier agency; other integers return 400 and non-integer values trigger an HTML 500 response."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Federal fiscal year to aggregate prime award obligations for.",
+          "constraints": "Required integer. Any integer is accepted, but years without data return empty results; non-integer input triggers an HTML 500 response."
+        },
+        "limit": {
+          "location": "query",
+          "type": "integer",
+          "description": "Maximum number of recipients to return per page.",
+          "constraints": "Optional. Defaults to 100 when omitted. Values \u2264 0 are normalized to 1, values > 500 are capped to 500, and non-integer input triggers an HTML 500 response."
+        },
+        "page": {
+          "location": "query",
+          "type": "integer",
+          "description": "1-indexed page number of the recipient list to return.",
+          "constraints": "Optional. Defaults to 1. Values \u2264 0 are normalized to 1, pages beyond the result set return empty results with 200 status, and non-integer input triggers an HTML 500 response."
+        }
+      },
+      "required": [
+        "awarding_agency_id",
+        "fiscal_year"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata with normalized paging values and navigation links.",
+          "required": [
+            "count",
+            "page",
+            "has_next_page",
+            "has_previous_page",
+            "next",
+            "current",
+            "previous"
+          ],
+          "properties": {
+            "count": {
+              "type": "integer",
+              "description": "Total number of recipients matching the query across all pages."
+            },
+            "page": {
+              "type": "integer",
+              "description": "Page number returned after server normalization."
+            },
+            "has_next_page": {
+              "type": "boolean",
+              "description": "True when additional pages can be requested."
+            },
+            "has_previous_page": {
+              "type": "boolean",
+              "description": "True when an earlier page exists."
+            },
+            "next": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Absolute URL for the next page when available, otherwise null."
+            },
+            "current": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Absolute URL reflecting the returned page with normalized query parameters."
+            },
+            "previous": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Absolute URL for the previous page when available, otherwise null."
+            }
+          }
+        },
+        "results": {
+          "type": "array",
+          "description": "Recipients sorted by obligated_amount descending. Entries include award category, aggregated obligated amount, and a recipient object with the display name.",
+          "items": {
+            "type": "object",
+            "required": [
+              "award_category",
+              "obligated_amount",
+              "recipient"
+            ],
+            "properties": {
+              "award_category": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Prime award category label. Observed values include 'contract', 'idv', 'grant', 'direct payment', and 'loans'."
+              },
+              "obligated_amount": {
+                "type": "string",
+                "description": "Aggregated obligated amount formatted as a decimal string; may be zero or negative for deobligations."
+              },
+              "recipient": {
+                "type": "object",
+                "required": [
+                  "recipient_name"
+                ],
+                "properties": {
+                  "recipient_name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Display name for the recipient. May be a real name, the literal 'REDACTED DUE TO PII', or null when disclosure is restricted."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "page_metadata",
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/award_spending/recipient/",
+          "query": {
+            "awarding_agency_id": 7,
+            "fiscal_year": 2023,
+            "limit": 3
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "page_metadata": {
+              "count": 32,
+              "page": 1,
+              "has_next_page": true,
+              "has_previous_page": false,
+              "next": "https://api.usaspending.gov/api/v2/award_spending/recipient/?awarding_agency_id=7&fiscal_year=2023&limit=3&page=2",
+              "current": "https://api.usaspending.gov/api/v2/award_spending/recipient/?awarding_agency_id=7&fiscal_year=2023&limit=3&page=1",
+              "previous": null
+            },
+            "results": [
+              {
+                "award_category": "idv",
+                "obligated_amount": "3000.00",
+                "recipient": {
+                  "recipient_name": "APPRISS LLC"
+                }
+              },
+              {
+                "award_category": "idv",
+                "obligated_amount": "3000.00",
+                "recipient": {
+                  "recipient_name": "CLARIVATE ANALYTICS (US) LLC"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/award_spending/recipient/",
+          "query": {
+            "awarding_agency_id": 700,
+            "fiscal_year": 2023,
+            "limit": 5
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "page_metadata": {
+              "count": 3748,
+              "page": 1,
+              "has_next_page": true,
+              "has_previous_page": false,
+              "next": "https://api.usaspending.gov/api/v2/award_spending/recipient/?awarding_agency_id=700&fiscal_year=2023&limit=5&page=2",
+              "current": "https://api.usaspending.gov/api/v2/award_spending/recipient/?awarding_agency_id=700&fiscal_year=2023&limit=5&page=1",
+              "previous": null
+            },
+            "results": [
+              {
+                "award_category": "grant",
+                "obligated_amount": "735792601.00",
+                "recipient": {
+                  "recipient_name": "STATE OF CALIFORNIA WATER RESOURCES CONTROL BOARD"
+                }
+              },
+              {
+                "award_category": "grant",
+                "obligated_amount": "615767000.00",
+                "recipient": {
+                  "recipient_name": "TEXAS WATER DEVELOPMENT BOARD"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/award_spending/recipient/",
+          "query": {
+            "awarding_agency_id": 9999,
+            "fiscal_year": 2023
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Awarding Agency ID provided must correspond to a toptier agency"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/award_spending/recipient/",
+          "query": {
+            "awarding_agency_id": 7,
+            "fiscal_year": 2023,
+            "limit": "1.1"
+          }
+        },
+        "response": {
+          "status": 500,
+          "body": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>"
+        }
+      }
+    ],
+    "quirks": [
+      "limit defaults to 100, is floored to 1, and capped at 500; pagination URLs always echo the normalized value.",
+      "page defaults to 1; zero or negative inputs are normalized to 1, while oversized page requests return empty result arrays with a 200 status.",
+      "Results remain sorted by obligated_amount descending even when values are zero or negative, so later pages can contain only deobligations.",
+      "recipient.recipient_name may be a real name, the literal 'REDACTED DUE TO PII', or null depending on disclosure rules.",
+      "Non-integer query parameters trigger HTML 500 error pages instead of JSON validation errors."
+    ],
+    "risks": [
+      "Clients must guard against HTML 500 responses when query parameters are not integers, otherwise JSON parsers will fail.",
+      "Large counts combined with the default limit=100 can return very large payloads; callers should set smaller limits when bandwidth is a concern.",
+      "Recipient names can be null or redacted, so downstream systems must tolerate missing or placeholder display names.",
+      "Loose fiscal_year validation means typos (e.g., far-future or negative years) silently return empty data, which can hide mistakes."
+    ],
+    "gaps": [
+      "Additional award_category labels beyond the observed set (contract, idv, grant, direct payment, loans) may exist but were not verified.",
+      "Rules determining when recipient_name is null versus 'REDACTED DUE TO PII' remain undocumented.",
+      "Supported fiscal_year range is unspecified; the API accepts any integer but returns empty data outside observed ranges."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/award_spending/recipient/",
+        "query": {
+          "awarding_agency_id": 7,
+          "fiscal_year": 2023,
+          "limit": 3
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"page_metadata\":{\"count\":32,\"page\":1,\"has_next_page\":true,...},\"results\":[{\"award_category\":\"idv\",\"obligated_amount\":\"3000.00\",...}]"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/award_spending/recipient/",
+        "query": {
+          "awarding_agency_id": 700,
+          "fiscal_year": 2023,
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"page_metadata\":{\"count\":3748,\"page\":1,\"has_next_page\":true,...},\"results\":[{\"award_category\":\"grant\",\"obligated_amount\":\"735792601.00\",...}]"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/award_spending/recipient/",
+        "query": {
+          "awarding_agency_id": 48,
+          "fiscal_year": 2023,
+          "limit": 1000
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "...\"limit\":500...\"has_next_page\":false..."
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/award_spending/recipient/",
+        "query": {
+          "awarding_agency_id": 7,
+          "fiscal_year": 2023,
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "...\"limit\":1...\"results\":[{\"award_category\":\"idv\",...}]"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/award_spending/recipient/",
+        "query": {
+          "fiscal_year": 2023
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Missing one or more required query parameters: fiscal_year, awarding_agency_id\"}"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/award_spending/recipient/",
+        "query": {
+          "awarding_agency_id": 9999,
+          "fiscal_year": 2023
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Awarding Agency ID provided must correspond to a toptier agency\"}"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/award_spending/recipient/",
+        "query": {
+          "awarding_agency_id": 7,
+          "fiscal_year": 2023,
+          "limit": "abc"
+        }
+      },
+      "response": {
+        "status": 500,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<!doctype html>...Server Error (500)..."
+      }
+    }
+  ],
+  "mismatches": [
+    "Documentation describes awarding_agency_id as a recipient identifier, but the live API requires a valid awarding toptier agency id and rejects other integers.",
+    "Documentation implies award_category will be 'contracts', yet production responses use lower-case labels such as 'contract', 'idv', 'grant', 'direct payment', and 'loans'.",
+    "Documentation presents limit as an optional number without mentioning the default of 100, normalization to 1, or the hard cap of 500."
+  ],
+  "gaps": [
+    "Additional award_category labels beyond the observed set (contract, idv, grant, direct payment, loans) may exist but were not verified.",
+    "Rules determining when recipient_name is null versus 'REDACTED DUE TO PII' remain undocumented.",
+    "Supported fiscal_year range is unspecified; the API accepts any integer but returns empty data outside observed ranges."
+  ],
+  "risks": [
+    "Non-integer query inputs yield HTML 500 pages, so clients must sanitize parameters or handle non-JSON error payloads.",
+    "Defaulting to limit=100 can return very large responses for agencies with thousands of recipients; callers should choose smaller limits when necessary.",
+    "Recipient names can be null or replaced with 'REDACTED DUE TO PII', which can break downstream assumptions about always receiving a usable display name.",
+    "Silent acceptance of unexpected fiscal_year values (including negative or future years) can hide caller mistakes because the API returns 200 with empty results."
+  ]
+}

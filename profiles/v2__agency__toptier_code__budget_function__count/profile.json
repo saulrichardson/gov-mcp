@@ -1,0 +1,329 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/budget_function/count.md",
+    "description": "Counts budget functions and sub-functions for a specified agency toptier code in a fiscal year.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/budget_function/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Identifier for the toptier agency (CGAC or FREC).",
+          "constraints": "Required; numeric string of 3-4 digits; other formats return HTML 404."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Fiscal year to evaluate. Defaults to the current fiscal year when omitted or blank.",
+          "constraints": "Optional; accepts integers 2008-2026 inclusive; blank string treated as omitted; leading zeros normalized; non-integer values return 400; values outside bounds return 422."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echoes the agency toptier code used for the request."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Fiscal year that the counts represent; defaults to current FY when not provided."
+        },
+        "budget_function_count": {
+          "type": "integer",
+          "description": "Number of distinct budget functions tied to the agency for the fiscal year."
+        },
+        "budget_sub_function_count": {
+          "type": "integer",
+          "description": "Number of distinct budget sub-functions tied to the agency for the fiscal year."
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Warning or informational strings; empty for supported fiscal years and includes DATA Act availability notice for pre-2017 years."
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "budget_function_count",
+        "budget_sub_function_count",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/012/budget_function/count/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "012",
+            "fiscal_year": 2026,
+            "budget_function_count": 9,
+            "budget_sub_function_count": 17,
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/097/budget_function/count/",
+          "query": {
+            "fiscal_year": "2010"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "097",
+            "fiscal_year": 2010,
+            "budget_function_count": 0,
+            "budget_sub_function_count": 0,
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "IPv6 requests closed without response during testing; forcing IPv4 (curl -4) consistently succeeded.",
+      "Supplying an empty query value for fiscal_year defaults back to the current fiscal year.",
+      "Leading zeros in fiscal_year are accepted and normalized in the response.",
+      "Non-digit toptier_code paths return an HTML 404 page, while unknown numeric codes return JSON 404 bodies.",
+      "messages array includes a historical data availability warning when requesting fiscal years before DATA Act coverage."
+    ],
+    "risks": [
+      "Clients connecting over IPv6 may receive empty replies and should fall back to IPv4.",
+      "Error payload format varies: some 404s are HTML rather than JSON, so clients must defensively parse failures.",
+      "Fiscal year bounds are enforced server-side; integrations should handle annual updates when the max fiscal year advances."
+    ],
+    "gaps": [
+      "Unverified whether responses ever include multiple distinct warning messages beyond the DATA Act notice.",
+      "Not confirmed if fiscal year bounds update automatically when the reporting window advances."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/budget_function/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 0,
+        "bodyExcerpt": "",
+        "contentType": ""
+      },
+      "notes": "fail - Server closed IPv6 connection without sending a response; retried with IPv4."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/budget_function/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2026,\"budget_function_count\":9,\"budget_sub_function_count\":17,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - Default request targets current fiscal year (2026) with counts and empty messages."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/budget_function/count/",
+        "query": {
+          "fiscal_year": "2023"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2023,\"budget_function_count\":9,\"budget_sub_function_count\":17,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - Explicit fiscal year parameter accepted and echoed."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/097/budget_function/count/",
+        "query": {
+          "fiscal_year": "2023"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"097\",\"fiscal_year\":2023,\"budget_function_count\":6,\"budget_sub_function_count\":8,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - Different toptier code returns different counts as expected."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/097/budget_function/count/",
+        "query": {
+          "fiscal_year": "2010"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"097\",\"fiscal_year\":2010,\"budget_function_count\":0,\"budget_sub_function_count\":0,\"messages\":[\"Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - Pre-DATA Act year returns zeros with explanatory message."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/abc/budget_function/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>...<h1>Not Found</h1>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail - Non-numeric toptier path does not match route and returns HTML 404."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/999/budget_function/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "{\"detail\":\"Agency with a toptier code of '999' does not exist\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - Numeric but unknown toptier code returns JSON 404 detail."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/budget_function/count/",
+        "query": {
+          "fiscal_year": "foo"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'fiscal_year'. 'foo' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - Non-integer fiscal_year rejected with 400 validation error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/budget_function/count/",
+        "query": {
+          "fiscal_year": "2027"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2027' is above max '2026'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - Fiscal year above current maximum returns 422."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/budget_function/count/",
+        "query": {
+          "fiscal_year": "2007"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2007' is below min '2008'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - Fiscal year below supported range returns 422."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/budget_function/count/",
+        "query": {
+          "fiscal_year": ""
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2026,\"budget_function_count\":9,\"budget_sub_function_count\":17,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - Empty fiscal_year query string is treated as omitted and defaults to current FY."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/budget_function/count/",
+        "query": {
+          "fiscal_year": "02023"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2023,\"budget_function_count\":9,\"budget_sub_function_count\":17,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - Leading zeros in fiscal_year are accepted and normalized."
+    }
+  ],
+  "mismatches": [
+    "Contract lists the request schema as a bare number, but the live API uses a RESTful GET with path and query parameters and no numeric body.",
+    "Docs describe toptier_code as a number, yet the live service requires a 3-4 digit string and returns HTML 404 for non-digit formats."
+  ],
+  "gaps": [
+    "Unverified whether responses ever include multiple distinct warning messages beyond the DATA Act notice.",
+    "Not confirmed if fiscal year bounds update automatically when the reporting window advances."
+  ],
+  "risks": [
+    "Clients connecting over IPv6 may receive empty replies and should fall back to IPv4.",
+    "Error payload format varies: some 404s are HTML rather than JSON, so clients must defensively parse failures.",
+    "Fiscal year bounds are enforced server-side; integrations should handle annual updates when the max fiscal year advances."
+  ]
+}

@@ -1,0 +1,365 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/program_activity.md",
+    "description": "Autocomplete search for program activity codes and names by partial code or text.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/program_activity/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "search_text": {
+          "location": "body",
+          "type": "string",
+          "description": "Case-insensitive search string matched against program activity codes and names.",
+          "constraints": "Required non-empty string. Missing, null, or empty string values return HTTP 400. Non-string inputs pass validation but downstream processing raises a 500 HTML error."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of matches to return. Defaults to 10 when omitted; large values can yield very large payloads.",
+          "constraints": "Optional. Accepts integers greater than or equal to zero, integer-like JSON numbers (decimals truncated toward zero), booleans (true treated as 1, false treated as 0), and numeric strings. Value 0 returns HTTP 200 with an empty list. Decimal strings and other non-numeric strings return 400. Negative or null values trigger a 500 HTML error.",
+          "default": 10
+        }
+      },
+      "required": [
+        "search_text"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Autocomplete matches ordered by backend relevance. Each entry includes both code and name strings; duplicate codes may appear with different names.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "program_activity_code": {
+                "type": "string"
+              },
+              "program_activity_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "program_activity_code",
+              "program_activity_name"
+            ]
+          }
+        }
+      },
+      "required": [
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/program_activity/",
+          "body": {
+            "search_text": "Meat"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "program_activity_code": "0003",
+                "program_activity_name": "MEAT GRADING"
+              },
+              {
+                "program_activity_code": "0005",
+                "program_activity_name": "MEAT AND POULTRY PROCESSING EXPANSION PROGRAM"
+              },
+              {
+                "program_activity_code": "0006",
+                "program_activity_name": "MEAT AND POULTRY PROCESSING EXPANSION PROGRAM TA"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/program_activity/",
+          "body": {}
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Missing one or more required request parameters: search_text"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/program_activity/",
+          "body": {
+            "search_text": "Meat",
+            "limit": true
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "program_activity_code": "0003",
+                "program_activity_name": "MEAT GRADING"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "limit=0 returns HTTP 200 with an empty results array instead of rejecting the value.",
+      "Boolean limit values are coerced to integers (true becomes 1, false becomes 0).",
+      "Large limits (observed up to 20,000) return all matching rows without a documented hard cap, producing thousands of entries.",
+      "Whitespace-only search strings are accepted and matched literally against stored names.",
+      "Negative limit values or non-string search_text inputs lead to HTML 500 responses rather than structured validation errors.",
+      "Decimal limit values sent as numbers truncate toward zero; the same values sent as strings are rejected with HTTP 400.",
+      "Additional body fields beyond search_text and limit are silently ignored.",
+      "Duplicate program_activity_code entries may appear with different names and should be deduplicated client-side if needed."
+    ],
+    "risks": [
+      "Invalid input types (e.g., non-string search_text or negative/null limit) can trigger 500 HTML errors that lack JSON structure; callers must validate before sending.",
+      "Large limit values can return thousands of rows without pagination; consumers should enforce their own caps or stream results.",
+      "Duplicate program_activity_code entries may require client-side deduplication depending on downstream expectations."
+    ],
+    "gaps": [
+      "Result ordering appears relevance-based but no deterministic sort guarantees are documented or inferred from probes.",
+      "Maximum accepted limit remains unverified beyond 20,000; higher values were not tested."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {
+          "search_text": "Meat"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"program_activity_code\":\"0003\",\"program_activity_name\":\"MEAT GRADING\"}, ...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Default request returned 10 code/name pairs."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {
+          "search_text": "Meat",
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"program_activity_code\":\"0003\"...}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Positive limit reduces result count accordingly."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {
+          "search_text": "Meat",
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Zero limit yields empty results without error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {
+          "search_text": "Meat",
+          "limit": -1
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<html><head><title>Server Error (500)</title></head>...",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Negative limit produces an HTML 500 error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Missing one or more required request parameters: search_text\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Omitting search_text yields validation error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {
+          "search_text": "Meat",
+          "limit": "5"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"program_activity_code\":\"0003\"...}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Numeric string limit is accepted."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {
+          "search_text": "Meat",
+          "limit": 2.5
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"program_activity_code\":\"0003\"},{\"program_activity_code\":\"0005\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Decimal JSON number truncated toward zero."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {
+          "search_text": "Meat",
+          "limit": "2.5"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Limit request parameter is not a valid, positive integer\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Decimal limit sent as string rejected with 400."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {
+          "search_text": "a",
+          "limit": 20000
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"program_activity_code\":\"0000\",\"program_activity_name\":\"ACF HISTORICAL ACTIVITY\"}, ...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Large limit returned 7,427 matches without a hard cap error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {
+          "search_text": "Meat",
+          "limit": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"program_activity_code\":\"0003\",\"program_activity_name\":\"MEAT GRADING\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Boolean true coerced to limit=1."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {
+          "search_text": "Meat",
+          "limit": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Boolean false coerced to limit=0."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {
+          "search_text": "Meat",
+          "limit": null
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<html><head><title>Server Error (500)</title></head>...",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Null limit causes HTML 500 error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/program_activity/",
+        "body": {
+          "search_text": "   "
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"program_activity_code\":\"0002\",\"program_activity_name\":\"RESEARCH DEVELOPMENT TEST    & EVALUATION\"}, ...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Whitespace-only search_text returns literal matches."
+    }
+  ],
+  "mismatches": [
+    "Docs allow generic numeric limit values, but the API only accepts integer-like inputs; decimal or negative strings error despite being described as numbers."
+  ],
+  "gaps": [
+    "Result ordering appears relevance-based but no deterministic sort guarantees are documented or inferred from probes.",
+    "Maximum accepted limit remains unverified beyond 20,000; higher values were not tested."
+  ],
+  "risks": [
+    "Invalid input types (e.g., non-string search_text or negative/null limit) can trigger 500 HTML errors that lack JSON structure; callers must validate before sending.",
+    "Large limit values can return thousands of rows without pagination; consumers should enforce their own caps or stream results.",
+    "Duplicate program_activity_code entries may require client-side deduplication depending on downstream expectations."
+  ]
+}

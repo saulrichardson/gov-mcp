@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/bulk_download/status.md",
+    "description": "Documentation describes a JSON job-status response, but every observed request to https://api.usaspending.gov/api/v2/bulk_download/status closes after TLS with no HTTP status or body.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/bulk_download/status"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "description": "No HTTP exchange completed; parameter handling remains unverified. Documentation suggests a file_name query string, but that behavior is unconfirmed.",
+      "properties": {},
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "null",
+      "description": "Server never emits an HTTP response; actual payload and status codes are unknown.",
+      "properties": {}
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/bulk_download/status",
+          "query": {
+            "file_name": "foo.zip"
+          }
+        },
+        "response": {
+          "status": 0,
+          "body": ""
+        }
+      }
+    ],
+    "quirks": [
+      "HTTPS connections to api.usaspending.gov complete TLS and then terminate with an empty reply (curl error 52).",
+      "The www.usaspending.gov front-end host responds to the same path with cached HTML instead of the documented JSON payload."
+    ],
+    "risks": [
+      "Clients cannot distinguish success or failure because the API aborts the connection before sending HTTP status information.",
+      "Integrations may mistakenly target www.usaspending.gov and receive HTML responses that break JSON parsers."
+    ],
+    "gaps": [
+      "No successful responses observed; request parameters and response schema remain undetermined.",
+      "Authentication, header requirements, and error surface are unknown."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "unknown",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/bulk_download/status/",
+        "query": {
+          "file_name": "012_PrimeTransactions_2020-01-13_H20M58S34486877.zip"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 0,
+        "bodyExcerpt": "",
+        "contentType": ""
+      },
+      "notes": "HTTPS call terminated with curl error 52 (Empty reply from server)."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/bulk_download/status/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 0,
+        "bodyExcerpt": "",
+        "contentType": ""
+      },
+      "notes": "HTTPS call without file_name parameter closed without HTTP response (curl error 52)."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 0,
+        "bodyExcerpt": "",
+        "contentType": ""
+      },
+      "notes": "Base host probe shows api.usaspending.gov closes TLS connections even for the root path (curl error 52)."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/bulk_download/status",
+        "query": {
+          "file_name": "foo.zip"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><base href=\"/\">",
+        "contentType": "text/html"
+      },
+      "notes": "www.usaspending.gov responds to the API path with static HTML instead of JSON."
+    }
+  ],
+  "mismatches": [
+    "Published contract promises a 200 JSON payload, but api.usaspending.gov closes the connection without emitting any HTTP response."
+  ],
+  "gaps": [
+    "No evidence confirming the documented file_name query parameter or any alternative inputs.",
+    "Response structure, status codes, and error handling remain unknown because the service never replies."
+  ],
+  "risks": [
+    "Client libraries will raise low-level connection errors (curl error 52 / RemoteDisconnected) instead of actionable HTTP failures.",
+    "Routing requests through www.usaspending.gov yields HTML that can silently corrupt downstream JSON consumers."
+  ]
+}

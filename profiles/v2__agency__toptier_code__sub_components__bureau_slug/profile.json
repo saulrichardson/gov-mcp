@@ -1,0 +1,398 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/sub_components/bureau_slug.md",
+    "description": "Returns federal account aggregates and totals for a specific agency sub-component in a fiscal year (observed for FY 2017-2026).",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/sub_components/{bureau_slug}/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Top-tier agency code; numeric string with leading zeroes allowed.",
+          "constraints": "Required; observed 3-digit CGAC codes succeed. Non-numeric or wrong-length values return HTML 404."
+        },
+        "bureau_slug": {
+          "location": "path",
+          "type": "string",
+          "description": "Hyphenated, lowercase slug for the agency sub-component (case-sensitive).",
+          "constraints": "Required; unknown or cross-agency slugs return 200 with zero totals, while casing mismatches return HTML 404."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "number",
+          "description": "Appropriations fiscal year to report.",
+          "constraints": "Optional; must be an integer. FY 2017-2026 succeeded. Values above 2026 return 422; FY 2016 and earlier return HTML 500; non-integers return 400."
+        },
+        "agency_type": {
+          "location": "query",
+          "type": "string",
+          "description": "Select awarding or funding agency aggregates.",
+          "constraints": "Optional; accepts 'awarding' (default) or 'funding'. Blank values fall back to awarding. Case-sensitive; invalid values return 400."
+        },
+        "order": {
+          "location": "query",
+          "type": "string",
+          "description": "Sort direction for the selected field.",
+          "constraints": "Optional; defaults to 'desc'. Accepts 'asc' or 'desc' (case-sensitive); invalid values return 400."
+        },
+        "sort": {
+          "location": "query",
+          "type": "string",
+          "description": "Field used to order the results.",
+          "constraints": "Optional; defaults to 'total_budgetary_resources'. Accepts 'name', 'id', 'total_obligations', 'total_outlays', 'total_budgetary_resources'. Case-sensitive; invalid entries return 400 listing allowed values."
+        },
+        "page": {
+          "location": "query",
+          "type": "number",
+          "description": "1-based page index of the result set.",
+          "constraints": "Optional; must be an integer >= 1. Pages beyond the dataset return empty results with hasNext=false; 0 or negatives return 422; non-integers return 400."
+        },
+        "limit": {
+          "location": "query",
+          "type": "number",
+          "description": "Number of federal accounts per page.",
+          "constraints": "Optional; defaults to 10. Observed range is 1-100 inclusive. Values outside the range return 422; non-integers return 400."
+        }
+      },
+      "required": [
+        "toptier_code",
+        "bureau_slug"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echoed top-tier code from the request."
+        },
+        "bureau_slug": {
+          "type": "string",
+          "description": "Echoed bureau slug; unknown slugs echo back with zero totals."
+        },
+        "fiscal_year": {
+          "type": "number",
+          "description": "Fiscal year used to generate the aggregates."
+        },
+        "totals": {
+          "type": "object",
+          "description": "Aggregate totals for the bureau in the requested fiscal year (zero when no data).",
+          "properties": {
+            "total_budgetary_resources": {
+              "type": "number"
+            },
+            "total_obligations": {
+              "type": "number"
+            },
+            "total_outlays": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "total_budgetary_resources",
+            "total_obligations",
+            "total_outlays"
+          ]
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata for the result set.",
+          "properties": {
+            "page": {
+              "type": "number"
+            },
+            "total": {
+              "type": "number",
+              "description": "Total record count across all pages."
+            },
+            "limit": {
+              "type": "number"
+            },
+            "next": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "previous": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "hasNext": {
+              "type": "boolean"
+            },
+            "hasPrevious": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "page",
+            "total",
+            "limit",
+            "next",
+            "previous",
+            "hasNext",
+            "hasPrevious"
+          ]
+        },
+        "results": {
+          "type": "array",
+          "description": "List of federal account aggregates for the bureau.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string",
+                "description": "Federal account identifier (###-#### format)."
+              },
+              "total_budgetary_resources": {
+                "type": "number"
+              },
+              "total_obligations": {
+                "type": "number"
+              },
+              "total_outlays": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "id",
+              "total_budgetary_resources",
+              "total_obligations",
+              "total_outlays"
+            ]
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Warning or informational strings (empty in all observed responses).",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "toptier_code",
+        "bureau_slug",
+        "fiscal_year",
+        "totals",
+        "page_metadata",
+        "results",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+          "query": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "073",
+            "bureau_slug": "small-business-administration",
+            "fiscal_year": 2026,
+            "totals": {
+              "total_obligations": 410511460.43,
+              "total_outlays": 402997689.92,
+              "total_budgetary_resources": 5864689299.41
+            },
+            "page_metadata": {
+              "page": 1,
+              "total": 14,
+              "limit": 10,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "name": "Salaries and Expenses, Small Business Administration",
+                "id": "073-0100",
+                "total_obligations": 261372382.99,
+                "total_outlays": 228076587.81,
+                "total_budgetary_resources": 1765967009.23
+              },
+              {
+                "name": "Disaster Loans Program Account, Small Business Administration",
+                "id": "073-1152",
+                "total_obligations": 68932868.95,
+                "total_outlays": 79227684.91,
+                "total_budgetary_resources": 950012157.54
+              }
+            ],
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+          "query": {
+            "fiscal_year": 2017
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "073",
+            "bureau_slug": "small-business-administration",
+            "fiscal_year": 2017,
+            "totals": {
+              "total_obligations": 2333957159.79,
+              "total_outlays": 2224647075.69,
+              "total_budgetary_resources": 3657307297.17
+            },
+            "page_metadata": {
+              "page": 1,
+              "total": 13,
+              "limit": 10,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "name": "Business Loans Program Account, Small Business Administration",
+                "id": "073-1154",
+                "total_obligations": 1770063029.97,
+                "total_outlays": 1704953052.97,
+                "total_budgetary_resources": 2449124233.24
+              }
+            ],
+            "messages": []
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Unknown or cross-agency bureau_slug values return HTTP 200 with zero totals/results rather than 404.",
+      "Range violations return 422 errors while type violations return 400 errors, each with a single detail string.",
+      "404 and 500 errors return HTML instead of JSON.",
+      "Blank agency_type values fall back to the default awarding view.",
+      "page_metadata.total reflects the total record count, not the number of pages.",
+      "Requests for fiscal_year <= 2016 consistently returned HTML 500 errors.",
+      "bureau_slug matching is case-sensitive; casing mistakes produce HTML 404 responses."
+    ],
+    "risks": [
+      "Clients must handle HTML 404 and 500 responses despite otherwise JSON responses.",
+      "Requests for fiscal_year <= 2016 trigger HTML 500 responses, so callers need guardrails for older years.",
+      "Typos or cross-agency bureau_slug values return zeroed totals, which may mask mistakes.",
+      "The max fiscal_year constraint tracks the current year (422 when exceeded), so integrations should derive year bounds dynamically.",
+      "Slug casing mistakes produce HTML 404 responses and must be avoided."
+    ],
+    "gaps": [
+      "No scenario produced a non-empty messages array, so its possible contents remain unknown.",
+      "Differences between awarding and funding agency_type responses were not observed; divergence conditions are unclear."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":410511460.43,\"total_outlays\":402997689.92,\"total_budgetary_resources\":5864689299.41},\"page_metadata\":{\"page\":1,\"total\":14,\"limit\":10,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Salaries and Expenses, Small Business Administration\",\"id\":\"073-0100\"...",
+        "contentType": "application/json"
+      },
+      "notes": "Default FY 2026 response with populated totals and pagination."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "fiscal_year": 2017
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"073\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2017,\"totals\":{\"total_obligations\":2333957159.79,\"total_outlays\":2224647075.69,\"total_budgetary_resources\":3657307297.17},\"page_metadata\":{\"page\":1,\"total\":13,\"limit\":10,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"name\":\"Business Loans Program Account, Small Business Administration\"...",
+        "contentType": "application/json"
+      },
+      "notes": "FY 2017 is the earliest fiscal year observed to succeed."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/small-business-administration/",
+        "query": {
+          "fiscal_year": 2016
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "FY 2016 request returned HTML 500, confirming lower bound behavior."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/073/sub_components/Small-Business-Administration/",
+        "query": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Not Found</title>\n</head>\n<body>\n  <h1>Not Found</h1><p>The requested resource was not found on this server.</p>\n</body>\n</html>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Changing slug casing triggers HTML 404, demonstrating case sensitivity."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/013/sub_components/small-business-administration/",
+        "query": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"013\",\"bureau_slug\":\"small-business-administration\",\"fiscal_year\":2026,\"totals\":{\"total_obligations\":0,\"total_outlays\":0,\"total_budgetary_resources\":0},\"page_metadata\":{\"page\":1,\"total\":0,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"results\":[],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Valid slug paired with a different toptier returns 200 with zero totals, matching unknown-slug behavior."
+    }
+  ],
+  "mismatches": [
+    "Docs list sort members as name/id/total_obligations/total_budgetary_resources, but the API also accepts total_outlays (and reports it in errors).",
+    "Docs describe the FederalAccount object without total_outlays, yet every result includes total_outlays.",
+    "Doc example path uses bureau_of_the_census (underscores); production expects bureau-of-the-census and the documented path returns 404."
+  ],
+  "gaps": [
+    "No scenario produced a non-empty messages array, so its possible contents remain unknown.",
+    "Differences between awarding and funding agency_type responses were not observed; divergence conditions are unclear."
+  ],
+  "risks": [
+    "Clients must handle HTML 404 and 500 responses despite otherwise JSON responses.",
+    "Requests for fiscal_year <= 2016 trigger HTML 500 responses, so callers need guardrails for older years.",
+    "Typos or cross-agency bureau_slug values return zeroed totals, which may mask mistakes.",
+    "The max fiscal_year constraint tracks the current year (422 when exceeded), so integrations should derive year bounds dynamically.",
+    "Slug casing mistakes produce HTML 404 responses and must be avoided."
+  ]
+}

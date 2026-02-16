@@ -1,0 +1,448 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/cfda/loans.md",
+    "description": "Returns CFDA-level disaster and emergency loan totals and program metadata filtered by required DEFC codes with optional keyword and loan type controls.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/cfda/loans/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [
+        "filter"
+      ],
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Required filter wrapper with DEFC selections and optional refinements.",
+          "required": [
+            "def_codes"
+          ],
+          "properties": {
+            "def_codes": {
+              "location": "body.filter",
+              "type": "array",
+              "description": "List of Disaster Emergency Fund (DEFC) codes to include.",
+              "constraints": "minItems 1; values must match documented uppercase DEFC codes ['1','2','3','4','5','6','7','8','9','A','AAA','AAB','AAC','AAD','AAE','AAF','AAG','AAH','AAI','AAJ','AAK','AAL','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','QQQ','R','S','T','U','V','W','X','Y','Z']; rejects non-arrays, empty arrays, lowercase codes, and values outside the list with 400/422 errors."
+            },
+            "award_type_codes": {
+              "location": "body.filter",
+              "type": "array",
+              "description": "Optional loan award type filters.",
+              "constraints": "minItems 1 when provided; allowed values ['07','08']; empty arrays return 422; values outside the set return 400; omitting the field leaves loan types unrestricted."
+            },
+            "query": {
+              "location": "body.filter",
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Optional case-insensitive keyword filter applied to CFDA metadata; null behaves as if omitted; whitespace-only strings are accepted but do not narrow results.",
+              "constraints": "empty string returns 422; non-string inputs return 400; whitespace-only strings pass validation but act like the filter is missing."
+            }
+          }
+        },
+        "pagination": {
+          "location": "body",
+          "type": "object",
+          "description": "Optional pagination and sorting controls.",
+          "properties": {
+            "page": {
+              "location": "body.pagination",
+              "type": "integer",
+              "description": "1-based page index.",
+              "constraints": "minimum 1; numeric strings coerced; 0 or negatives return 422; decimals return 400."
+            },
+            "limit": {
+              "location": "body.pagination",
+              "type": "integer",
+              "description": "Maximum number of rows per page.",
+              "constraints": "minimum 1; maximum 100; numeric strings coerced; 0 returns 422; values above 100 return 422 with max message."
+            },
+            "sort": {
+              "location": "body.pagination",
+              "type": "string",
+              "description": "Field used to order results.",
+              "constraints": "allowed values ['award_count','description','code','id','obligation','outlay','face_value_of_loan']; requesting 'id' or 'code' triggers a warning and falls back to 'description'."
+            },
+            "order": {
+              "location": "body.pagination",
+              "type": "string",
+              "description": "Sort direction.",
+              "constraints": "allowed values ['asc','desc']; invalid values return 400."
+            }
+          },
+          "constraints": "Defaults observed: page 1, limit 10, sort 'id', order 'desc' (with backend fallback to description when sorting by id/code)."
+        },
+        "spending_type": {
+          "location": "body",
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional spending metric flag; accepts any string or null with no observed effect on results.",
+          "constraints": "Ignored by the backend."
+        }
+      }
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "totals": {
+          "type": "object",
+          "description": "Aggregate totals across all matching CFDA programs.",
+          "properties": {
+            "award_count": {
+              "type": "number",
+              "description": "Total disaster loan award count for the filtered set."
+            },
+            "face_value_of_loan": {
+              "type": "number",
+              "description": "Sum of face value amounts for matched loans."
+            },
+            "obligation": {
+              "type": "number",
+              "description": "Aggregate obligations for the filtered loans."
+            },
+            "outlay": {
+              "type": "number",
+              "description": "Aggregate outlays for the filtered loans."
+            }
+          }
+        },
+        "results": {
+          "type": "array",
+          "description": "Ordered CFDA program rows that satisfy the filters.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number",
+                "description": "Internal CFDA identifier (integer)."
+              },
+              "code": {
+                "type": "string",
+                "description": "CFDA program code."
+              },
+              "description": {
+                "type": "string",
+                "description": "CFDA program title."
+              },
+              "award_count": {
+                "type": "number",
+                "description": "Number of disaster loan awards attributed to the program."
+              },
+              "face_value_of_loan": {
+                "type": "number",
+                "description": "Total face value of loans for the program."
+              },
+              "obligation": {
+                "type": "number",
+                "description": "Total obligations for the program."
+              },
+              "outlay": {
+                "type": "number",
+                "description": "Total outlays for the program."
+              },
+              "resource_link": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "External reference URL for the program; may be null."
+              },
+              "cfda_federal_agency": {
+                "type": "string",
+                "description": "Owning federal agency name."
+              },
+              "cfda_objectives": {
+                "type": "string",
+                "description": "Program objectives narrative (long text)."
+              },
+              "cfda_website": {
+                "type": "string",
+                "description": "Program website URL (observed as non-null)."
+              },
+              "applicant_eligibility": {
+                "type": "string",
+                "description": "Applicant eligibility narrative."
+              },
+              "beneficiary_eligibility": {
+                "type": "string",
+                "description": "Beneficiary eligibility narrative."
+              }
+            },
+            "required": [
+              "id",
+              "code",
+              "description",
+              "award_count",
+              "face_value_of_loan",
+              "obligation",
+              "outlay",
+              "resource_link",
+              "cfda_federal_agency",
+              "cfda_objectives",
+              "cfda_website",
+              "applicant_eligibility",
+              "beneficiary_eligibility"
+            ]
+          }
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata for the current result page.",
+          "properties": {
+            "page": {
+              "type": "number",
+              "description": "Current page number."
+            },
+            "total": {
+              "type": "number",
+              "description": "Total number of available rows."
+            },
+            "limit": {
+              "type": "number",
+              "description": "Requested page size."
+            },
+            "next": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Next page number when more results exist; null on last page."
+            },
+            "previous": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Previous page number; null on first page."
+            },
+            "hasNext": {
+              "type": "boolean",
+              "description": "True when another page is available."
+            },
+            "hasPrevious": {
+              "type": "boolean",
+              "description": "True when a previous page exists."
+            }
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Optional warning strings (present when sorts fall back to 'description')."
+        }
+      }
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/cfda/loans/",
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "totals": {
+              "award_count": 1,
+              "face_value_of_loan": 24486834,
+              "obligation": 99043.63,
+              "outlay": 99043.63
+            },
+            "results": [
+              {
+                "id": 4810,
+                "code": "87.005",
+                "description": "Debt Financing",
+                "award_count": 1,
+                "face_value_of_loan": 24486834,
+                "obligation": 99043.63,
+                "outlay": 99043.63,
+                "resource_link": "https://sam.gov/fal/60724cb5a3a0460da2b0c624f4d676dc/view",
+                "cfda_federal_agency": "UNITED STATES INTERNATIONAL DEVELOPMENT FINANCE CORPORATION, UNITED STATES INTERNATIONAL DEVELOPMENT FINANCE CORPORATION",
+                "cfda_objectives": "The U.S. International Development Finance Corporation (DFC) partners with ",
+                "cfda_website": "http://www.ifap.ed.gov/.",
+                "applicant_eligibility": "The applicant must be a U.S. citizen, national, or",
+                "beneficiary_eligibility": "Vocational, undergraduate, and graduate"
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 1,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "messages": [
+              "Notice! API Request to sort on 'id' field isn't fully implemented. Results were actually sorted using 'description' field."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/cfda/loans/",
+          "body": {}
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Missing value: 'filter|def_codes' is a required field"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Server emits a 'messages' array only when warnings exist (notably when requesting 'id' or 'code' sorts); supported sorts like 'description' omit the field.",
+      "Default requests attempt to sort by 'id', but the backend actually sorts by 'description' and reports the fallback when 'id' or 'code' is requested.",
+      "Numeric strings for pagination 'page' and 'limit' are coerced to integers, while decimal numbers are rejected with type errors.",
+      "'limit' cannot exceed 100; higher values return a 422 error with an explicit maximum message.",
+      "Whitespace-only keyword strings bypass filtering and behave as though the query is absent.",
+      "'spending_type' accepts any string or null value without changing totals or ordering."
+    ],
+    "risks": [
+      "Callers relying on 'id' or 'code' ordering must handle the server fallback and accompanying warning message or sort client-side.",
+      "Aggregate award counts and financial totals can be very large; clients must handle high-precision numeric values.",
+      "Whitespace-only keyword inputs are accepted and skip filtering, so clients expecting strict validation should trim user input before sending."
+    ],
+    "gaps": [
+      "Spending_type semantics remain undocumented; all tested inputs (including null) are ignored but no evidence shows a value that alters results.",
+      "cfda_website is documented as nullable but no probe observed a null value, so null-handling requirements are unclear."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\":{\"obligation\":99043.63,\"outlay\":99043.63,\"face_value_of_loan\":24486834.0,\"award_count\":1},\"results\":[{\"id\":4810,\"code\":\"87.005\",\"description\":\"Debt Financing\",\"award_count\":1,\"resource_link\":\"https://sam.gov/fal/60724cb5a3a0460da2b0c624f4d676dc/view\",\"cfda_federal_agency\":\"UNITED STATES INTERNATIONAL DEVELOPMENT FINANCE CORPORATION, UNITED STATES INTERNATIONAL DEVELOPMENT FINANCE CORPORATION\"}],\"page_metadata\":{\"page\":1,\"total\":1,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"messages\":[\"Notice! API Request to sort on 'id' field isn't fully implemented. Results were actually sorted using 'description' field.\"]}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "pagination": {
+            "limit": 500
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '500' is above max '100'\"}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "query": "   "
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\":{\"obligation\":99043.63,\"outlay\":99043.63,\"face_value_of_loan\":24486834.0,\"award_count\":1},\"results\":[{\"id\":4810,\"code\":\"87.005\"}],\"messages\":[\"Notice! API Request to sort on 'id' field isn't fully implemented. Results were actually sorted using 'description' field.\"]}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "pagination": {
+            "page": 1.5
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'page'. '1.5' is not a valid type (integer)\"}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/cfda/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "pagination": {
+            "order": "ascending"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'order' is outside valid values ['asc', 'desc']\"}"
+      }
+    }
+  ],
+  "mismatches": [
+    "Docs specify Result.id as a string, but the API returns integer ids.",
+    "Docs imply 'id' and 'code' are fully supported sort fields; the API falls back to 'description' and emits warnings when those fields are requested.",
+    "Docs omit the 'messages' warning array, yet the API surfaces it when providing sort fallback notices."
+  ],
+  "gaps": [
+    "Spending_type semantics remain undocumented; no observed value altered results.",
+    "cfda_website null-handling is unverified because all observed responses returned a string."
+  ],
+  "risks": [
+    "Clients depending on 'id' or 'code' order must read 'messages' and handle fallback sorting behavior.",
+    "Large aggregate totals can exceed 32-bit ranges; callers should parse them as high-precision numbers.",
+    "Whitespace-only keyword submissions are accepted and skip filtering, which may surprise consumers expecting strict validation."
+  ]
+}

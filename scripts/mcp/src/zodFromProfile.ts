@@ -3,21 +3,23 @@ import { Profile } from "./types.js";
 
 function buildDescription(def: any): string | undefined {
   const parts: string[] = [];
+  const typeRaw = def?.type;
+  if (typeof typeRaw === "string" && typeRaw.trim()) {
+    parts.push(`Type: ${typeRaw.trim()}`);
+  } else if (Array.isArray(typeRaw)) {
+    const types = typeRaw
+      .map((item) => (typeof item === "string" ? item.trim() : ""))
+      .filter(Boolean);
+    if (types.length > 0) parts.push(`Type: ${Array.from(new Set(types)).join(" | ")}`);
+  }
   if (typeof def?.description === "string" && def.description.trim()) parts.push(def.description.trim());
   if (typeof def?.constraints === "string" && def.constraints.trim()) parts.push(`Constraints: ${def.constraints.trim()}`);
   if (typeof def?.location === "string" && def.location.trim()) parts.push(`Location: ${def.location.trim()}`);
   return parts.length > 0 ? parts.join("\n") : undefined;
 }
 
-function zodFromDef(def: any, depth = 0): z.ZodTypeAny {
-  if (depth > 4) return z.any();
-
-  const rawType = def?.type;
-  if (typeof rawType !== "string") {
-    return z.any();
-  }
-
-  const type = rawType.toLowerCase();
+function zodFromTypeName(typeName: string, def: any, depth: number): z.ZodTypeAny {
+  const type = typeName.toLowerCase();
   if (type === "string") return z.string();
   if (type === "integer") return z.number().int();
   if (type === "number") return z.number();
@@ -46,25 +48,47 @@ function zodFromDef(def: any, depth = 0): z.ZodTypeAny {
   return z.any();
 }
 
+function zodFromDef(def: any, depth = 0): z.ZodTypeAny {
+  if (depth > 4) return z.any();
+
+  const rawType = def?.type;
+  if (typeof rawType === "string" && rawType.trim()) {
+    return zodFromTypeName(rawType.trim(), def, depth);
+  }
+  if (Array.isArray(rawType)) {
+    const typeNames = Array.from(
+      new Set(
+        rawType
+          .map((item) => (typeof item === "string" ? item.trim() : ""))
+          .filter(Boolean)
+      )
+    );
+    if (typeNames.length === 1) return zodFromTypeName(typeNames[0] as string, def, depth);
+    if (typeNames.length >= 2) {
+      const schemas = typeNames.map((name) => zodFromTypeName(name as string, def, depth));
+      return z.union(schemas as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]]);
+    }
+  }
+  return z.any();
+}
+
 export function buildToolInputSchema(profile: Profile): z.ZodTypeAny {
   const props = profile.inputSchema?.properties;
   if (!props || typeof props !== "object" || Array.isArray(props)) {
     throw new Error(`profile '${profile.slug}' inputSchema.properties must be an object`);
   }
 
-  const requiredList = Array.isArray(profile.inputSchema?.required) ? profile.inputSchema.required : [];
-  const required = new Set<string>(requiredList.filter((v: any) => typeof v === "string"));
-
   const shape: Record<string, z.ZodTypeAny> = {};
   for (const [name, def] of Object.entries(props)) {
-    let schema = zodFromDef(def);
+    // Keep tool input schema permissive so all validation/classification is
+    // centralized in callEndpoint -> standardized tool error envelope.
+    let schema = z.any();
     const desc = buildDescription(def);
     if (desc) schema = schema.describe(desc);
-    if (!required.has(name)) schema = schema.optional();
-    shape[name] = schema;
+    shape[name] = schema.optional();
   }
 
-  // Strict: fail on unknown keys so the model doesn't think it passed something
-  // that got silently dropped.
-  return z.object(shape).strict();
+  // Allow unknown keys so validation failures are classified uniformly by the
+  // endpoint call layer instead of short-circuiting in SDK argument parsing.
+  return z.object(shape).passthrough();
 }

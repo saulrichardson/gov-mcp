@@ -1,0 +1,292 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/program_activity/count.md",
+    "description": "Returns the number of program activity categories for a specified agency toptier code in a given fiscal year.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/program_activity/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Agency toptier identifier echoed in responses.",
+          "constraints": "Required; accepts numeric digit strings of length 3 or 4 that map to an existing CGAC/FREC; codes with more than four digits are truncated to the last four before validation; malformed segments (non-numeric or missing leading zeros) fall through to an HTML 404 route."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Fiscal year to evaluate; defaults to the API's latest reporting year when omitted or blank (observed 2026).",
+          "constraints": "Optional; accepts integers 2008 through 2026 inclusive as observed; duplicate query keys use the last value; unknown query parameters are ignored; non-integer values return HTTP 400; out-of-range integers return HTTP 422."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echo of the requested toptier code."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Fiscal year applied to the count."
+        },
+        "program_activity_count": {
+          "type": "integer",
+          "description": "Number of distinct program activity categories for the agency and fiscal year."
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Informational or warning strings; pre-2017 fiscal years emit the documented DATA Act warning."
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "program_activity_count",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/012/program_activity/count/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "012",
+            "fiscal_year": 2026,
+            "program_activity_count": 0,
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/012/program_activity/count/",
+          "query": {
+            "fiscal_year": "2015"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "012",
+            "fiscal_year": 2015,
+            "program_activity_count": 0,
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/9553/program_activity/count/",
+          "query": {
+            "fiscal_year": "2020"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "9553",
+            "fiscal_year": 2020,
+            "program_activity_count": 2,
+            "messages": []
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Blank fiscal_year query values are treated as omitted and default to the latest reporting year.",
+      "When fiscal_year is provided multiple times, the last value wins.",
+      "Unknown query parameters are silently ignored.",
+      "Requests for fiscal years before DATA Act reporting emit a standard warning message in messages.",
+      "Malformed toptier path segments (non-numeric or missing zero padding) return an HTML 404 page instead of JSON.",
+      "Supplying more than four digits in toptier_code causes the value to be truncated to the last four digits before validation, so the 404 detail references the truncated code."
+    ],
+    "risks": [
+      "Clients expecting JSON must guard against HTML 404 responses when the path segment fails routing.",
+      "Fiscal year bounds track the platform's active reporting year and may shift, leading to 422 responses for stale integrations.",
+      "A valid response can legitimately report a zero count, so downstream logic must distinguish zero data from errors.",
+      "Implicit truncation of overlong toptier codes can obscure the true source of 404 errors during debugging."
+    ],
+    "gaps": [
+      "No evidence on alternate warning messages beyond the pre-2017 DATA Act notice."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/program_activity/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2026,\"program_activity_count\":0,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Omitted fiscal_year defaulted to FY 2026 with zero count."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/program_activity/count/",
+        "query": {
+          "fiscal_year": "2020"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2020,\"program_activity_count\":510,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Explicit fiscal_year within range returns populated count."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/program_activity/count/",
+        "query": {
+          "fiscal_year": "2015"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2015,\"program_activity_count\":0,\"messages\":[\"Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Pre-2017 fiscal years return zero counts plus DATA Act warning."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/9553/program_activity/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"9553\",\"fiscal_year\":2026,\"program_activity_count\":0,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Valid 4-digit toptier defaults to the latest reporting year."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/9553/program_activity/count/",
+        "query": {
+          "fiscal_year": "2020"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"9553\",\"fiscal_year\":2020,\"program_activity_count\":2,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "4-digit toptier with explicit fiscal_year returns data."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/999/program_activity/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "{\"detail\":\"Agency with a toptier code of '999' does not exist\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Unknown numeric code returns JSON 404 detail."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/program_activity/count/",
+        "query": {
+          "fiscal_year": "abc"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'fiscal_year'. 'abc' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Non-integer fiscal_year rejected with 400."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/12/program_activity/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>...Not Found...",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Missing leading zeros causes routing miss and HTML 404."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/10000/program_activity/count/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "{\"detail\":\"Agency with a toptier code of '0000' does not exist\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Overlong digit string truncated to last four digits before lookup."
+    }
+  ],
+  "mismatches": [
+    "Docs present a JSON request schema of type number, but the live GET endpoint is driven solely by path and query parameters.",
+    "Docs describe toptier_code as a number, yet the API expects zero-padded digit strings and returns the value as a string."
+  ],
+  "gaps": [
+    "No evidence on alternate warning messages beyond the pre-2017 DATA Act notice."
+  ],
+  "risks": [
+    "Clients expecting JSON must guard against HTML 404 responses when the path segment fails routing.",
+    "Fiscal year bounds track the platform's active reporting year and may shift, leading to 422 responses for stale integrations.",
+    "A valid response can legitimately report a zero count, so downstream logic must distinguish zero data from errors.",
+    "Implicit truncation of overlong toptier codes can obscure the true source of 404 errors during debugging."
+  ]
+}

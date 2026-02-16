@@ -1,0 +1,384 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/awards/funding.md",
+    "description": "Lists federal account funding records for a given award including obligated and outlay amounts by reporting period.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/awards/funding/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "award_id": {
+          "location": "body",
+          "type": "string|integer",
+          "description": "Identifier of the award to inspect (generated award id preferred, surrogate integer id also accepted).",
+          "constraints": "Required. Accepts generated award identifier strings or surrogate integer ids. Arrays, nulls, and decimal numbers return 422 validation errors. Unknown ids respond 200 with empty results."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer|string",
+          "description": "Maximum number of records to return on a page.",
+          "constraints": "Optional. Defaults to 10. Accepts integers from 1-100 inclusive; numeric strings (including leading zeros or surrounding whitespace) are coerced. Values below 1 or above 100 return 422. Null, decimal strings, or strings containing non-digits return 400."
+        },
+        "page": {
+          "location": "body",
+          "type": "integer|string",
+          "description": "1-based page index to fetch when results exceed the limit.",
+          "constraints": "Optional. Defaults to 1. Must resolve to an integer greater than or equal to 1. Numeric strings (including leading zeros or whitespace) are coerced. Values below 1 return 422. Decimal or non-numeric strings and null return 400. Very large page numbers return 200 with empty results."
+        },
+        "sort": {
+          "location": "body",
+          "type": "string",
+          "description": "Field used to order results (must match a response field name).",
+          "constraints": "Optional. Enumerated values: account_title, awarding_agency_name, disaster_emergency_fund_code, federal_account, funding_agency_name, gross_outlay_amount, object_class, program_activity, reporting_fiscal_date, transaction_obligated_amount. When omitted the API sorts by account_title descending and breaks ties by reporting_fiscal_date ascending, contrary to the documentation. Invalid or null values return 400."
+        },
+        "order": {
+          "location": "body",
+          "type": "string",
+          "description": "Sort direction control.",
+          "constraints": "Optional. Valid values: asc, desc (case sensitive). Defaults to desc even when sort is omitted; supplying order without sort reverses the implicit account_title ordering. Null, numeric, or other strings return 400."
+        }
+      },
+      "required": [
+        "award_id"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Array of funding records for the requested award. Each record provides federal_account and account_title strings; funding and awarding agency ids, names, toptier ids, and slugs; object_class and object_class_name strings; program_activity_code and program_activity_name strings which may be null; disaster_emergency_fund_code string values such as 'Q' or 'N' or null; transaction_obligated_amount and gross_outlay_amount numbers that may be null or negative; reporting_fiscal_year/quarter/month numbers that may be null; and is_quarterly_submission boolean."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata containing integer page, optional next and previous integers (null when unavailable), and booleans hasNext and hasPrevious."
+        }
+      },
+      "required": [
+        "results",
+        "page_metadata"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/awards/funding/",
+          "query": {},
+          "body": {
+            "award_id": "CONT_AWD_0002_2800_SS001740003_2800",
+            "limit": 4
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "account_title": "Salaries and Expenses, Social Security Administration",
+                "reporting_fiscal_year": 2017
+              },
+              {
+                "account_title": "Salaries and Expenses, Social Security Administration",
+                "reporting_fiscal_year": 2022
+              },
+              {
+                "account_title": "Office of the Inspector General, Social Security Administration",
+                "reporting_fiscal_year": 2017
+              },
+              {
+                "account_title": "Office of the Inspector General, Social Security Administration",
+                "reporting_fiscal_year": 2022
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "hasNext": false,
+              "hasPrevious": false,
+              "next": null,
+              "previous": null
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/awards/funding/",
+          "query": {},
+          "body": {
+            "award_id": "CONT_AWD_0002_2800_SS001740003_2800",
+            "limit": 5.5
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Invalid value in 'limit'. '5.5' is not a valid type (integer)"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Omitting sort causes the service to order results by account_title descending and break ties by reporting_fiscal_date ascending, not by reporting_fiscal_date desc as documented.",
+      "Supplying order without sort flips the implicit account_title sort direction while keeping the same field.",
+      "Null monetary fields (transaction_obligated_amount or gross_outlay_amount) are common and sort ahead of numeric values when ordering desc.",
+      "Requests for nonexistent award ids return 200 with empty results and page_metadata.hasNext=false instead of an error.",
+      "Integer-like strings for limit/page (including leading zeros or whitespace) are coerced, while decimal strings or non-digits trigger 400 errors."
+    ],
+    "risks": [
+      "Clients must handle null and negative monetary values when aggregating funding data.",
+      "Empty 200 responses for unknown award ids may mask lookup errors unless callers check for results length.",
+      "Sorting with many duplicate keys may yield non-deterministic secondary ordering and repeats across pages."
+    ],
+    "gaps": [
+      "The API does not expose total record counts, so the precise number of pages must be discovered iteratively.",
+      "Meaning of disaster_emergency_fund_code letter values (e.g., 'Q', 'N') is not described by the API responses or documentation."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0001902C3002_9700_-NONE-_-NONE-"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[{\"federal_account\":\"057-3600\",\"gross_outlay_amount\":1530623.99,\"disaster_emergency_fund_code\":\"N\",\"reporting_fiscal_year\":2020},...] ,\"page_metadata\":{\"page\":1,\"next\":2,\"hasNext\":true,\"hasPrevious\":false}}"
+      },
+      "notes": "Default pagination returned 10 rows with a next page pointer."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0001902C3002_9700_-NONE-_-NONE-",
+          "limit": 3
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[{\"gross_outlay_amount\":0.07,\"federal_account\":\"057-3600\"},...],\"page_metadata\":{\"page\":1,\"next\":2,\"hasNext\":true}}"
+      },
+      "notes": "Limit reduced the page size to three records."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0001902C3002_9700_-NONE-_-NONE-",
+          "limit": 3,
+          "page": 2
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[{\"gross_outlay_amount\":0.07,\"reporting_fiscal_year\":2020},...],\"page_metadata\":{\"page\":2,\"next\":3,\"previous\":1,\"hasNext\":true,\"hasPrevious\":true}}"
+      },
+      "notes": "Pagination advanced to page 2 with previous pointer."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0001902C3002_9700_-NONE-_-NONE-",
+          "sort": "transaction_obligated_amount",
+          "order": "asc",
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[{\"transaction_obligated_amount\":-22621009.69,\"account_title\":\"Research, Development, Test, and Evaluation, Navy\"},...],\"page_metadata\":{\"page\":1,\"next\":2,\"hasNext\":true}}"
+      },
+      "notes": "Ascending sort placed the most negative obligations first."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0001902C3002_9700_-NONE-_-NONE-",
+          "order": "descending"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'order' is outside valid values ['asc', 'desc']\"}"
+      },
+      "notes": "Invalid order string rejected with a 400 error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Missing value: 'award_id' is a required field\"}"
+      },
+      "notes": "Omitting award_id triggers a 422 validation error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "award_id": "NOT_A_REAL_AWARD"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[],\"page_metadata\":{\"page\":1,\"next\":null,\"hasNext\":false}}"
+      },
+      "notes": "Unknown award id returns an empty result set with 200 OK."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_N0001902C3002_9700_-NONE-_-NONE-",
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}"
+      },
+      "notes": "Limit values below 1 are rejected with 422."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_0002_2800_SS001740003_2800",
+          "limit": "05"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[{\"account_title\":\"Salaries and Expenses, Social Security Administration\"},...],\"page_metadata\":{\"page\":1,\"hasNext\":false}}"
+      },
+      "notes": "Numeric strings with leading zeros are coerced to integer limits."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_0002_2800_SS001740003_2800",
+          "limit": 5.5
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. '5.5' is not a valid type (integer)\"}"
+      },
+      "notes": "Decimal limit values return a 400 type error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_0002_2800_SS001740003_2800",
+          "page": 1.5
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'page'. '1.5' is not a valid type (integer)\"}"
+      },
+      "notes": "Decimal page values are rejected with a 400 error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "award_id": 123.45
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'award_id'. '123.45' is not a valid type (integer, text)\"}"
+      },
+      "notes": "Decimal award identifiers raise a 422 validation error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_0002_2800_SS001740003_2800",
+          "order": "asc"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[{\"account_title\":\"Office of the Inspector General, Social Security Administration\",\"reporting_fiscal_year\":2017},...],\"page_metadata\":{\"page\":1,\"hasNext\":false}}"
+      },
+      "notes": "Supplying order without sort reverses the implicit account_title ordering while keeping the same field."
+    }
+  ],
+  "mismatches": [
+    "Documentation states disaster_emergency_fund_code is boolean, but live responses return letter codes such as 'Q' or 'N' or null.",
+    "Documentation marks program_activity_code/program_activity_name as required, yet live data includes null values for both fields.",
+    "Documentation lists reporting_fiscal_date descending as the default sort, but the API defaults to account_title descending with older fiscal periods first."
+  ],
+  "gaps": [
+    "The API does not expose total record counts, so the precise number of pages must be discovered iteratively.",
+    "Meaning of disaster_emergency_fund_code letter values (e.g., 'Q', 'N') is not described by the API responses or documentation."
+  ],
+  "risks": [
+    "Clients must handle null and negative monetary values when aggregating funding data.",
+    "Empty 200 responses for unknown award ids may mask lookup errors unless callers check for results length.",
+    "Sorting with many duplicate keys may yield non-deterministic secondary ordering and repeats across pages."
+  ]
+}

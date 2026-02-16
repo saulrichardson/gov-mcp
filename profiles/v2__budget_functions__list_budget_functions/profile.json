@@ -1,0 +1,252 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/budget_functions/list_budget_functions.md",
+    "description": "Lists the agency budget function reference data as a single JSON payload; observed responses include 20 entries sorted by title and require JSON content negotiation.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/budget_functions/list_budget_functions/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": true,
+      "description": "No query parameters or body are required. Arbitrary extra query keys are ignored, but using the Django REST Framework format key (e.g., format=csv) returned HTTP 404."
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Observed payloads contain budget function objects sorted by budget_function_title.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "budget_function_code": {
+                "type": "string",
+                "description": "Three-digit budget function code such as \"050\" or \"750\"."
+              },
+              "budget_function_title": {
+                "type": "string",
+                "description": "Human-readable budget function title."
+              }
+            },
+            "required": [
+              "budget_function_code",
+              "budget_function_title"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "results"
+      ],
+      "additionalProperties": true
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/budget_functions/list_budget_functions/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "budget_function_code": "750",
+                "budget_function_title": "Administration of Justice"
+              },
+              {
+                "budget_function_code": "350",
+                "budget_function_title": "Agriculture"
+              },
+              {
+                "budget_function_code": "370",
+                "budget_function_title": "Commerce and Housing Credit"
+              },
+              {
+                "budget_function_code": "450",
+                "budget_function_title": "Community and Regional Development"
+              },
+              {
+                "budget_function_code": "500",
+                "budget_function_title": "Education, Training, Employment, and Social Services"
+              },
+              {
+                "budget_function_code": "270",
+                "budget_function_title": "Energy"
+              },
+              {
+                "budget_function_code": "800",
+                "budget_function_title": "General Government"
+              },
+              {
+                "budget_function_code": "250",
+                "budget_function_title": "General Science, Space, and Technology"
+              },
+              {
+                "budget_function_code": "000",
+                "budget_function_title": "Governmental Receipts"
+              },
+              {
+                "budget_function_code": "550",
+                "budget_function_title": "Health"
+              },
+              {
+                "budget_function_code": "600",
+                "budget_function_title": "Income Security"
+              },
+              {
+                "budget_function_code": "150",
+                "budget_function_title": "International Affairs"
+              },
+              {
+                "budget_function_code": "570",
+                "budget_function_title": "Medicare"
+              },
+              {
+                "budget_function_code": "990",
+                "budget_function_title": "Multiple functions"
+              },
+              {
+                "budget_function_code": "050",
+                "budget_function_title": "National Defense"
+              },
+              {
+                "budget_function_code": "300",
+                "budget_function_title": "Natural Resources and Environment"
+              },
+              {
+                "budget_function_code": "900",
+                "budget_function_title": "Net Interest"
+              },
+              {
+                "budget_function_code": "650",
+                "budget_function_title": "Social Security"
+              },
+              {
+                "budget_function_code": "400",
+                "budget_function_title": "Transportation"
+              },
+              {
+                "budget_function_code": "700",
+                "budget_function_title": "Veterans Benefits and Services"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/budget_functions/list_budget_functions/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 405,
+          "body": {
+            "detail": "Method \"POST\" not allowed."
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Requests without the trailing slash receive an HTTP 301 redirect to the canonical path.",
+      "Supplying the DRF format query parameter (e.g., format=csv) returns HTTP 404 instead of JSON.",
+      "Requests with Accept headers that exclude application/json (e.g., Accept: application/xml) receive HTTP 406."
+    ],
+    "risks": [
+      "Endpoint always returns the full unpaginated list; clients must tolerate the entire payload and handle potential catalog growth.",
+      "Clients that omit application/json in the Accept header will receive HTTP 406 and no data.",
+      "Using the reserved format query parameter causes HTTP 404, so integrations must avoid that key."
+    ],
+    "gaps": [
+      "Unknown whether the number of budget function entries or their ordering can change over time.",
+      "No evidence of officially supported query parameters beyond the default JSON variant."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/budget_functions/list_budget_functions/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"budget_function_code\":\"750\",\"budget_function_title\":\"Administration of Justice\"},{\"budget_function_code\":\"350\",\"budget_function_title\":\"Agriculture\"},{\"budget_function_code\":\"370\",\"budget_function_title\":\"Commerce and Housing Credit\"},...]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - baseline request returns 20 budget functions sorted alphabetically by title."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/budget_functions/list_budget_functions/",
+        "query": {
+          "format": "csv"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "{\"detail\":\"Not found.\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - using the format=csv content negotiation query returns a 404 instead of the list data."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/budget_functions/list_budget_functions/",
+        "query": {
+          "page": "1"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"budget_function_code\":\"750\",\"budget_function_title\":\"Administration of Justice\"},{\"budget_function_code\":\"350\",\"budget_function_title\":\"Agriculture\"},{\"budget_function_code\":\"370\",\"budget_function_title\":\"Commerce and Housing Credit\"},...]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - page parameter tolerated but response remains the same 20-entry list."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/budget_functions/list_budget_functions/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 406,
+        "bodyExcerpt": "{\"detail\":\"Could not satisfy the request Accept header.\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - server requires clients to accept application/json and rejects XML-only Accept headers."
+    }
+  ],
+  "mismatches": [],
+  "gaps": [
+    "Unknown whether the number of budget function entries or their ordering can change over time.",
+    "No evidence of officially supported query parameters beyond the default JSON variant."
+  ],
+  "risks": [
+    "Endpoint always returns the full unpaginated list; clients must tolerate the entire payload and handle potential catalog growth.",
+    "Clients that omit application/json in the Accept header will receive HTTP 406 and no data.",
+    "Using the reserved format query parameter causes HTTP 404, so integrations must avoid that key."
+  ]
+}

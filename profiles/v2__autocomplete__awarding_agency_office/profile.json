@@ -1,0 +1,484 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/awarding_agency_office.md",
+    "description": "Autocomplete awarding agencies, sub-agencies, and offices matching a search term and return related hierarchy context.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/awarding_agency_office/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "search_text": {
+          "location": "body",
+          "type": "string",
+          "description": "Case-insensitive search string for agency, sub-agency, or office names and abbreviations.",
+          "constraints": "Required. Missing, null, or empty strings return 400 'Missing one or more required request parameters: search_text'. Comparison is literal: leading/trailing spaces or whitespace-only inputs change results. Non-string JSON values are coerced to their string form before matching."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of matches returned per category array.",
+          "constraints": "Optional. Defaults to 10 per category when omitted. Numeric strings are coerced, floats are truncated, and 0 returns empty arrays. Negative integers still return 200 but omit some categories and flood others. Setting limit to null triggers a 500 HTML error, and non-numeric strings return 400 'Limit request parameter is not a valid, positive integer'. Large positive values saturate near 601 office entries."
+        }
+      },
+      "required": [
+        "search_text"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [
+        "results",
+        "messages"
+      ],
+      "properties": {
+        "results": {
+          "type": "object",
+          "required": [
+            "toptier_agency",
+            "subtier_agency",
+            "office"
+          ],
+          "properties": {
+            "toptier_agency": {
+              "type": "array",
+              "description": "Top-tier agencies matching the search term, including nested subtier agencies and offices.",
+              "items": {
+                "type": "object",
+                "required": [
+                  "abbreviation",
+                  "code",
+                  "name",
+                  "subtier_agencies",
+                  "offices"
+                ],
+                "properties": {
+                  "abbreviation": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "subtier_agencies": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "abbreviation",
+                        "code",
+                        "name"
+                      ],
+                      "properties": {
+                        "abbreviation": {
+                          "type": "string"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "offices": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "name"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "subtier_agency": {
+              "type": "array",
+              "description": "Sub-tier agencies with their parent toptier agency and child offices.",
+              "items": {
+                "type": "object",
+                "required": [
+                  "abbreviation",
+                  "code",
+                  "name",
+                  "toptier_agency",
+                  "offices"
+                ],
+                "properties": {
+                  "abbreviation": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "toptier_agency": {
+                    "type": "object",
+                    "required": [
+                      "abbreviation",
+                      "code",
+                      "name"
+                    ],
+                    "properties": {
+                      "abbreviation": {
+                        "type": "string"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "offices": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "name"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "office": {
+              "type": "array",
+              "description": "Office-level matches with cross-references to their subtier and toptier agencies.",
+              "items": {
+                "type": "object",
+                "required": [
+                  "code",
+                  "name",
+                  "subtier_agency",
+                  "toptier_agency"
+                ],
+                "properties": {
+                  "code": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "subtier_agency": {
+                    "type": "object",
+                    "required": [
+                      "abbreviation",
+                      "code",
+                      "name"
+                    ],
+                    "properties": {
+                      "abbreviation": {
+                        "type": "string"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "toptier_agency": {
+                    "type": "object",
+                    "required": [
+                      "abbreviation",
+                      "code",
+                      "name"
+                    ],
+                    "properties": {
+                      "abbreviation": {
+                        "type": "string"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Informational strings; observed empty across successful and error responses.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/awarding_agency_office/",
+          "query": {},
+          "body": {
+            "search_text": "Defense",
+            "limit": 1
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": {
+              "toptier_agency": [
+                {
+                  "abbreviation": "DNFSB",
+                  "code": "347",
+                  "name": "Defense Nuclear Facilities Safety Board",
+                  "subtier_agencies": [
+                    {
+                      "abbreviation": "DNFSB",
+                      "code": "9516",
+                      "name": "Defense Nuclear Facilities Safety Board"
+                    }
+                  ],
+                  "offices": [
+                    {
+                      "code": "953142",
+                      "name": "DEFENSE NUCLEAR FAC SAFETY BOARD"
+                    }
+                  ]
+                }
+              ],
+              "subtier_agency": [
+                {
+                  "abbreviation": "DNFSB",
+                  "code": "9516",
+                  "name": "Defense Nuclear Facilities Safety Board",
+                  "toptier_agency": {
+                    "abbreviation": "DNFSB",
+                    "code": "347",
+                    "name": "Defense Nuclear Facilities Safety Board"
+                  },
+                  "offices": [
+                    {
+                      "code": "953142",
+                      "name": "DEFENSE NUCLEAR FAC SAFETY BOARD"
+                    }
+                  ]
+                }
+              ],
+              "office": [
+                {
+                  "code": "953142",
+                  "name": "DEFENSE NUCLEAR FAC SAFETY BOARD",
+                  "subtier_agency": {
+                    "abbreviation": "DNFSB",
+                    "code": "9516",
+                    "name": "Defense Nuclear Facilities Safety Board"
+                  },
+                  "toptier_agency": {
+                    "abbreviation": "DNFSB",
+                    "code": "347",
+                    "name": "Defense Nuclear Facilities Safety Board"
+                  }
+                }
+              ]
+            },
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/awarding_agency_office/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Missing one or more required request parameters: search_text"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/awarding_agency_office/",
+          "query": {},
+          "body": {
+            "search_text": "Defense",
+            "limit": "abc"
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Limit request parameter is not a valid, positive integer"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/awarding_agency_office/",
+          "query": {},
+          "body": {
+            "search_text": "Defense",
+            "limit": null
+          }
+        },
+        "response": {
+          "status": 500,
+          "body": "<!doctype html><html lang=\"en\"><head><title>Server Error (500)</title></head><body><h1>Server Error (500)</h1><p></p></body></html>"
+        }
+      }
+    ],
+    "quirks": [
+      "`results` is keyed by `toptier_agency`, `subtier_agency`, and `office` arrays rather than a single list of match objects.",
+      "Search text is case-insensitive but literal; leading/trailing spaces or whitespace-only inputs change which records match.",
+      "Limit defaults to 10 per category. Numeric strings and floats are coerced, negative integers return 200 with distorted payloads, and `limit: null` triggers a 500 HTML error.",
+      "Server ignores unknown body fields like `extra`, and `messages` remained empty across all observed responses."
+    ],
+    "risks": [
+      "Clients expecting the documented array of match objects will break unless they handle the three separate category arrays.",
+      "Office entries can contain null codes or names, so downstream consumers must tolerate missing identifiers.",
+      "Unvalidated limit values (floats, negatives, null) can cause huge or malformed payloads or a 500 error; callers should constrain inputs to positive integers."
+    ],
+    "gaps": [
+      "No observed responses populated the `messages` array, so it is unclear when guidance or warnings appear.",
+      "True maximum result counts per category remain unknown beyond the ~601 office entries observed for broad terms.",
+      "Negative limit behavior varies by query (sometimes dropping toptier results), and the exact rules are undocumented."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency_office/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":{\"toptier_agency\":[{\"abbreviation\":\"DNFSB\",\"code\":\"347\",\"name\":\"Defense Nuclear Facilities Safety Board\"}],\"subtier_agency\":[...],\"office\":[...]},\"messages\":[]}" 
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency_office/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": "abc"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Limit request parameter is not a valid, positive integer\"}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency_office/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": null
+        }
+      },
+      "response": {
+        "status": 500,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head><title>Server Error (500)</title></head><body><h1>Server Error (500)</h1>"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/awarding_agency_office/",
+        "query": {},
+        "body": {
+          "search_text": "   "
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":{\"toptier_agency\":[],\"subtier_agency\":[],\"office\":[{\"code\":\"130132\",\"name\":\"COMMERCE   NITA  SPACE DISTURB\"},{...}]},\"messages\":[]}" 
+      }
+    }
+  ],
+  "mismatches": [
+    "Docs describe `results` as an array of `AwardingAgencyOfficeMatchObject`, but the live response returns an object keyed by `toptier_agency`, `subtier_agency`, and `office` arrays.",
+    "Docs require office `code` and `name` to be strings, yet observed office entries sometimes return null for these fields.",
+    "Docs specify `limit` as a numeric field; however, numeric strings and floats are coerced, negative integers distort results, and `limit: null` causes a 500 error."
+  ],
+  "gaps": [
+    "No observed responses populated the `messages` array, so it is unclear when guidance or warnings appear.",
+    "True maximum result counts per category remain unknown beyond the ~601 office entries observed for broad terms.",
+    "Negative limit behavior varies by query (sometimes dropping toptier results), and the exact rules are undocumented."
+  ],
+  "risks": [
+    "Clients expecting the documented array of match objects will break unless they handle the three separate category arrays.",
+    "Office entries can contain null codes or names, so downstream consumers must tolerate missing identifiers.",
+    "Unvalidated limit values (floats, negatives, null) can cause huge or malformed payloads or a 500 error; callers should constrain inputs to positive integers."
+  ]
+}

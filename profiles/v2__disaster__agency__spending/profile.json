@@ -1,0 +1,461 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/agency/spending.md",
+    "description": "Aggregates disaster and emergency spending by agency with optional award-only metrics and paginated sorting controls.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "\/api\/v2\/disaster\/agency\/spending\/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Filter object; every request must identify which disaster emergency fund codes to aggregate and can optionally narrow awards by type or keyword.",
+          "constraints": "`def_codes` must be a non-empty array of valid uppercase DEFC codes (invalid values yield 400; empty arrays yield 422). `award_type_codes`, when provided, must be a non-empty array drawn from ['-1','02','03','04','05','06','07','08','09','10','11','A','B','C','D','IDV_A','IDV_B','IDV_B_A','IDV_B_B','IDV_B_C','IDV_C','IDV_D','IDV_E']; supplying an empty array or non-array raises 422/400. `award_type_codes` is ignored when `spending_type` is 'total' but triggers child agency breakdowns for award views. `query` accepts arbitrary strings (very long strings succeed) and only affects `spending_type='award'`; total spending ignores it. Additional shared-search keys such as `time_period` or `agencies` are accepted but ignored without warnings."
+        },
+        "spending_type": {
+          "location": "body",
+          "type": "string",
+          "description": "Selects whether totals reflect all budgetary resources ('total') or only award-linked spending ('award').",
+          "constraints": "Required; case-sensitive enum ['total','award']."
+        },
+        "pagination": {
+          "location": "body",
+          "type": "object",
+          "description": "Optional pagination and sorting controls applied to the agency results array.",
+          "constraints": "`limit` must resolve to an integer between 1 and 100 inclusive (values outside return 422). `page` must be an integer ≥ 1 (0 returns 422). `order` accepts only 'asc' or 'desc' (other values return 400). For `spending_type='total'`, `sort` may be one of ['id','code','description','award_count','total_budgetary_resources','obligation','outlay']; for `spending_type='award'`, valid values are ['id','code','description','award_count','obligation','outlay'] and requesting 'total_budgetary_resources' returns 400. Unsupported sort strings also return 400. Certain award-view sorts (e.g., 'id' or 'code') complete but emit warnings in `messages` and fall back to description ordering."
+        }
+      },
+      "required": [
+        "filter",
+        "spending_type"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "totals": {
+          "type": "object",
+          "description": "Aggregate metrics for the requested view. Always includes numeric `obligation` and `outlay`. `total_budgetary_resources` is present only for `spending_type='total'`. `award_count` is present only for `spending_type='award'`. When filters match nothing, values return as 0."
+        },
+        "results": {
+          "type": "array",
+          "description": "Array of agency aggregate objects. Each item provides `id` (integer or null), `code` (string), `description` (string), nullable numeric `award_count`, `obligation`, `outlay`, and `total_budgetary_resources`. For total spending, `total_budgetary_resources` is populated; for award spending it is null. Every item includes a `children` array (often empty); when populated (observed after supplying `award_type_codes`), each child includes `id`, `code`, `description`, `award_count`, `obligation`, and `outlay` but omits `total_budgetary_resources`."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination block with `page`, `total`, `limit`, `next`, `previous`, `hasNext`, and `hasPrevious`. `next`/`previous` are null at the respective ends. Empty result pages retain accurate `total` counts."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Optional array of warning strings. Observed when the service cannot honor the requested sort (e.g., award view sorted by 'id' or 'code'); results fall back to description ordering while including a notice."
+        }
+      },
+      "required": [
+        "totals",
+        "results",
+        "page_metadata"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "\/api\/v2\/disaster\/agency\/spending\/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            },
+            "spending_type": "total"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "totals": {
+              "obligation": 7210622269.71,
+              "outlay": 6953937862.19,
+              "total_budgetary_resources": 7707863149.53
+            },
+            "results": [
+              {
+                "id": 1522,
+                "code": "077",
+                "description": "U.S. International Development Finance Corporation",
+                "children": [],
+                "award_count": null,
+                "obligation": 99043.63,
+                "outlay": 99043.63,
+                "total_budgetary_resources": 100000.0
+              },
+              {
+                "id": 806,
+                "code": "075",
+                "description": "Department of Health and Human Services",
+                "children": [],
+                "award_count": null,
+                "obligation": 6119463425.35,
+                "outlay": 5785894315.44,
+                "total_budgetary_resources": 6437899969.52
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 5,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "\/api\/v2\/disaster\/agency\/spending\/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ],
+              "award_type_codes": [
+                "A",
+                "B"
+              ]
+            },
+            "spending_type": "award",
+            "pagination": {
+              "limit": 2,
+              "sort": "code"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "totals": {
+              "obligation": 145723035.41,
+              "outlay": 150968353.25,
+              "award_count": 1135
+            },
+            "results": [
+              {
+                "id": 806,
+                "code": "075",
+                "description": "Department of Health and Human Services",
+                "award_count": 1045,
+                "obligation": 135671655.04,
+                "outlay": 140182397.44,
+                "children": [
+                  {
+                    "id": 806,
+                    "code": "7529",
+                    "description": "National Institutes of Health",
+                    "award_count": 537,
+                    "obligation": 35681883.87,
+                    "outlay": 36484008.37
+                  }
+                ],
+                "total_budgetary_resources": null
+              },
+              {
+                "id": 801,
+                "code": "072",
+                "description": "Agency for International Development",
+                "award_count": 4,
+                "obligation": 2046581.0,
+                "outlay": 2046581.0,
+                "children": [
+                  {
+                    "id": 801,
+                    "code": "7200",
+                    "description": "Agency for International Development",
+                    "award_count": 4,
+                    "obligation": 2046581.0,
+                    "outlay": 2046581.0
+                  }
+                ],
+                "total_budgetary_resources": null
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 3,
+              "limit": 2,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "messages": [
+              "Notice! API Request to sort on 'code' field isn't fully implemented. Results were actually sorted using 'description' field."
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Keyword filter `query` is ignored for `spending_type='total'`, returning the same aggregates regardless of the keyword.",
+      "Passing `award_type_codes` introduces child agency rows and can emit fallback warnings when combined with unsupported sorts.",
+      "Pagination requests beyond the available data return empty `results` while preserving accurate `page_metadata.total` counts.",
+      "Shared search filters such as `time_period` and `agencies` are silently ignored, so the response mirrors the unfiltered dataset."
+    ],
+    "risks": [
+      "Consumers may assume keyword or other shared filters apply to total spending, but the API ignores them without warning.",
+      "`results.id` can be null; treating it as a stable identifier can break client-side joins or caching.",
+      "Award responses can include negative obligations or outlays, so downstream sums must handle sign correctly.",
+      "Error responses alternate between HTTP 400 and 422 with only a `detail` string; clients should not expect structured error payloads.",
+      "Sort requests that the backend cannot honor either fail with 400 or succeed while silently substituting ordering, signaled only via `messages`."
+    ],
+    "gaps": [
+      "Unclear which, if any, additional shared filters (locations, recipients, etc.) have real effect; tests show some are ignored but coverage is incomplete."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "\/api\/v2\/disaster\/agency\/spending\/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\":{\"obligation\":7210622269.71,\"outlay\":6953937862.19},\"results\":[{\"code\":\"077\",\"obligation\":99043.63},{\"code\":\"075\",\"obligation\":6119463425.35}],\"page_metadata\":{\"page\":1,\"total\":5,\"limit\":10}}"
+      },
+      "notes": "Minimal request succeeds and returns five agencies without keyword filtering."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\/api\/v2\/disaster\/agency\/spending\/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "spending_type": "award"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\":{\"obligation\":4310785072.75,\"outlay\":6218381045.21,\"award_count\":5530},\"results\":[{\"code\":\"077\",\"award_count\":1},{\"code\":\"075\",\"award_count\":4739}],\"page_metadata\":{\"page\":1,\"total\":4,\"limit\":10}}"
+      },
+      "notes": "Award view returns award counts and omits total_budgetary_resources while totals include award_count."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\/api\/v2\/disaster\/agency\/spending\/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "award_type_codes": [
+              "A",
+              "B"
+            ]
+          },
+          "spending_type": "award"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\":{\"obligation\":145723035.41,\"outlay\":150968353.25,\"award_count\":1135},\"results\":[{\"code\":\"075\",\"children\":[{\"code\":\"7570\"}]}],\"page_metadata\":{\"page\":1,\"total\":3,\"limit\":10},\"messages\":[\"Notice! API Request to sort on 'id'...\"]}"
+      },
+      "notes": "Adding award_type_codes yields child rows and emits a warning that sort order fell back when requesting 'id'."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\/api\/v2\/disaster\/agency\/spending\/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "pagination": {
+            "limit": 2,
+            "page": 1,
+            "sort": "obligation",
+            "order": "desc"
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"code\":\"075\"},{\"code\":\"072\"}],\"page_metadata\":{\"page\":1,\"total\":5,\"next\":2,\"limit\":2}}"
+      },
+      "notes": "Pagination limit trims results to two entries and supplies a next-page pointer."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\/api\/v2\/disaster\/agency\/spending\/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "pagination": {
+            "limit": 2,
+            "page": 1,
+            "sort": "bogus",
+            "order": "desc"
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'sort' is outside valid values ['id', 'code', ...]\"}"
+      },
+      "notes": "Unsupported sort strings trigger HTTP 400 with an explicit detail list."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\/api\/v2\/disaster\/agency\/spending\/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "pagination": {
+            "limit": 0
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}"
+      },
+      "notes": "Limit enforces a minimum of 1 via 422."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\/api\/v2\/disaster\/agency\/spending\/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "query": "health"
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"code\":\"077\"},{\"code\":\"075\"},{\"code\":\"073\"},{\"code\":\"072\"},{\"code\":\"019\"}],\"page_metadata\":{\"total\":5}}"
+      },
+      "notes": "Keyword filter leaves total spending results unchanged, confirming it is ignored in that mode."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\/api\/v2\/disaster\/agency\/spending\/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "time_period": [
+              {
+                "start_date": "2020-01-01",
+                "end_date": "2020-12-31"
+              }
+            ]
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"code\":\"077\"},{\"code\":\"075\"}],\"page_metadata\":{\"total\":5}}"
+      },
+      "notes": "Adding a time_period filter leaves totals unchanged, indicating the backend ignores it."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "\/api\/v2\/disaster\/agency\/spending\/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "award_type_codes": [
+              "A",
+              "B"
+            ]
+          },
+          "spending_type": "award",
+          "pagination": {
+            "sort": "total_budgetary_resources"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'sort' is outside valid values ['award_count', 'description', 'code', 'id', 'obligation', 'outlay']\"}"
+      },
+      "notes": "Award view rejects `total_budgetary_resources` as a sort option despite documentation listing it."
+    }
+  ],
+  "mismatches": [
+    "Docs declare Result.id as a string, but live responses supply integers and sometimes null.",
+    "Docs describe `filter.query` as a keyword filter for all views, yet total spending ignores it entirely.",
+    "Docs instruct that `award_type_codes` be used only with `spending_type='award'`, but the API accepts them with 'total' and produces unchanged results without warnings.",
+    "Docs claim Result children mirror the parent schema, but award children omit `total_budgetary_resources`.",
+    "Docs list 'total_budgetary_resources' as a valid sort choice, yet award spending requests reject it with HTTP 400."
+  ],
+  "gaps": [
+    "Unclear which additional shared filters (locations, recipients, etc.) are respected; only time_period and agencies were tested and found inert."
+  ],
+  "risks": [
+    "Clients may believe ignored filters (keyword, time_period, agencies) restrict totals when they do not.",
+    "`results.id` can be null, so downstream systems must not rely on it as a primary key.",
+    "Award aggregates may return negative obligations or outlays, which can distort naive rollups.",
+    "Error handling varies between 400 and 422 with only a `detail` string, complicating machine parsing.",
+    "Unsupported sort requests may either fail or silently downgrade ordering, requiring consumers to monitor `messages`."
+  ]
+}

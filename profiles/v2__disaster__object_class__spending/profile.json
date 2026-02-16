@@ -1,0 +1,410 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/object_class/spending.md",
+    "description": "Aggregates disaster and emergency spending by object class using DEFC filters, returning totals for obligations/outlays and optional award counts.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/object_class/spending/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [
+        "filter",
+        "spending_type"
+      ],
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Container for shared disaster filters; server enforces a DEFC list but tolerates other search keys without effect.",
+          "constraints": "Must include def_codes array of valid DEFC strings; additional keys like award_type_codes, query, and time_period are accepted but mostly inert."
+        },
+        "filter.def_codes": {
+          "location": "body",
+          "type": "array",
+          "description": "Disaster Emergency Fund codes to aggregate over.",
+          "constraints": "Required; array length >= 1; values must be uppercase from ['1','2','3','4','5','6','7','8','9','A','AAA','AAB','AAC','AAD','AAE','AAF','AAG','AAH','AAI','AAJ','AAK','AAL','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','QQQ','R','S','T','U','V','W','X','Y','Z']; bad codes or non-arrays return 400 or 422."
+        },
+        "filter.award_type_codes": {
+          "location": "body",
+          "type": "array",
+          "description": "Subset of award type codes to apply when spending_type is 'award'.",
+          "constraints": "Optional; accepts arrays or even bare strings, including invalid codes, without changing results."
+        },
+        "filter.query": {
+          "location": "body",
+          "type": "string",
+          "description": "Keyword text intended to narrow results.",
+          "constraints": "Optional non-empty string; empty string returns 422, but observed keywords did not alter aggregates."
+        },
+        "filter.time_period": {
+          "location": "body",
+          "type": "array",
+          "description": "Array of time period objects with start_date/end_date/date_type from the shared search schema.",
+          "constraints": "Optional; accepted ranges (including far outside program years) produced the same totals as no time period filter."
+        },
+        "spending_type": {
+          "location": "body",
+          "type": "string",
+          "description": "Determines whether totals represent all resources ('total') or award-only spending ('award').",
+          "constraints": "Required; allowed values ['total','award']; missing field yields 422 and other values return 400."
+        },
+        "pagination": {
+          "location": "body",
+          "type": "object",
+          "description": "Controls paging and sorting (defaults: page 1, limit 10, sort 'id', order 'desc').",
+          "constraints": "Optional; numeric entries may be provided as numbers or numeric strings and are coerced server-side."
+        },
+        "pagination.limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Results per page for parent object classes.",
+          "constraints": "Optional; accepts 1-100 inclusive (numeric strings allowed); values outside range return 422."
+        },
+        "pagination.page": {
+          "location": "body",
+          "type": "integer",
+          "description": "1-based page index.",
+          "constraints": "Optional; must be >= 1 (numeric strings allowed); out-of-range pages return empty results while totals persist."
+        },
+        "pagination.sort": {
+          "location": "body",
+          "type": "string",
+          "description": "Field used to order parent rows.",
+          "constraints": "Optional; allowed ['id','code','description','award_count','obligation','outlay','total_budgetary_resources']; invalid values return 400."
+        },
+        "pagination.order": {
+          "location": "body",
+          "type": "string",
+          "description": "Sort direction.",
+          "constraints": "Optional; accepts 'asc' or 'desc' only."
+        }
+      }
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [
+        "results",
+        "page_metadata",
+        "totals"
+      ],
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Parent object classes with fields id (string), code (string), description (string), award_count (number|null), obligation (number), outlay (number), and children (array of similarly shaped objects). award_count is null when spending_type='total' and numeric when spending_type='award'."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata containing page, total, limit, next (number|null), previous (number|null), hasNext, hasPrevious; flags flip correctly for edge pages and empty slices."
+        },
+        "totals": {
+          "type": "object",
+          "description": "Aggregate obligation/outlay for the full filter scope; award_count appears only when spending_type='award'. Totals remain even when results is empty."
+        }
+      }
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/object_class/spending/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            },
+            "spending_type": "total",
+            "pagination": {
+              "limit": 2,
+              "page": 1
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "id": "90",
+                "code": "90",
+                "description": "Other",
+                "award_count": null,
+                "obligation": 21096.07,
+                "outlay": 20697.37,
+                "children": []
+              },
+              {
+                "id": "40",
+                "code": "40",
+                "description": "Grants and fixed charges",
+                "award_count": null,
+                "obligation": 3101137188.61,
+                "outlay": 3023489007.36,
+                "children": []
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 6,
+              "limit": 2,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "totals": {
+              "obligation": 7210622269.71,
+              "outlay": 6953937862.19
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/object_class/spending/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "QQQ"
+              ]
+            },
+            "spending_type": "total"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [],
+            "page_metadata": {
+              "page": 1,
+              "total": 0,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "totals": {
+              "obligation": 0,
+              "outlay": 0
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/object_class/spending/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ],
+              "query": ""
+            },
+            "spending_type": "total"
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'filter|query' value '' is below min '1' items"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "filter.query must be non-empty, yet any keyword tested returned the same aggregates as an unfiltered request.",
+      "filter.award_type_codes is ignored: arbitrary values, including plain strings and bogus codes, do not change results.",
+      "filter.time_period objects are accepted but observed totals matched the baseline with no date filter.",
+      "Undocumented sort option 'total_budgetary_resources' is accepted but neither changes ordering nor surfaces that field in responses.",
+      "Totals are independent of pagination; empty result pages still include overall obligation/outlay sums."
+    ],
+    "risks": [
+      "When spending_type='total', award_count fields are null and missing from totals, so typed consumers must tolerate nulls.",
+      "Empty result pages (e.g., high page numbers) keep non-zero totals, which can mislead aggregations if emptiness is treated as zero spend.",
+      "Silent acceptance of award_type_codes makes it easy to assume subset filtering succeeded when it did not.",
+      "Keyword and time_period filters appear ineffective, so downstream analytics depending on them may be misleading."
+    ],
+    "gaps": [
+      "Purpose and behavior of the accepted 'total_budgetary_resources' sort key remain unknown because responses never expose that field."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\": [{\"id\": \"90\", \"code\": \"90\", \"obligation\": 21096.07}, {\"id\": \"40\", \"code\": \"40\", \"obligation\": 3101137188.61}], \"page_metadata\": {\"page\": 1, \"total\": 6, \"limit\": 10}, \"totals\": {\"obligation\": 7210622269.71, \"outlay\": 6953937862.19}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - minimal total request works; defaults page=1 limit=10; award_count fields return null in results"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "spending_type": "award"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\": {\"award_count\": 6258, \"obligation\": 4310785072.75, \"outlay\": 6218381045.21}, \"results\": [{\"id\": \"40\", \"award_count\": 2982, \"obligation\": 2191378807.84}, {\"id\": \"30\", \"award_count\": 480, \"obligation\": 86905917.92}], \"page_metadata\": {\"page\": 1, \"total\": 5, \"limit\": 10}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - award spending exposes award_count metrics and five parent object classes"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\": \"Missing value: 'spending_type' is a required field\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - omitting spending_type triggers 422 validation error"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "ZZ"
+            ]
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\": \"Field 'filter|def_codes' is outside valid values ['1','2','3','4','5','6','7','8','9','A','AAA',...,'Z']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - invalid def_codes value rejected; error enumerates accepted codes"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "QQQ"
+            ]
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[],\"page_metadata\":{\"page\":1,\"total\":0,\"limit\":10,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false},\"totals\":{\"obligation\":0,\"outlay\":0}}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - DEFC QQQ returns an empty dataset with zero totals"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "query": ""
+          },
+          "spending_type": "total"
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|query' value '' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - blank query strings are rejected"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/object_class/spending/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "award_type_codes": "A"
+          },
+          "spending_type": "award"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"totals\":{\"award_count\":6258,\"obligation\":4310785072.75,\"outlay\":6218381045.21},\"results\":[{\"id\":\"40\",\"award_count\":2982},{\"id\":\"30\",\"award_count\":480}]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - even a string award_type_codes input matches the baseline award totals, indicating the filter is ignored"
+    }
+  ],
+  "mismatches": [
+    "Docs describe filter.query as a keyword filter, yet observed responses were unchanged for different terms and only blank strings are rejected.",
+    "Docs restrict filter.award_type_codes to a listed enum array, but the API accepts arbitrary values (arrays or strings) without effect.",
+    "Docs list sort options only through 'outlay', while the API also accepts 'total_budgetary_resources'.",
+    "Docs imply time_period filters results, but observed totals matched baseline even for distant date ranges."
+  ],
+  "gaps": [
+    "Purpose and behavior of the accepted 'total_budgetary_resources' sort key remain unknown because responses never expose that field."
+  ],
+  "risks": [
+    "When spending_type='total', award_count fields are null and missing from totals, so typed consumers must tolerate nulls.",
+    "Empty result pages (e.g., high page numbers) keep non-zero totals, which can mislead aggregations if emptiness is treated as zero spend.",
+    "Silent acceptance of award_type_codes makes it easy to assume subset filtering succeeded when it did not.",
+    "Keyword and time_period filters appear ineffective, so downstream analytics depending on them may be misleading."
+  ]
+}

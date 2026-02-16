@@ -116,13 +116,59 @@ describe("loadProfiles", () => {
     expect(() => loadProfiles({ repoRoot: root })).toThrow(/missing prompt.md/i);
   });
 
+  it("fails when parameter location metadata is invalid", () => {
+    const root = mkdtempSync(join(tmpdir(), "mcp-load-invalid-location-"));
+    writeProfile(root, "v2__awards__last_updated", {
+      mutate: (doc) => {
+        doc.contract.inputSchema.properties.limit = {
+          type: "integer",
+          location: "header",
+          description: "Maximum row count.",
+        };
+      },
+    });
+
+    expect(() => loadProfiles({ repoRoot: root })).toThrow(/location/i);
+  });
+
+  it("fails when parameter description metadata is missing", () => {
+    const root = mkdtempSync(join(tmpdir(), "mcp-load-missing-param-desc-"));
+    writeProfile(root, "v2__awards__last_updated", {
+      mutate: (doc) => {
+        doc.contract.inputSchema.properties.keyword = {
+          type: "string",
+          location: "query",
+        };
+      },
+    });
+
+    expect(() => loadProfiles({ repoRoot: root })).toThrow(/description is required/i);
+  });
+
   it("loads valid profiles", () => {
     const root = mkdtempSync(join(tmpdir(), "mcp-load-ok-"));
-    writeProfile(root, "v2__awards__last_updated");
+    writeProfile(root, "v2__awards__last_updated", {
+      mutate: (doc) => {
+        doc.contract.inputSchema.properties.page = {
+          type: "integer",
+          location: "query",
+          description: "Page number for pagination.",
+        };
+        doc.contract.inputSchema.properties.filters = {
+          type: ["array", "object"],
+          location: "body",
+          description: "Flexible filters payload.",
+        };
+        doc.contract.inputSchema.required = ["page"];
+      },
+    });
 
     const loaded = loadProfiles({ repoRoot: root });
     expect(loaded.schemaVersion).toBe(SCHEMA_VERSION);
     expect(loaded.profiles).toHaveLength(1);
     expect(loaded.profiles[0]?.slug).toBe("v2__awards__last_updated");
+    expect(loaded.profiles[0]?.planner?.requiredParams).toEqual(["page"]);
+    expect(loaded.profiles[0]?.planner?.bodyParams).toEqual(["filters"]);
+    expect(loaded.profiles[0]?.planner?.supportsPagination).toBe(true);
   });
 });

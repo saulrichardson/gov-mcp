@@ -1,0 +1,273 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/object_class/count.md",
+    "description": "Counts distinct object class entries for the requested agency toptier code and fiscal year, defaulting to the latest loaded year when the query omits fiscal_year.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/agency/{toptier_code}/object_class/count/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Agency toptier identifier supplied in the URL path (CGAC or FREC).",
+          "constraints": "Required; must be a 3- or 4-digit numeric code. Known codes return JSON. Numeric-but-unknown codes return JSON 404 with detail. Non-numeric or wrong-length segments miss the route and respond with HTML 404."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Appropriations fiscal year to evaluate.",
+          "constraints": "Optional; omitting it or sending an empty string defaults to the current fiscal year (FY2026 at capture time). Must parse as an integer between 2008 and 2026 inclusive. Non-integer inputs (including a single space) return 400 with a type validation message. Outside-range integers return 422 with explicit min/max detail."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echoed agency toptier code."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Validated or defaulted fiscal year."
+        },
+        "object_class_count": {
+          "type": "integer",
+          "description": "Number of object class records for the agency and fiscal year; observed non-negative."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Array of warning strings; observed empty or containing the DATA Act availability notice for pre-FY2017 years."
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "object_class_count",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/012/object_class/count/",
+          "query": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "012",
+            "fiscal_year": 2026,
+            "object_class_count": 56,
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/9553/object_class/count/",
+          "query": {
+            "fiscal_year": 2016
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "9553",
+            "fiscal_year": 2016,
+            "object_class_count": 0,
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/012/object_class/count/",
+          "query": {
+            "fiscal_year": 2050
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'fiscal_year' value '2050' is above max '2026'"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "/api/v2/agency/012/object_class/count/",
+          "query": {
+            "fiscal_year": " "
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Invalid value in 'fiscal_year'. ' ' is not a valid type (integer)"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Fiscal years before FY2017 return object_class_count 0 plus the DATA Act availability notice in messages.",
+      "Supplying fiscal_year as an empty string defaults to the current fiscal year, but a single space character fails validation with 400.",
+      "Fiscal_year bounds are enforced with 422 errors citing the observed minimum and maximum (2008-2026 at capture time).",
+      "Non-numeric or misformed toptier_code path segments fall through routing and yield HTML 404 responses."
+    ],
+    "risks": [
+      "Clients must handle both 400 and 422 validation failures surfaced in the detail field.",
+      "HTML 404 responses for malformed toptier_code values can break JSON parsers if not guarded against.",
+      "Fiscal year bounds shift annually; outdated integrations may see 422 errors after year turnover until they update the allowed range."
+    ],
+    "gaps": [
+      "Only observed a single warning string in messages; other message formats or multiple entries remain unverified."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/object_class/count/",
+        "query": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2026,\"object_class_count\":56,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - Omitting fiscal_year defaulted to FY2026 and returned the expected schema."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/object_class/count/",
+        "query": {
+          "fiscal_year": 2024
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"012\",\"fiscal_year\":2024,\"object_class_count\":58,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - Explicit fiscal_year override worked and preserved the response shape."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/9553/object_class/count/",
+        "query": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"9553\",\"fiscal_year\":2026,\"object_class_count\":20,\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - Verified a four-digit FREC toptier code returns JSON and defaults to FY2026."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/9553/object_class/count/",
+        "query": {
+          "fiscal_year": 2016
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"9553\",\"fiscal_year\":2016,\"object_class_count\":0,\"messages\":[\"Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years.\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - Pre-FY2017 request returns zero count plus the DATA Act warning."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/object_class/count/",
+        "query": {
+          "fiscal_year": 2050
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'fiscal_year' value '2050' is above max '2026'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - Future fiscal_year rejected with explicit max bound."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/object_class/count/",
+        "query": {
+          "fiscal_year": "abc"
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'fiscal_year'. 'abc' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "pass - Non-integer string fails with 400 type validation detail."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/012/object_class/count/",
+        "query": {
+          "fiscal_year": " "
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'fiscal_year'. ' ' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "fail - Single space in fiscal_year does not default and triggers 400 validation error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/agency/ABC/object_class/count/",
+        "query": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<h1>Not Found</h1><p>The requested resource was not found on this server.</p>",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "fail - Non-numeric toptier_code misses the route and returns HTML 404."
+    }
+  ],
+  "mismatches": [
+    "Documentation implies JSON responses, but invalid toptier_code segments can return HTML 404 pages."
+  ],
+  "gaps": [
+    "Only observed a single warning string in messages; other message formats or multiple entries remain unverified."
+  ],
+  "risks": [
+    "Clients must handle both 400 and 422 validation failures surfaced in the detail field.",
+    "HTML 404 responses for malformed toptier_code values can break JSON parsers if not guarded against.",
+    "Fiscal year bounds shift annually; outdated integrations may see 422 errors after year turnover until they update the allowed range."
+  ]
+}

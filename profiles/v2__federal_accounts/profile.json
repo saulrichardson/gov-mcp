@@ -1,0 +1,859 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/federal_accounts.md",
+    "description": "Returns a paginated list of federal accounts with managing agency metadata and budgetary_resources for a fiscal-year context (top-level response field fy; settable via filters.fy).",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/federal_accounts/"
+    },
+    "inputSchema": {
+      "confidence": "confirmed",
+      "type": "object",
+      "properties": {
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Optional filter object.",
+          "properties": {
+            "fy": {
+              "type": "string",
+              "description": "Fiscal year context for budgetary_resources.",
+              "constraints": "Optional. Invalid values return 400 with a server-provided allowed-year list (observed strings '2001' through '2026')."
+            },
+            "agency_identifier": {
+              "type": "string",
+              "description": "Filters results to federal accounts managed by a specific agency identifier.",
+              "constraints": "Optional. Exact string match semantics were observed: '012' returned results while '12' returned count=0 (200 with results=[])."
+            }
+          },
+          "constraints": "Optional. Unknown keys inside filters are rejected with 400 (Unexpected field ... in parameter filters)."
+        },
+        "sort": {
+          "location": "body",
+          "type": "object",
+          "description": "Sort specification for the results list.",
+          "properties": {
+            "field": {
+              "type": "string",
+              "description": "Sort field.",
+              "constraints": "Optional. Invalid values return 400 with allowed values ['budgetary_resources', 'managing_agency', 'account_name', 'account_number']."
+            },
+            "direction": {
+              "type": "string",
+              "description": "Sort direction.",
+              "constraints": "Optional. Observed accepted values include 'asc' and 'desc'."
+            }
+          },
+          "constraints": "Optional. Unknown keys inside sort are rejected with 400 (Unexpected field ... in parameter sort). Observed defaults: omitting sort sorts by budgetary_resources ascending; providing sort.field without direction defaults direction to asc (observed for field=budgetary_resources); providing sort.direction without field defaults field to budgetary_resources."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum rows per page.",
+          "constraints": "Optional. Default is 10 when omitted. Min 1 (limit=0 -> 422). Max 100 (limit=101 -> 422). Digit-only strings (e.g., '5') are accepted; non-integer numerics (e.g., 2.5) return 400."
+        },
+        "page": {
+          "location": "body",
+          "type": "integer",
+          "description": "1-based page selector.",
+          "constraints": "Optional. Default is 1 when omitted. Min 1 (page=0 -> 422). Digit-only strings (e.g., '2') are accepted; non-integer numerics (e.g., 2.5) return 400. Pages beyond the last return 200 with results=[]."
+        },
+        "keyword": {
+          "location": "body",
+          "type": "string",
+          "description": "Keyword search.",
+          "constraints": "Optional. When omitted, response keyword is null. Empty string '' is rejected with 422. Whitespace-only strings are accepted but echoed as keyword='' and behave like an unfiltered search (count unchanged)."
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "confirmed",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "Total number of federal accounts matching the request."
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Page size used for this response."
+        },
+        "page": {
+          "type": "integer",
+          "description": "Current page number returned."
+        },
+        "fy": {
+          "type": "string",
+          "description": "Fiscal year context for budgetary_resources."
+        },
+        "keyword": {
+          "type": "string|null",
+          "description": "Echo of keyword input: null when omitted; otherwise a string (can be empty string when whitespace-only keyword is provided)."
+        },
+        "next": {
+          "type": "integer|null",
+          "description": "Next page number when hasNext=true, otherwise null."
+        },
+        "previous": {
+          "type": "integer|null",
+          "description": "Previous page number when hasPrevious=true, otherwise null."
+        },
+        "hasNext": {
+          "type": "boolean",
+          "description": "Indicates whether another page is available after the current one."
+        },
+        "hasPrevious": {
+          "type": "boolean",
+          "description": "Indicates whether a page exists before the current one."
+        },
+        "results": {
+          "type": "array",
+          "description": "Array of federal account records (can be empty).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "account_id": {
+                "type": "integer",
+                "description": "Unique identifier for the federal account."
+              },
+              "account_number": {
+                "type": "string",
+                "description": "Federal account number."
+              },
+              "account_name": {
+                "type": "string",
+                "description": "Federal account name."
+              },
+              "agency_identifier": {
+                "type": "string",
+                "description": "Managing agency identifier code as text."
+              },
+              "managing_agency": {
+                "type": "string",
+                "description": "Managing agency name."
+              },
+              "managing_agency_acronym": {
+                "type": "string|null",
+                "description": "Managing agency acronym; null is possible (observed)."
+              },
+              "budgetary_resources": {
+                "type": "number|null",
+                "description": "Budgetary resources for the requested FY; can be null, zero, or negative."
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "count",
+        "limit",
+        "page",
+        "fy",
+        "keyword",
+        "next",
+        "previous",
+        "hasNext",
+        "hasPrevious",
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/federal_accounts/",
+          "query": {},
+          "body": {
+            "filters": {
+              "fy": "2023"
+            },
+            "limit": 1
+          }
+        },
+        "response": {
+          "status": 200,
+          "contentType": "application/json",
+          "body": {
+            "count": 2253,
+            "limit": 1,
+            "page": 1,
+            "fy": "2023",
+            "keyword": null,
+            "next": 2,
+            "previous": null,
+            "hasNext": true,
+            "hasPrevious": false,
+            "results": [
+              {
+                "agency_identifier": "027",
+                "account_id": 4595,
+                "account_name": "Universal Service Fund, Federal Communications Commission",
+                "account_number": "027-5183",
+                "budgetary_resources": -3849993872.97,
+                "managing_agency": "Federal Communications Commission",
+                "managing_agency_acronym": "FCC"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/federal_accounts/",
+          "query": {},
+          "body": {
+            "filters": {
+              "agency_identifier": "012"
+            },
+            "limit": 1
+          }
+        },
+        "response": {
+          "status": 200,
+          "contentType": "application/json",
+          "body": {
+            "count": 200,
+            "limit": 1,
+            "page": 1,
+            "fy": "2026",
+            "keyword": null,
+            "next": 2,
+            "previous": null,
+            "hasNext": true,
+            "hasPrevious": false,
+            "results": [
+              {
+                "agency_identifier": "012",
+                "account_id": 3418,
+                "account_name": "Expenses, Common Computing Environment, Agriculture",
+                "account_number": "012-0113",
+                "budgetary_resources": 0.0,
+                "managing_agency": "Department of Agriculture",
+                "managing_agency_acronym": "USDA"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/federal_accounts/",
+          "query": {},
+          "body": {
+            "keyword": "256-1760",
+            "limit": 1
+          }
+        },
+        "response": {
+          "status": 200,
+          "contentType": "application/json",
+          "body": {
+            "count": 1,
+            "limit": 1,
+            "page": 1,
+            "fy": "2026",
+            "keyword": "256-1760",
+            "next": null,
+            "previous": null,
+            "hasNext": false,
+            "hasPrevious": false,
+            "results": [
+              {
+                "agency_identifier": "256",
+                "account_id": 6345,
+                "account_name": "Salaries and Expenses, Commission on Combating Synthetic Opioid Trafficking",
+                "account_number": "256-1760",
+                "budgetary_resources": 1351902.38,
+                "managing_agency": "Commission On Combating Synthetic Opioid Trafficking",
+                "managing_agency_acronym": null
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/federal_accounts/",
+          "query": {},
+          "body": {
+            "limit": 101
+          }
+        },
+        "response": {
+          "status": 422,
+          "contentType": "application/json",
+          "body": {
+            "detail": "Field 'limit' value '101' is above max '100'"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/federal_accounts/",
+          "query": {},
+          "body": {
+            "limit": 100,
+            "page": 24
+          }
+        },
+        "response": {
+          "status": 200,
+          "contentType": "application/json",
+          "body": {
+            "count": 2253,
+            "limit": 100,
+            "page": 24,
+            "fy": "2026",
+            "keyword": null,
+            "next": null,
+            "previous": 23,
+            "hasNext": false,
+            "hasPrevious": true,
+            "results": []
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Default limit is 10 when omitted (documentation says 50).",
+      "Maximum supported limit is 100; higher values are rejected with 422.",
+      "Omitting sort sorts by budgetary_resources ascending (docs claim sort.direction default desc).",
+      "Response always includes top-level keyword: null when omitted; otherwise a string (including empty string when whitespace-only keyword is provided).",
+      "filters.fy rejects out-of-range values with 400 and includes the allowed FY strings in the detail message (observed list '2001'\u2013'2026').",
+      "Pages beyond the last page return 200 with results=[] (not an error).",
+      "Digit-only strings for page/limit are accepted and coerced to integers; floats/decimals are rejected with 400.",
+      "managing_agency_acronym can be null in results.",
+      "Error responses (400/405/422) are JSON objects with a top-level detail string."
+    ],
+    "risks": [
+      "Clients must handle 422 (bounds) and 400/405 (type/enum/parse/method) errors; error payloads are JSON with a top-level detail string.",
+      "Default limit=10 and max limit=100 require pagination for full enumeration; clients expecting limit=50 will under-fetch unless they set limit explicitly.",
+      "Pages beyond the last return 200 with results=[], so callers should stop paginating based on hasNext/next/results length rather than expecting an error.",
+      "budgetary_resources can be null, zero, or negative; consumers must not assume a non-null positive amount.",
+      "managing_agency_acronym can be null even when other fields are present; consumers must not assume it is always a string.",
+      "filters.agency_identifier is an exact string match; unpadded inputs (e.g., '12' vs '012') returned count=0 with 200, which can mask user input errors.",
+      "filters.fy only accepts server-validated fiscal year strings; hard-coding an out-of-range FY will fail with 400 (with an allowed-year list in detail).",
+      "Whitespace-only keyword inputs are accepted and behave like unfiltered searches while echoing keyword=''; UIs should trim/validate before sending.",
+      "Implement retries/backoff for network-level failures: probes recorded status=0 connection closes without an HTTP response."
+    ],
+    "gaps": [
+      "Docs indicate account_name/account_number may be null; nulls were not observed in sampled probes, so nullability remains possible.",
+      "Exact keyword search field coverage beyond observed account_name/account_number matches is not exhaustively verified.",
+      "Intermittent connection drops (TLS close with no HTTP status) were observed during discovery; trigger conditions remain unclear."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "unknown",
+    "lastVerified": "2026-02-15"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":2253,\"limit\":10,\"page\":1,\"fy\":\"2026\",\"keyword\":null,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false,\"results\":[{\"agency_identifier\":\"027\",\"account_id\":4595,\"account_name\":\"Universal Service Fund, Federal Communications Commission\",\"account_number\":\"027-5183\",\"budgetary_resources\":-18447414770.81,\"managing_agency\":\"Federal Communications Commission\",\"managing_agency_acronym\":\"FCC\"},{\"agency_identifier\":\"011\",\"account_id\":3355,\"account_name\":\"Contribution to the North American Development Bank, Funds Appropriated to the President\",\"account_number\":\"011-1008\",\"budgetary_resou",
+        "contentType": "application/json"
+      },
+      "notes": "Confirm default behavior: empty JSON body returns 200 with default limit/page/fy and sorted results.",
+      "meta": {
+        "newFromPass2": true,
+        "name": "baseline_defaults"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "filters": {
+            "fy": "2023"
+          },
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":2253,\"limit\":1,\"page\":1,\"fy\":\"2023\",\"keyword\":null,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false,\"results\":[{\"agency_identifier\":\"027\",\"account_id\":4595,\"account_name\":\"Universal Service Fund, Federal Communications Commission\",\"account_number\":\"027-5183\",\"budgetary_resources\":-3849993872.97,\"managing_agency\":\"Federal Communications Commission\",\"managing_agency_acronym\":\"FCC\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Confirm filters.fy works: sets response fy and budgetary_resources values while leaving count unchanged.",
+      "meta": {
+        "newFromPass2": true,
+        "name": "fy_filter_valid"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "filters": {
+            "fy": "1999"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'filters' is outside valid values ['2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Error surface: filters.fy rejects values outside the server-defined certified year list (expect 400 with allowed years).",
+      "meta": {
+        "newFromPass2": true,
+        "name": "fy_filter_invalid"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "filters": {
+            "agency_identifier": "012"
+          },
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":200,\"limit\":1,\"page\":1,\"fy\":\"2026\",\"keyword\":null,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false,\"results\":[{\"agency_identifier\":\"012\",\"account_id\":3418,\"account_name\":\"Expenses, Common Computing Environment, Agriculture\",\"account_number\":\"012-0113\",\"budgetary_resources\":0.0,\"managing_agency\":\"Department of Agriculture\",\"managing_agency_acronym\":\"USDA\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Confirm filters.agency_identifier narrows results (expect count < unfiltered).",
+      "meta": {
+        "newFromPass2": true,
+        "name": "agency_identifier_filter_valid"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "filters": {
+            "agency_identifier": "12"
+          },
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":0,\"limit\":1,\"page\":1,\"fy\":\"2026\",\"keyword\":null,\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false,\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Empty dataset representation: unpadded agency_identifier can yield 200 with count=0 and results=[].",
+      "meta": {
+        "newFromPass2": true,
+        "name": "agency_identifier_filter_unpadded"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "filters": {
+            "foo": "bar"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Unexpected field 'foo' in parameter filters\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Error surface: unexpected fields inside filters are rejected (expect 400 Unexpected field).",
+      "meta": {
+        "newFromPass2": true,
+        "name": "filters_unknown_key"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "sort": {
+            "field": "bogus",
+            "direction": "asc"
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'sort' is outside valid values ['budgetary_resources', 'managing_agency', 'account_name', 'account_number']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Error surface: invalid sort.field should return 400 with allowed field list.",
+      "meta": {
+        "newFromPass2": true,
+        "name": "sort_invalid_field"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "sort": {
+            "field": "account_name",
+            "direction": "asc",
+            "foo": "bar"
+          },
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Unexpected field 'foo' in parameter sort\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Error surface: extra keys inside sort are rejected (expect 400 Unexpected field).",
+      "meta": {
+        "newFromPass2": true,
+        "name": "sort_unknown_key"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "keyword": "fund",
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":655,\"limit\":1,\"page\":1,\"fy\":\"2026\",\"keyword\":\"fund\",\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false,\"results\":[{\"agency_identifier\":\"027\",\"account_id\":4595,\"account_name\":\"Universal Service Fund, Federal Communications Commission\",\"account_number\":\"027-5183\",\"budgetary_resources\":-18447414770.81,\"managing_agency\":\"Federal Communications Commission\",\"managing_agency_acronym\":\"FCC\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Confirm keyword search works and echoes keyword in response; should reduce count vs unfiltered.",
+      "meta": {
+        "newFromPass2": true,
+        "name": "keyword_basic"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "keyword": " ",
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":2253,\"limit\":1,\"page\":1,\"fy\":\"2026\",\"keyword\":\"\",\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false,\"results\":[{\"agency_identifier\":\"027\",\"account_id\":4595,\"account_name\":\"Universal Service Fund, Federal Communications Commission\",\"account_number\":\"027-5183\",\"budgetary_resources\":-18447414770.81,\"managing_agency\":\"Federal Communications Commission\",\"managing_agency_acronym\":\"FCC\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Null/empty distinction: whitespace-only keyword is accepted, is trimmed to empty string in response, and behaves like unfiltered search.",
+      "meta": {
+        "newFromPass2": true,
+        "name": "keyword_whitespace"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "keyword": ""
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'keyword' value '' is below min '1' items\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Validate keyword min-length: empty string should be rejected (expect 422 below-min).",
+      "meta": {
+        "newFromPass2": true,
+        "name": "keyword_empty_string"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "keyword": "256-1760",
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":1,\"limit\":1,\"page\":1,\"fy\":\"2026\",\"keyword\":\"256-1760\",\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false,\"results\":[{\"agency_identifier\":\"256\",\"account_id\":6345,\"account_name\":\"Salaries and Expenses, Commission on Combating Synthetic Opioid Trafficking\",\"account_number\":\"256-1760\",\"budgetary_resources\":1351902.38,\"managing_agency\":\"Commission On Combating Synthetic Opioid Trafficking\",\"managing_agency_acronym\":null}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Nullability probe: managing_agency_acronym can be null for some federal accounts.",
+      "meta": {
+        "newFromPass2": true,
+        "name": "keyword_account_acronym_null"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "keyword": "009-0110",
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":1,\"limit\":1,\"page\":1,\"fy\":\"2026\",\"keyword\":\"009-0110\",\"next\":null,\"previous\":null,\"hasNext\":false,\"hasPrevious\":false,\"results\":[{\"agency_identifier\":\"009\",\"account_id\":3261,\"account_name\":\"Salaries and Expenses, Commission on Security and Cooperation in Europe\",\"account_number\":\"009-0110\",\"budgetary_resources\":null,\"managing_agency\":\"Legislative Branch Boards and Commissions\",\"managing_agency_acronym\":\"LEG ORGS\"}]}",
+        "contentType": "application/json"
+      },
+      "notes": "Nullability probe: budgetary_resources can be null for some federal accounts in the default FY.",
+      "meta": {
+        "newFromPass2": true,
+        "name": "keyword_budgetary_resources_null"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "limit": 101
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '101' is above max '100'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Probe limit upper bound: values > 100 should be rejected (expect 422 with detail).",
+      "meta": {
+        "newFromPass2": true,
+        "name": "limit_over_max"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "limit": 2.5
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. '2.5' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Validate limit type: non-integer numeric should be rejected (expect 400 invalid type).",
+      "meta": {
+        "newFromPass2": true,
+        "name": "limit_float_type_error"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "limit": "5"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":2253,\"limit\":5,\"page\":1,\"fy\":\"2026\",\"keyword\":null,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false,\"results\":[{\"agency_identifier\":\"027\",\"account_id\":4595,\"account_name\":\"Universal Service Fund, Federal Communications Commission\",\"account_number\":\"027-5183\",\"budgetary_resources\":-18447414770.81,\"managing_agency\":\"Federal Communications Commission\",\"managing_agency_acronym\":\"FCC\"},{\"agency_identifier\":\"011\",\"account_id\":3355,\"account_name\":\"Contribution to the North American Development Bank, Funds Appropriated to the President\",\"account_number\":\"011-1008\",\"budgetary_resour",
+        "contentType": "application/json"
+      },
+      "notes": "Check type coercion: digit-only string for limit should be accepted and coerced to integer.",
+      "meta": {
+        "newFromPass2": true,
+        "name": "limit_string_coercion"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "page": 0
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'page' value '0' is below min '1'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Validate page lower bound: page=0 should be rejected (expect 422 below-min).",
+      "meta": {
+        "newFromPass2": true,
+        "name": "page_below_min"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "page": 2.5,
+          "limit": 5
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'page'. '2.5' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Validate page type: non-integer numeric should be rejected (expect 400 invalid type).",
+      "meta": {
+        "newFromPass2": true,
+        "name": "page_float_type_error"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "page": "2"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":2253,\"limit\":10,\"page\":2,\"fy\":\"2026\",\"keyword\":null,\"next\":3,\"previous\":1,\"hasNext\":true,\"hasPrevious\":true,\"results\":[{\"agency_identifier\":\"014\",\"account_id\":3910,\"account_name\":\"Environmental Improvement and Restoration Fund, Office of Natural Resources Revenue, Interior\",\"account_number\":\"014-5425\",\"budgetary_resources\":0.0,\"managing_agency\":\"Department of the Interior\",\"managing_agency_acronym\":\"DOI\"},{\"agency_identifier\":\"014\",\"account_id\":3911,\"account_name\":\"Water and Related Resources, Reclamation Fund, Bureau of Reclamation\",\"account_number\":\"014-5430\",\"budgetary_resources\":0",
+        "contentType": "application/json"
+      },
+      "notes": "Check type coercion: digit-only string for page should be accepted and coerced to integer.",
+      "meta": {
+        "newFromPass2": true,
+        "name": "page_string_coercion"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "limit": 100,
+          "page": 24
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":2253,\"limit\":100,\"page\":24,\"fy\":\"2026\",\"keyword\":null,\"next\":null,\"previous\":23,\"hasNext\":false,\"hasPrevious\":true,\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Pagination edge: page beyond last returns 200 with empty results and next=null (not an error).",
+      "meta": {
+        "newFromPass2": true,
+        "name": "page_overflow_empty_results"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/federal_accounts/",
+        "query": {}
+      },
+      "response": {
+        "status": 405,
+        "bodyExcerpt": "{\"detail\":\"Method \\\"GET\\\" not allowed.\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Method surface: GET is not allowed; endpoint is POST-only (expect 405 with JSON detail).",
+      "meta": {
+        "newFromPass2": true,
+        "name": "get_method_not_allowed"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": "{"
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"JSON parse error - Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Error surface: malformed JSON body returns 400 with parse error detail.",
+      "meta": {
+        "newFromPass2": true,
+        "name": "malformed_json"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/federal_accounts/",
+        "query": {},
+        "body": {
+          "filters": {
+            "fy": "2023"
+          }
+        }
+      },
+      "response": {
+        "status": 0,
+        "bodyExcerpt": "",
+        "contentType": ""
+      },
+      "notes": "fail - remote server closed TLS connection with no HTTP status when filters.fy was supplied"
+    }
+  ],
+  "mismatches": [
+    "Documentation lists default limit as 50, but live responses default to 10.",
+    "Documentation claims sort.direction defaults to 'desc', but omitting direction defaults to 'asc' (and omitting sort entirely sorts by budgetary_resources asc).",
+    "Documentation omits the keyword field in the 200 response payload, but it is always present (null when keyword is omitted).",
+    "Documentation does not describe an upper bound for limit, but the API enforces limit <= 100 (422 when exceeded).",
+    "Documentation describes filters.fy as a string, but the API enforces an enumerated list of certified fiscal years (400 when outside the allowed set).",
+    "Documentation marks managing_agency_acronym as required string, but live data includes null values."
+  ],
+  "gaps": [
+    "Docs indicate account_name/account_number may be null; nulls were not observed in sampled probes, so nullability remains possible.",
+    "Exact keyword search field coverage beyond observed account_name/account_number matches is not exhaustively verified.",
+    "Intermittent connection drops (TLS close with no HTTP status) were observed during discovery; trigger conditions remain unclear."
+  ],
+  "risks": [
+    "Clients must handle 422 (bounds) and 400/405 (type/enum/parse/method) errors; error payloads are JSON with a top-level detail string.",
+    "Default limit=10 and max limit=100 require pagination for full enumeration; clients expecting limit=50 will under-fetch unless they set limit explicitly.",
+    "Pages beyond the last return 200 with results=[], so callers should stop paginating based on hasNext/next/results length rather than expecting an error.",
+    "budgetary_resources can be null, zero, or negative; consumers must not assume a non-null positive amount.",
+    "managing_agency_acronym can be null even when other fields are present; consumers must not assume it is always a string.",
+    "filters.agency_identifier is an exact string match; unpadded inputs (e.g., '12' vs '012') returned count=0 with 200, which can mask user input errors.",
+    "filters.fy only accepts server-validated fiscal year strings; hard-coding an out-of-range FY will fail with 400 (with an allowed-year list in detail).",
+    "Whitespace-only keyword inputs are accepted and behave like unfiltered searches while echoing keyword=''; UIs should trim/validate before sending.",
+    "Implement retries/backoff for network-level failures: probes recorded status=0 connection closes without an HTTP response."
+  ]
+}

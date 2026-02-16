@@ -1,0 +1,253 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/budget_functions/list_budget_subfunctions.md",
+    "description": "Retrieve budget subfunctions, optionally filtered by a three-digit, zero-padded budget function code, with results sorted by title ascending.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/budget_functions/list_budget_subfunctions/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "budget_function": {
+          "location": "body",
+          "type": "string",
+          "description": "Optional zero-padded budget function code limiting the returned subfunctions to a single budget function.",
+          "constraints": "Optional. Provide a three-digit, zero-padded code string. Observed working values include '050', '800', and '990'. Null, empty, or omitted values return the full catalog. Unrecognized or wrongly formatted values yield an empty list without error. The filter only applies when the request declares Content-Type: application/json."
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Array of budget subfunction objects sorted ascending by budget_subfunction_title.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "budget_subfunction_code": {
+                "type": "string",
+                "description": "Three-digit budget subfunction code."
+              },
+              "budget_subfunction_title": {
+                "type": "string",
+                "description": "Human-readable name of the budget subfunction."
+              }
+            },
+            "required": [
+              "budget_subfunction_code",
+              "budget_subfunction_title"
+            ]
+          }
+        }
+      },
+      "required": [
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/budget_functions/list_budget_subfunctions/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "budget_subfunction_code": "352",
+                "budget_subfunction_title": "Agricultural research and services"
+              },
+              {
+                "budget_subfunction_code": "402",
+                "budget_subfunction_title": "Air transportation"
+              },
+              {
+                "budget_subfunction_code": "452",
+                "budget_subfunction_title": "Area and regional development"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/budget_functions/list_budget_subfunctions/",
+          "query": {},
+          "body": {
+            "budget_function": "050"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "budget_subfunction_code": "053",
+                "budget_subfunction_title": "Atomic energy defense activities"
+              },
+              {
+                "budget_subfunction_code": "054",
+                "budget_subfunction_title": "Defense-related activities"
+              },
+              {
+                "budget_subfunction_code": "051",
+                "budget_subfunction_title": "Department of Defense-Military"
+              },
+              {
+                "budget_subfunction_code": "050",
+                "budget_subfunction_title": "National Defense"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/budget_functions/list_budget_subfunctions/",
+          "query": {},
+          "body": {
+            "budget_function": "123"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": []
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Null, empty, or omitted budget_function returns the full catalog instead of raising an error.",
+      "Unrecognized, mistyped, or non-string budget_function values return an empty results array with HTTP 200.",
+      "Trailing whitespace is not trimmed; for example '050 ' returns an empty list.",
+      "The budget_function filter is only honored when the request uses Content-Type: application/json; other media types such as text/plain receive HTTP 415, and missing the header causes the backend to ignore the filter and return the full catalog."
+    ],
+    "risks": [
+      "Clients expecting validation errors for malformed budget_function inputs will instead receive empty results, which can hide mistakes.",
+      "Missing or incorrect Content-Type headers cause the endpoint to ignore the budget_function filter, making it easy to fetch the full catalog unintentionally."
+    ],
+    "gaps": [
+      "Complete enumeration of accepted budget_function codes is undocumented; only a subset (050, 800, 990) has been verified via probes."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/budget_functions/list_budget_subfunctions/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"budget_subfunction_code\":\"352\",\"budget_subfunction_title\":\"Agricultural research and services\"}, ...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Omitting budget_function returns the full catalog sorted by title."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/budget_functions/list_budget_subfunctions/",
+        "query": {},
+        "body": {
+          "budget_function": "050"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"budget_subfunction_code\":\"053\",\"budget_subfunction_title\":\"Atomic energy defense activities\"}, ...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Valid code 050 limits results to National Defense subfunctions."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/budget_functions/list_budget_subfunctions/",
+        "query": {},
+        "body": {
+          "budget_function": "050 "
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Trailing whitespace prevents a match; endpoint returns an empty array."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/budget_functions/list_budget_subfunctions/",
+        "query": {},
+        "body": {
+          "budget_function": 50
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Numeric input is not coerced; returns an empty list."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/budget_functions/list_budget_subfunctions/",
+        "query": {},
+        "body": {
+          "budget_function": "050"
+        }
+      },
+      "response": {
+        "status": 415,
+        "bodyExcerpt": "{\"detail\":\"Unsupported media type \\\"text/plain\\\" in request.\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Setting Content-Type to text/plain is rejected with HTTP 415."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/budget_functions/list_budget_subfunctions/",
+        "query": {},
+        "body": {
+          "budget_function": "050"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[{\"budget_subfunction_code\":\"352\",\"budget_subfunction_title\":\"Agricultural research and services\"}, ...]}",
+        "contentType": "application/json"
+      },
+      "notes": "Omitting the Content-Type header causes the backend to return the full catalog, ignoring the filter."
+    }
+  ],
+  "mismatches": [],
+  "gaps": [
+    "Full set of supported budget_function codes is unknown beyond the observed values (050, 800, 990)."
+  ],
+  "risks": [
+    "Empty results on malformed budget_function inputs can mask caller mistakes.",
+    "Missing or incorrect Content-Type headers cause unintended full-catalog responses."
+  ]
+}

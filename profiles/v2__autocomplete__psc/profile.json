@@ -1,0 +1,313 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/psc.md",
+    "description": "Retrieves Product or Service Codes (PSC) and descriptions matching autocomplete search text.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/psc/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "search_text": {
+          "location": "body",
+          "type": "string",
+          "description": "Search string matched against PSC codes and descriptions; full four-character codes return exact code matches while description fragments surface related PSC entries.",
+          "constraints": "Required; must be provided as a JSON string. Empty string yields 400 'Missing one or more required request parameters: search_text'. Whitespace-only strings return 200 with an empty results array. Arrays are accepted but return an empty results array. Numeric or boolean values trigger a 500 HTML error. Null or omission returns the same 400 missing-parameter error."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of autocomplete suggestions to include in the response.",
+          "constraints": "Optional; defaults to 10. Floats truncate toward zero (e.g., 2.5→2, 0.7→0). Boolean values coerce to 1 (true) or 0 (false). Zero is allowed and returns an empty results array. Negative or null values produce a 500 HTML error. Non-numeric strings (including decimal strings) return 400 'Limit request parameter is not a valid, positive integer'. Limits above the catalog size simply return the full 3,627-row PSC catalog (~370 KB)."
+        }
+      },
+      "required": [
+        "search_text"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Autocomplete matches ordered by backend relevance; length never exceeds the smaller of the provided limit and the 3,627-row PSC catalog.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "product_or_service_code": {
+                "type": "string",
+                "description": "PSC code matching the search criteria."
+              },
+              "psc_description": {
+                "type": "string",
+                "description": "PSC description associated with the code."
+              }
+            },
+            "required": [
+              "product_or_service_code",
+              "psc_description"
+            ]
+          }
+        }
+      },
+      "required": [
+        "results"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/psc/",
+          "body": {
+            "search_text": "defense",
+            "limit": 3
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "product_or_service_code": "AC",
+                "psc_description": "C – National Defense R&D Services"
+              },
+              {
+                "product_or_service_code": "AC11",
+                "psc_description": "NATIONAL DEFENSE R&D SERVICES; DEPARTMENT OF DEFENSE - MILITARY; BASIC RESEARCH"
+              },
+              {
+                "product_or_service_code": "AC12",
+                "psc_description": "NATIONAL DEFENSE R&D SERVICES; DEPARTMENT OF DEFENSE - MILITARY; APPLIED RESEARCH"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/psc/",
+          "body": {
+            "search_text": "defense",
+            "limit": "foo"
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Limit request parameter is not a valid, positive integer"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/psc/",
+          "body": {
+            "search_text": 1234
+          }
+        },
+        "response": {
+          "status": 500,
+          "contentType": "text/html; charset=utf-8",
+          "body": "<html>...Server Error (500)...</html>"
+        }
+      }
+    ],
+    "quirks": [
+      "Float limit values truncate toward zero (2.5→2 results, 0.7→0), and boolean limits coerce to 1 or 0.",
+      "Limit value 0 is accepted and returns an empty results array.",
+      "Null or negative limit values trigger 500 HTML responses instead of JSON validation errors.",
+      "search_text arrays are accepted but return an empty results array instead of erroring.",
+      "Numeric or boolean search_text values surface a 500 HTML error page.",
+      "Request bodies sent without a JSON Content-Type header can be treated as missing search_text (400).",
+      "Large limits return the entire PSC catalog (3,627 rows, ~370 KB) without pagination.",
+      "Partial PSC code prefixes shorter than four characters do not match; full codes are required for code lookups."
+    ],
+    "risks": [
+      "Clients must sanitize search_text and limit types to avoid backend 500 HTML responses instead of JSON errors.",
+      "Large limit values return the full PSC catalog (3,627 rows, ~370 KB) in one response with no pagination guidance.",
+      "Error responses may be HTML (500) or JSON (400); consumers must handle multiple content types."
+    ],
+    "gaps": [
+      "Result relevance ordering is undocumented and may change without notice."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/psc/",
+        "body": {
+          "search_text": "defense"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\": [{\"product_or_service_code\": \"AC\", \"psc_description\": \"C \\u2013 National Defense R&D Services\"}, {\"product_or_service_code\": \"AC11\", \"psc_description\": \"NATIONAL DEFENSE R&D SERVICES; DEPARTMENT OF DEFENSE - MILITARY; BASIC RESEARCH\"}, {\"product_or_service_code\": \"AC12\", \"psc_description\": \"NATIONAL DEFENSE R&D SERVICES; DEPARTMENT OF DEFENSE - MILITARY; APPLIED RESEARCH\"}]}"
+      },
+      "notes": "pass – default call returns 10 defense-related PSC entries (default limit 10)."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/psc/",
+        "body": {
+          "search_text": "defense",
+          "limit": 3
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\": [{\"product_or_service_code\": \"AC\", \"psc_description\": \"C \\u2013 National Defense R&D Services\"}, {\"product_or_service_code\": \"AC11\", \"psc_description\": \"NATIONAL DEFENSE R&D SERVICES; DEPARTMENT OF DEFENSE - MILITARY; BASIC RESEARCH\"}, {\"product_or_service_code\": \"AC12\", \"psc_description\": \"NATIONAL DEFENSE R&D SERVICES; DEPARTMENT OF DEFENSE - MILITARY; APPLIED RESEARCH\"}]}"
+      },
+      "notes": "pass – limit parameter trims response to requested count."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/psc/",
+        "body": {
+          "search_text": "defense",
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\": []}"
+      },
+      "notes": "pass – limit 0 is accepted but produces an empty result set."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/psc/",
+        "body": {
+          "search_text": "defense",
+          "limit": -5
+        }
+      },
+      "response": {
+        "status": 500,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<html>...Server Error (500)...</html>"
+      },
+      "notes": "fail – negative limit triggers 500 HTML error instead of validation response."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/psc/",
+        "body": {
+          "search_text": "defense",
+          "limit": 2.5
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\": [{\"product_or_service_code\": \"AC\", \"psc_description\": \"C \\u2013 National Defense R&D Services\"}, {\"product_or_service_code\": \"AC11\", \"psc_description\": \"NATIONAL DEFENSE R&D SERVICES; DEPARTMENT OF DEFENSE - MILITARY; BASIC RESEARCH\"}]}"
+      },
+      "notes": "pass – float limit is truncated to an integer (2.5 → 2 results)."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/psc/",
+        "body": {
+          "search_text": "defense",
+          "limit": "5"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\": [{\"product_or_service_code\": \"AC\", \"psc_description\": \"C \\u2013 National Defense R&D Services\"}, {\"product_or_service_code\": \"AC11\", \"psc_description\": \"NATIONAL DEFENSE R&D SERVICES; DEPARTMENT OF DEFENSE - MILITARY; BASIC RESEARCH\"}, {\"product_or_service_code\": \"AC12\", \"psc_description\": \"NATIONAL DEFENSE R&D SERVICES; DEPARTMENT OF DEFENSE - MILITARY; APPLIED RESEARCH\"}, {\"product_or_service_code\": \"AC13\", \"psc_description\": \"NATIONAL DEFENSE R&D SERVICES; DEPARTMENT OF DEFENSE - MILITARY; EXPERIMENTAL DEVELOPMENT\"}, {\"product_or_service_code\": \"AC14\", \"psc_description\": \"NATIONAL DEFENSE R&D SERVICES; DEPARTMENT OF DEFENSE - MILITARY; R&D ADMINISTRATIVE EXPENSES\"}]}"
+      },
+      "notes": "pass – numeric string limit is coerced to an integer successfully."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/psc/",
+        "body": {
+          "search_text": "a",
+          "limit": 5000
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\": [{\"product_or_service_code\": \"10\", \"psc_description\": \"WEAPONS\"}, {\"product_or_service_code\": \"1040\", \"psc_description\": \"CHEMICAL WEAPONS AND EQUIPMENT\"}, {\"product_or_service_code\": \"1045\", \"psc_description\": \"LAUNCHERS, TORPEDO AND DEPTH CHARGE\"}]}"
+      },
+      "notes": "pass – limit 5000 returns the full PSC catalog (3,627 rows, ~370 KB payload)."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/psc/",
+        "body": {
+          "search_text": 1234
+        }
+      },
+      "response": {
+        "status": 500,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<html>...Server Error (500)...</html>"
+      },
+      "notes": "fail – numeric search_text triggers a 500 HTML error instead of validation feedback."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/psc/",
+        "body": {
+          "search_text": true
+        }
+      },
+      "response": {
+        "status": 500,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<html>...Server Error (500)...</html>"
+      },
+      "notes": "fail – boolean search_text triggers the same 500 HTML error path as numeric values."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/psc/",
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\": \"Missing one or more required request parameters: search_text\"}"
+      },
+      "notes": "fail – empty JSON body returns the missing search_text error."
+    }
+  ],
+  "mismatches": [
+    "Docs describe limit as an optional number, but the backend requires a positive integer; decimal strings and other non-integers receive 'Limit request parameter is not a valid, positive integer'.",
+    "Negative or null limit values yield 500 Server Error HTML responses instead of the documented validation handling."
+  ],
+  "gaps": [
+    "Result relevance ordering is undocumented and may change without notice."
+  ],
+  "risks": [
+    "Clients must sanitize search_text and limit types to avoid backend 500 HTML responses instead of JSON errors.",
+    "Large limit values return the full PSC catalog (3,627 rows, ~370 KB) in one response with no pagination guidance.",
+    "Error responses may be HTML (500) or JSON (400); consumers must handle multiple content types."
+  ]
+}

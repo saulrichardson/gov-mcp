@@ -1,0 +1,308 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/funding_agency.md",
+    "description": "Deprecated funding agency autocomplete endpoint returning agency matches for provided search text.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/funding_agency/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "search_text": {
+          "location": "body",
+          "type": "string",
+          "description": "Autocomplete substring used to match funding agencies; comparison is case-insensitive and whitespace-sensitive.",
+          "constraints": "required; null, empty string, 0, false, or empty collection values return 400 \"Missing one or more required request parameters: search_text\"; leading/trailing spaces are not trimmed and can prevent matches; truthy non-string scalars are stringified before matching."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of matches to return; defaults to 10 when omitted.",
+          "constraints": "optional; accepts non-negative integers, numeric strings, floats (floored), and booleans; zero yields an empty results array; non-numeric strings return 400 \"Limit request parameter is not a valid, positive integer\"; null, objects, arrays, or negative values trigger a 500 HTML Server Error; large values return the entire match set (observed 513 rows with limit=100000)."
+        }
+      },
+      "required": [
+        "search_text"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "description": "Ordered list of funding agency matches.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "Identifier for the funding agency (observed as integer)."
+              },
+              "toptier_flag": {
+                "type": "boolean",
+                "description": "Indicates whether the match represents a toptier agency."
+              },
+              "toptier_agency": {
+                "type": "object",
+                "properties": {
+                  "toptier_code": {
+                    "type": "string"
+                  },
+                  "abbreviation": {
+                    "type": ["string", "null"]
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              },
+              "subtier_agency": {
+                "type": "object",
+                "properties": {
+                  "abbreviation": {
+                    "type": ["string", "null"]
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Array of warning strings; all observed successes return a single deprecation notice.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/funding_agency/",
+          "query": {},
+          "body": {
+            "search_text": "Defense",
+            "limit": 1
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              {
+                "id": 1137,
+                "toptier_flag": true,
+                "toptier_agency": {
+                  "toptier_code": "347",
+                  "abbreviation": "DNFSB",
+                  "name": "Defense Nuclear Facilities Safety Board"
+                },
+                "subtier_agency": {
+                  "abbreviation": "DNFSB",
+                  "name": "Defense Nuclear Facilities Safety Board"
+                }
+              }
+            ],
+            "messages": [
+              "This endpoint is DEPRECATED. Please refer to the api contracts."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/funding_agency/",
+          "query": {},
+          "body": {
+            "search_text": "Defense",
+            "limit": "abc"
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Limit request parameter is not a valid, positive integer"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/funding_agency/",
+          "query": {},
+          "body": {
+            "search_text": "Defense",
+            "limit": {}
+          }
+        },
+        "response": {
+          "status": 500,
+          "body": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>\n"
+        }
+      }
+    ],
+    "quirks": [
+      "`search_text` input is not trimmed; leading or trailing spaces can suppress matches.",
+      "Truthy non-string scalars for `search_text` are stringified and searched, while falsy scalars trigger the missing-parameter 400 response.",
+      "`limit` accepts numeric strings, floats (floored), and booleans without error.",
+      "`limit`=0 is allowed and returns an empty `results` array.",
+      "Large `limit` values (e.g., 100000) return the entire match set without pagination metadata.",
+      "Successful responses always include the deprecation warning message."
+    ],
+    "risks": [
+      "Clients must guard against malformed `limit` values; invalid types or negatives provoke HTML 500 responses.",
+      "Whitespace-sensitive `search_text` means callers should trim input to avoid silent empty result sets.",
+      "Large limits can return all 513 matches in a single payload, which may impact latency or client processing.",
+      "Endpoint is formally deprecated and may be removed or changed without notice."
+    ],
+    "gaps": [
+      "Autocomplete ranking and ordering rules are undocumented; observed ordering favors certain agencies but criteria are unknown."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "deprecated",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/funding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense"
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[{\"id\":1137,\"toptier_flag\":true,...}],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}"
+      },
+      "notes": "Default request returned toptier match set with deprecation message."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/funding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}"
+      },
+      "notes": "Zero limit accepted and returned empty results."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/funding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": -5
+        }
+      },
+      "response": {
+        "status": 500,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<html>...Server Error (500)...</html>"
+      },
+      "notes": "Negative limit triggers HTML 500 server error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/funding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": "abc"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Limit request parameter is not a valid, positive integer\"}"
+      },
+      "notes": "Non-numeric limit string rejected with structured client error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/funding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "Defense",
+          "limit": {}
+        }
+      },
+      "response": {
+        "status": 500,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<!doctype html>\\n<html lang=\"en\">...Server Error (500)..."
+      },
+      "notes": "Object limit input results in HTML 500 response."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/funding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "  Defense  "
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}"
+      },
+      "notes": "Whitespace-padded search returned no matches, confirming lack of trimming."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/funding_agency/",
+        "query": {},
+        "body": {
+          "search_text": "a",
+          "limit": 100000
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"results\":[{\"id\":1432,...}],\"messages\":[\"This endpoint is DEPRECATED. Please refer to the api contracts.\"]}"
+      },
+      "notes": "Extremely large limit returned all 513 matches without pagination metadata."
+    }
+  ],
+  "mismatches": [
+    "Docs describe JSON errors, but invalid `limit` values (negative, null, or non-scalar) return 500 HTML error pages.",
+    "Docs specify `limit` as a number, yet the service also accepts numeric strings, floats, and booleans."
+  ],
+  "gaps": [
+    "Autocomplete ranking and ordering rules are undocumented; observed ordering favors certain agencies but criteria are unknown."
+  ],
+  "risks": [
+    "Clients must guard against malformed `limit` values; invalid types or negatives provoke HTML 500 responses.",
+    "Whitespace-sensitive `search_text` means callers should trim input to avoid silent empty result sets.",
+    "Large limits can return all 513 matches in a single payload, which may impact latency or client processing.",
+    "Endpoint is formally deprecated and may be removed or changed without notice."
+  ]
+}

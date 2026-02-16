@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "generatedAt": "2026-02-15",
+  "generatedAt": "2026-02-16",
   "profiles": [
     {
       "slug": "v2__agency__awards__count",
@@ -27,10 +27,118 @@
       "promptPath": "profiles/v2__agency__toptier_code__awards__new__count/prompt.md"
     },
     {
+      "slug": "v2__agency__toptier_code__budget_function",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__budget_function/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__budget_function/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__budget_function__count",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__budget_function__count/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__budget_function__count/prompt.md"
+    },
+    {
       "slug": "v2__agency__toptier_code__budgetary_resources",
       "lastVerified": "2026-02-13",
       "profilePath": "profiles/v2__agency__toptier_code__budgetary_resources/profile.json",
       "promptPath": "profiles/v2__agency__toptier_code__budgetary_resources/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__def_code",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__def_code/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__def_code/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__federal_account",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__federal_account/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__federal_account/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__federal_account__count",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__federal_account__count/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__federal_account__count/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__object_class",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__object_class/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__object_class/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__object_class__count",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__object_class__count/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__object_class__count/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__obligations_by_award_category",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__obligations_by_award_category/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__obligations_by_award_category/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__program_activity",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__program_activity/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__program_activity/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__program_activity__count",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__program_activity__count/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__program_activity__count/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__sub_agency",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__sub_agency/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__sub_agency/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__sub_agency__count",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__sub_agency__count/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__sub_agency__count/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__sub_components",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__sub_components/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__sub_components/prompt.md"
+    },
+    {
+      "slug": "v2__agency__toptier_code__sub_components__bureau_slug",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__toptier_code__sub_components__bureau_slug/profile.json",
+      "promptPath": "profiles/v2__agency__toptier_code__sub_components__bureau_slug/prompt.md"
+    },
+    {
+      "slug": "v2__agency__treasury_account__tas__object_class",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__treasury_account__tas__object_class/profile.json",
+      "promptPath": "profiles/v2__agency__treasury_account__tas__object_class/prompt.md"
+    },
+    {
+      "slug": "v2__agency__treasury_account__tas__program_activity",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__agency__treasury_account__tas__program_activity/profile.json",
+      "promptPath": "profiles/v2__agency__treasury_account__tas__program_activity/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__accounts__a",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__accounts__a/profile.json",
+      "promptPath": "profiles/v2__autocomplete__accounts__a/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__accounts__aid",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__accounts__aid/profile.json",
+      "promptPath": "profiles/v2__autocomplete__accounts__aid/prompt.md"
     },
     {
       "slug": "v2__autocomplete__accounts__ata",
@@ -39,10 +147,70 @@
       "promptPath": "profiles/v2__autocomplete__accounts__ata/prompt.md"
     },
     {
+      "slug": "v2__autocomplete__accounts__bpoa",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__accounts__bpoa/profile.json",
+      "promptPath": "profiles/v2__autocomplete__accounts__bpoa/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__accounts__epoa",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__accounts__epoa/profile.json",
+      "promptPath": "profiles/v2__autocomplete__accounts__epoa/prompt.md"
+    },
+    {
       "slug": "v2__autocomplete__accounts__main",
       "lastVerified": "2026-02-13",
       "profilePath": "profiles/v2__autocomplete__accounts__main/profile.json",
       "promptPath": "profiles/v2__autocomplete__accounts__main/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__accounts__sub",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__accounts__sub/profile.json",
+      "promptPath": "profiles/v2__autocomplete__accounts__sub/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__awarding_agency",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__awarding_agency/profile.json",
+      "promptPath": "profiles/v2__autocomplete__awarding_agency/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__awarding_agency_office",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__awarding_agency_office/profile.json",
+      "promptPath": "profiles/v2__autocomplete__awarding_agency_office/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__cfda",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__cfda/profile.json",
+      "promptPath": "profiles/v2__autocomplete__cfda/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__city",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__city/profile.json",
+      "promptPath": "profiles/v2__autocomplete__city/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__funding_agency",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__funding_agency/profile.json",
+      "promptPath": "profiles/v2__autocomplete__funding_agency/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__funding_agency_office",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__funding_agency_office/profile.json",
+      "promptPath": "profiles/v2__autocomplete__funding_agency_office/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__glossary",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__glossary/profile.json",
+      "promptPath": "profiles/v2__autocomplete__glossary/prompt.md"
     },
     {
       "slug": "v2__autocomplete__location",
@@ -51,16 +219,238 @@
       "promptPath": "profiles/v2__autocomplete__location/prompt.md"
     },
     {
+      "slug": "v2__autocomplete__naics",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__naics/profile.json",
+      "promptPath": "profiles/v2__autocomplete__naics/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__program_activity",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__program_activity/profile.json",
+      "promptPath": "profiles/v2__autocomplete__program_activity/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__psc",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__psc/profile.json",
+      "promptPath": "profiles/v2__autocomplete__psc/prompt.md"
+    },
+    {
+      "slug": "v2__autocomplete__recipient",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__autocomplete__recipient/profile.json",
+      "promptPath": "profiles/v2__autocomplete__recipient/prompt.md"
+    },
+    {
+      "slug": "v2__award_spending__recipient",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__award_spending__recipient/profile.json",
+      "promptPath": "profiles/v2__award_spending__recipient/prompt.md"
+    },
+    {
+      "slug": "v2__awards__accounts",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__awards__accounts/profile.json",
+      "promptPath": "profiles/v2__awards__accounts/prompt.md"
+    },
+    {
+      "slug": "v2__awards__award_id",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__awards__award_id/profile.json",
+      "promptPath": "profiles/v2__awards__award_id/prompt.md"
+    },
+    {
+      "slug": "v2__awards__count__federal_account__award_id",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__awards__count__federal_account__award_id/profile.json",
+      "promptPath": "profiles/v2__awards__count__federal_account__award_id/prompt.md"
+    },
+    {
+      "slug": "v2__awards__count__subaward__award_id",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__awards__count__subaward__award_id/profile.json",
+      "promptPath": "profiles/v2__awards__count__subaward__award_id/prompt.md"
+    },
+    {
+      "slug": "v2__awards__count__transaction__award_id",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__awards__count__transaction__award_id/profile.json",
+      "promptPath": "profiles/v2__awards__count__transaction__award_id/prompt.md"
+    },
+    {
+      "slug": "v2__awards__funding",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__awards__funding/profile.json",
+      "promptPath": "profiles/v2__awards__funding/prompt.md"
+    },
+    {
+      "slug": "v2__awards__funding_rollup",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__awards__funding_rollup/profile.json",
+      "promptPath": "profiles/v2__awards__funding_rollup/prompt.md"
+    },
+    {
       "slug": "v2__awards__last_updated",
       "lastVerified": "2026-02-06",
       "profilePath": "profiles/v2__awards__last_updated/profile.json",
       "promptPath": "profiles/v2__awards__last_updated/prompt.md"
     },
     {
+      "slug": "v2__budget_functions__list_budget_functions",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__budget_functions__list_budget_functions/profile.json",
+      "promptPath": "profiles/v2__budget_functions__list_budget_functions/prompt.md"
+    },
+    {
+      "slug": "v2__budget_functions__list_budget_subfunctions",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__budget_functions__list_budget_subfunctions/profile.json",
+      "promptPath": "profiles/v2__budget_functions__list_budget_subfunctions/prompt.md"
+    },
+    {
+      "slug": "v2__bulk_download__awards",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__bulk_download__awards/profile.json",
+      "promptPath": "profiles/v2__bulk_download__awards/prompt.md"
+    },
+    {
+      "slug": "v2__bulk_download__list_agencies",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__bulk_download__list_agencies/profile.json",
+      "promptPath": "profiles/v2__bulk_download__list_agencies/prompt.md"
+    },
+    {
+      "slug": "v2__bulk_download__list_monthly_files",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__bulk_download__list_monthly_files/profile.json",
+      "promptPath": "profiles/v2__bulk_download__list_monthly_files/prompt.md"
+    },
+    {
+      "slug": "v2__bulk_download__status",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__bulk_download__status/profile.json",
+      "promptPath": "profiles/v2__bulk_download__status/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__agency__count",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__agency__count/profile.json",
+      "promptPath": "profiles/v2__disaster__agency__count/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__agency__loans",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__agency__loans/profile.json",
+      "promptPath": "profiles/v2__disaster__agency__loans/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__agency__spending",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__agency__spending/profile.json",
+      "promptPath": "profiles/v2__disaster__agency__spending/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__award__amount",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__award__amount/profile.json",
+      "promptPath": "profiles/v2__disaster__award__amount/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__award__count",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__award__count/profile.json",
+      "promptPath": "profiles/v2__disaster__award__count/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__cfda__count",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__cfda__count/profile.json",
+      "promptPath": "profiles/v2__disaster__cfda__count/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__cfda__loans",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__cfda__loans/profile.json",
+      "promptPath": "profiles/v2__disaster__cfda__loans/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__def_code__count",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__def_code__count/profile.json",
+      "promptPath": "profiles/v2__disaster__def_code__count/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__federal_account__loans",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__federal_account__loans/profile.json",
+      "promptPath": "profiles/v2__disaster__federal_account__loans/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__federal_account__spending",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__federal_account__spending/profile.json",
+      "promptPath": "profiles/v2__disaster__federal_account__spending/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__object_class__count",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__object_class__count/profile.json",
+      "promptPath": "profiles/v2__disaster__object_class__count/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__object_class__spending",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__object_class__spending/profile.json",
+      "promptPath": "profiles/v2__disaster__object_class__spending/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__overview",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__overview/profile.json",
+      "promptPath": "profiles/v2__disaster__overview/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__recipient__count",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__recipient__count/profile.json",
+      "promptPath": "profiles/v2__disaster__recipient__count/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__recipient__loans",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__recipient__loans/profile.json",
+      "promptPath": "profiles/v2__disaster__recipient__loans/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__recipient__spending",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__recipient__spending/profile.json",
+      "promptPath": "profiles/v2__disaster__recipient__spending/prompt.md"
+    },
+    {
+      "slug": "v2__disaster__spending_by_geography",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__disaster__spending_by_geography/profile.json",
+      "promptPath": "profiles/v2__disaster__spending_by_geography/prompt.md"
+    },
+    {
       "slug": "v2__download__accounts",
       "lastVerified": "2026-02-15",
       "profilePath": "profiles/v2__download__accounts/profile.json",
       "promptPath": "profiles/v2__download__accounts/prompt.md"
+    },
+    {
+      "slug": "v2__download__awards",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__download__awards/profile.json",
+      "promptPath": "profiles/v2__download__awards/prompt.md"
+    },
+    {
+      "slug": "v2__download__contract",
+      "lastVerified": "2026-02-13",
+      "profilePath": "profiles/v2__download__contract/profile.json",
+      "promptPath": "profiles/v2__download__contract/prompt.md"
     },
     {
       "slug": "v2__download__count",
@@ -79,6 +469,18 @@
       "lastVerified": "2026-02-15",
       "profilePath": "profiles/v2__download__transactions/profile.json",
       "promptPath": "profiles/v2__download__transactions/prompt.md"
+    },
+    {
+      "slug": "v2__federal_accounts",
+      "lastVerified": "2026-02-15",
+      "profilePath": "profiles/v2__federal_accounts/profile.json",
+      "promptPath": "profiles/v2__federal_accounts/prompt.md"
+    },
+    {
+      "slug": "v2__federal_accounts__account_number",
+      "lastVerified": "2026-02-15",
+      "profilePath": "profiles/v2__federal_accounts__account_number/profile.json",
+      "promptPath": "profiles/v2__federal_accounts__account_number/prompt.md"
     },
     {
       "slug": "v2__financial_balances__agencies",

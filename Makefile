@@ -10,7 +10,7 @@ STAGE_KILL_GRACE_SECONDS ?= 20
 SKIP_OUTPUT_VALIDATION ?= 0
 FROM_JOB_DIR ?=
 
-.PHONY: discover validate profile pipeline clean-worktrees discover-all validate-all profile-all pipeline-all gather-runs merge-agent-branches mcp-server promote-profile verify codex-preflight pipeline-coverage pipeline-run-foreground pipeline-run-bg pipeline-retry-failed pipeline-audit pipeline-repair-stale pipeline-status pipeline-status-watch
+.PHONY: discover validate profile pipeline clean-worktrees discover-all validate-all profile-all pipeline-all gather-runs merge-agent-branches mcp-server promote-profile verify codex-preflight pipeline-coverage pipeline-promote-finals pipeline-run-foreground pipeline-run-bg pipeline-retry-failed pipeline-audit pipeline-repair-stale pipeline-status pipeline-status-watch
 
 discover:
 	@$(REPO_ROOT)/scripts/codex/bin/run-agent.sh discover $(SLUG) $(BASE)
@@ -104,6 +104,10 @@ codex-preflight:
 # Coverage proof: staged contracts vs completed final artifacts vs promoted profiles.
 pipeline-coverage:
 	@python $(REPO_ROOT)/scripts/full_pipeline.py coverage --version $(PIPELINE_VERSION)
+
+# Promote every staged slug that already has a valid final artifact.
+pipeline-promote-finals:
+	@python $(REPO_ROOT)/scripts/full_pipeline.py promote-finals --version $(PIPELINE_VERSION) --parallel $(PARALLEL)
 
 # Foreground full run with resumable per-slug status outputs under runs/_jobs.
 pipeline-run-foreground:

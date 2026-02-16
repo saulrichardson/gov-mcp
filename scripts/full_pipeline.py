@@ -7,6 +7,7 @@ Subcommands:
   - run: run pipeline in foreground with structured status files
   - start-bg: launch `run` detached and print monitor commands
   - retry-failed: replay only failed (and orphaned/incomplete) slugs from a prior job
+  - promote-finals: bulk promote already-valid final artifacts into profiles/manifest
   - audit: offline validation of a job's outputs (fails loud on incomplete jobs)
   - repair-stale: reconcile a job whose runner is gone but status still says running
   - status: inspect job status (once or watch mode)
@@ -794,6 +795,15 @@ def parse_args() -> argparse.Namespace:
     p_retry.add_argument("--skip-output-validation", action="store_true", help="Skip post-stage offline artifact checks")
     p_retry.add_argument("--dry-run", action="store_true", help="Print planned retry payload without launching a run")
 
+    p_promote = sub.add_parser(
+        "promote-finals",
+        parents=[common],
+        help="Promote already-valid final artifacts into profiles/manifest",
+    )
+    p_promote.add_argument("--dry-run", action="store_true", help="Print promotable candidates without writing")
+    p_promote.add_argument("--skip-manifest-validate", action="store_true", help="Skip validate-profiles post-check")
+    p_promote.add_argument("--json", action="store_true", help="Emit JSON payload")
+
     p_audit = sub.add_parser(
         "audit",
         help="Offline validation of a job's outputs (fails loudly on incomplete/failed jobs)",
@@ -1034,6 +1044,172 @@ def cmd_retry_failed(args: argparse.Namespace, repo_root: Path) -> int:
         )
     )
     return rc
+
+
+def _promote_profile_cli(repo_root: Path, slug: str, validate_after: bool) -> dict[str, Any]:
+    promote_bin = (repo_root / "scripts" / "mcp" / "bin" / "promote-profile").resolve()
+    if not promote_bin.exists():
+        raise RuntimeError(f"missing promote-profile script at {promote_bin}")
+
+    cmd = [str(promote_bin), "--slug", slug]
+    if not validate_after:
+        cmd.append("--no-validate")
+    proc = subprocess.run(
+        cmd,
+        cwd=repo_root,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip()
+        raise RuntimeError(
+            f"promote-profile failed for slug={slug} rc={proc.returncode} detail={detail[:600]}"
+        )
+
+    out = (proc.stdout or "").strip()
+    if not out:
+        return {"slug": slug, "raw": ""}
+    try:
+        parsed = json.loads(out)
+    except Exception:
+        parsed = {"slug": slug, "raw": out}
+    return parsed
+
+
+def _validate_profiles_manifest(repo_root: Path) -> dict[str, Any]:
+    validate_bin = (repo_root / "scripts" / "mcp" / "bin" / "validate-profiles").resolve()
+    if not validate_bin.exists():
+        raise RuntimeError(f"missing validate-profiles script at {validate_bin}")
+    proc = subprocess.run(
+        [str(validate_bin)],
+        cwd=repo_root,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    return {
+        "ok": proc.returncode == 0,
+        "exitCode": proc.returncode,
+        "stdout": (proc.stdout or "").strip(),
+        "stderr": (proc.stderr or "").strip(),
+    }
+
+
+def cmd_promote_finals(args: argparse.Namespace, repo_root: Path) -> int:
+    version = args.version
+    slugs_override = parse_slugs_override(repo_root, version, args.slugs, args.slugs_file)
+    target_slugs = slugs_override or read_staged_slugs(repo_root, version)
+    promoted_slugs = read_promoted_slugs(repo_root)
+
+    already_promoted: list[str] = []
+    missing_finals: list[str] = []
+    invalid_finals: list[dict[str, str]] = []
+    promotable: list[str] = []
+
+    for slug in target_slugs:
+        if slug in promoted_slugs:
+            already_promoted.append(slug)
+            continue
+        if not has_final_artifact(repo_root, version, slug):
+            missing_finals.append(slug)
+            continue
+        ok, detail = validate_stage_outputs(repo_root, version, slug, "profile", stage_started_at=None)
+        if ok:
+            promotable.append(slug)
+        else:
+            invalid_finals.append({"slug": slug, "detail": detail})
+
+    promotable = sorted(promotable)
+    already_promoted = sorted(already_promoted)
+    missing_finals = sorted(missing_finals)
+    invalid_finals = sorted(invalid_finals, key=lambda item: item["slug"])
+
+    if args.dry_run:
+        payload = {
+            "event": "pipeline_promote_finals_dry_run",
+            "version": version,
+            "targetSlugCount": len(target_slugs),
+            "alreadyPromotedCount": len(already_promoted),
+            "missingFinalCount": len(missing_finals),
+            "invalidFinalCount": len(invalid_finals),
+            "promotableCount": len(promotable),
+            "promotableSlugs": promotable,
+            "missingFinalSlugs": missing_finals,
+            "invalidFinalSlugs": invalid_finals,
+            "generatedAt": now_iso(),
+        }
+        if args.json:
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        else:
+            print(json.dumps(payload, indent=2))
+        return 0
+
+    promoted_results: list[dict[str, Any]] = []
+    promote_failures: list[dict[str, str]] = []
+
+    def _promote_one(slug: str) -> dict[str, Any]:
+        try:
+            result = _promote_profile_cli(repo_root, slug, validate_after=False)
+            return {"slug": slug, "ok": True, "result": result}
+        except Exception as err:
+            return {"slug": slug, "ok": False, "error": str(err)}
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, int(args.parallel))) as pool:
+        futures = {pool.submit(_promote_one, slug): slug for slug in promotable}
+        for future in concurrent.futures.as_completed(futures):
+            outcome = future.result()
+            if outcome.get("ok"):
+                promoted_results.append(
+                    {
+                        "slug": str(outcome.get("slug")),
+                        "result": outcome.get("result"),
+                    }
+                )
+            else:
+                promote_failures.append(
+                    {
+                        "slug": str(outcome.get("slug")),
+                        "error": str(outcome.get("error")),
+                    }
+                )
+
+    promoted_results = sorted(promoted_results, key=lambda item: item["slug"])
+    promote_failures = sorted(promote_failures, key=lambda item: item["slug"])
+
+    manifest_validation: dict[str, Any] | None = None
+    if not args.skip_manifest_validate:
+        manifest_validation = _validate_profiles_manifest(repo_root)
+    else:
+        manifest_validation = {"ok": True, "skipped": True}
+
+    payload = {
+        "event": "pipeline_promote_finals_completed",
+        "version": version,
+        "targetSlugCount": len(target_slugs),
+        "alreadyPromotedCount": len(already_promoted),
+        "missingFinalCount": len(missing_finals),
+        "invalidFinalCount": len(invalid_finals),
+        "promotableCount": len(promotable),
+        "promotedCount": len(promoted_results),
+        "promoteFailureCount": len(promote_failures),
+        "promotedSlugs": [item["slug"] for item in promoted_results],
+        "promoteFailures": promote_failures,
+        "missingFinalSlugs": missing_finals,
+        "invalidFinalSlugs": invalid_finals,
+        "manifestValidation": manifest_validation,
+        "generatedAt": now_iso(),
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        print(json.dumps(payload, indent=2))
+
+    if promote_failures:
+        return 2
+    if manifest_validation and not manifest_validation.get("ok"):
+        return 2
+    return 0
 
 
 def cmd_audit(args: argparse.Namespace, repo_root: Path) -> int:
@@ -1362,6 +1538,8 @@ def main() -> int:
         return cmd_start_bg(args, repo_root)
     if args.command == "retry-failed":
         return cmd_retry_failed(args, repo_root)
+    if args.command == "promote-finals":
+        return cmd_promote_finals(args, repo_root)
     if args.command == "audit":
         return cmd_audit(args, repo_root)
     if args.command == "repair-stale":

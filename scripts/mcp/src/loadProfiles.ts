@@ -2,11 +2,25 @@ import fg from "fast-glob";
 import { existsSync, readFileSync } from "fs";
 import { basename, dirname, join } from "path";
 import { fileURLToPath } from "url";
-import { CANONICAL_SCHEMA_VERSION, EndpointSummary, Profile, ProfileReportSchema } from "./types.js";
+import {
+  CANONICAL_SCHEMA_VERSION,
+  EndpointSummary,
+  ParamLocation,
+  PlannerMetadata,
+  PlannerParameter,
+  Profile,
+  ProfileReportSchema,
+} from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const defaultRepoRoot = join(__dirname, "..", "..", "..");
+const MIN_PROFILE_DESCRIPTION_LEN = 20;
+const ALLOWED_PARAM_LOCATIONS = new Set<ParamLocation>(["query", "body", "path"]);
+const PAGINATION_PARAM_RE = /(?:^|[_-])(page|limit|offset|cursor|next|per[_-]?page|page[_-]?size)(?:$|[_-])/i;
+const SORT_PARAM_RE = /(?:^|[_-])(sort|order|ordering|direction)(?:$|[_-])/i;
+const FILTER_PARAM_RE = /(?:^|[_-])(filter|filters|search|query|keyword|q)(?:$|[_-])/i;
+const DATE_RANGE_PARAM_RE = /(?:^|[_-])(date|start|end|from|to|fiscal[_-]?year)(?:$|[_-])/i;
 
 function parseSlugFromPath(file: string): { slug: string; version?: string } {
   const parts = file.split(/[/\\\\]/g).filter(Boolean);
@@ -32,6 +46,131 @@ function parseSlugFromPath(file: string): { slug: string; version?: string } {
 
   const slug = basename(dirname(dirname(file)));
   return { slug };
+}
+
+function normalizeTypeSpec(slug: string, paramName: string, rawType: unknown): string[] {
+  if (typeof rawType === "string" && rawType.trim()) {
+    return [rawType.trim()];
+  }
+
+  if (Array.isArray(rawType)) {
+    const normalized = rawType
+      .map((item) => (typeof item === "string" ? item.trim() : ""))
+      .filter(Boolean);
+    if (normalized.length === rawType.length && normalized.length > 0) {
+      return Array.from(new Set(normalized));
+    }
+  }
+
+  throw new Error(
+    `inputSchema.properties['${paramName}'].type for slug '${slug}' must be a non-empty string or string[]`
+  );
+}
+
+function assertProfileDescription(slug: string, description: unknown): string {
+  const text = typeof description === "string" ? description.trim() : "";
+  if (!text) {
+    throw new Error(`description is required for slug '${slug}'`);
+  }
+  if (text.length < MIN_PROFILE_DESCRIPTION_LEN) {
+    throw new Error(
+      `description for slug '${slug}' must be at least ${MIN_PROFILE_DESCRIPTION_LEN} characters`
+    );
+  }
+  return text;
+}
+
+function buildPlannerMetadata(slug: string, description: unknown, inputSchema: any): PlannerMetadata {
+  assertProfileDescription(slug, description);
+
+  const properties = inputSchema?.properties;
+  if (!properties || typeof properties !== "object" || Array.isArray(properties)) {
+    throw new Error(`inputSchema.properties must be an object for slug '${slug}'`);
+  }
+
+  const requiredRaw = inputSchema?.required;
+  const requiredList = Array.isArray(requiredRaw) ? requiredRaw : [];
+  if (requiredRaw !== undefined && !Array.isArray(requiredRaw)) {
+    throw new Error(`inputSchema.required must be an array for slug '${slug}'`);
+  }
+
+  const requiredSet = new Set<string>();
+  for (const name of requiredList) {
+    if (typeof name !== "string" || !name.trim()) {
+      throw new Error(`inputSchema.required must contain non-empty strings for slug '${slug}'`);
+    }
+    if (!(name in properties)) {
+      throw new Error(`inputSchema.required references unknown property '${name}' for slug '${slug}'`);
+    }
+    requiredSet.add(name);
+  }
+
+  const parameters: PlannerParameter[] = [];
+  const queryParams: string[] = [];
+  const bodyParams: string[] = [];
+  const pathParams: string[] = [];
+
+  for (const [name, def] of Object.entries(properties)) {
+    if (!def || typeof def !== "object" || Array.isArray(def)) {
+      throw new Error(`inputSchema.properties['${name}'] must be an object for slug '${slug}'`);
+    }
+
+    const typedDef = def as Record<string, unknown>;
+    const locationRaw = typedDef.location ?? "query";
+    if (typeof locationRaw !== "string" || !ALLOWED_PARAM_LOCATIONS.has(locationRaw as ParamLocation)) {
+      throw new Error(
+        `inputSchema.properties['${name}'].location for slug '${slug}' must be one of ${Array.from(
+          ALLOWED_PARAM_LOCATIONS
+        ).join(", ")}`
+      );
+    }
+    const location = locationRaw as ParamLocation;
+    const paramDescription = typeof typedDef.description === "string" ? typedDef.description.trim() : "";
+    if (!paramDescription) {
+      throw new Error(`inputSchema.properties['${name}'].description is required for slug '${slug}'`);
+    }
+
+    const types = normalizeTypeSpec(slug, name, typedDef.type);
+    const required = requiredSet.has(name);
+    const param: PlannerParameter = {
+      name,
+      location,
+      required,
+      description: paramDescription,
+      types,
+    };
+    parameters.push(param);
+
+    if (location === "query") queryParams.push(name);
+    else if (location === "body") bodyParams.push(name);
+    else pathParams.push(name);
+  }
+
+  parameters.sort((a, b) => a.name.localeCompare(b.name));
+  queryParams.sort((a, b) => a.localeCompare(b));
+  bodyParams.sort((a, b) => a.localeCompare(b));
+  pathParams.sort((a, b) => a.localeCompare(b));
+
+  const requiredParams = parameters.filter((p) => p.required).map((p) => p.name);
+  const optionalParams = parameters.filter((p) => !p.required).map((p) => p.name);
+  const supportsPagination = parameters.some((p) => PAGINATION_PARAM_RE.test(p.name));
+  const supportsSorting = parameters.some((p) => SORT_PARAM_RE.test(p.name));
+  const supportsFiltering = parameters.some((p) => FILTER_PARAM_RE.test(p.name));
+  const supportsDateRange = parameters.some((p) => DATE_RANGE_PARAM_RE.test(p.name));
+
+  return {
+    parameterCount: parameters.length,
+    requiredParams,
+    optionalParams,
+    queryParams,
+    bodyParams,
+    pathParams,
+    supportsPagination,
+    supportsSorting,
+    supportsFiltering,
+    supportsDateRange,
+    parameters,
+  };
 }
 
 type LoadProfilesOptions = {
@@ -112,6 +251,7 @@ export function loadProfiles(options: LoadProfilesOptions = {}): {
       if (!c.lifecycle || !c.lastVerified || c.confidence !== "confirmed") {
         throw new Error("lifecycle, lastVerified, and confidence=confirmed are required");
       }
+      const planner = buildPlannerMetadata(slug, c.description, c.inputSchema);
 
       const promptCandidate = file.replace(/profile\.json$/, "prompt.md");
       if (requirePrompts && !existsSync(promptCandidate)) {
@@ -131,6 +271,7 @@ export function loadProfiles(options: LoadProfilesOptions = {}): {
         risks: c.risks,
         gaps: c.gaps,
         mismatches: pr.mismatches,
+        planner,
         lifecycle: c.lifecycle,
         lastVerified: c.lastVerified,
         confidence: c.confidence,
@@ -160,6 +301,7 @@ export function loadProfiles(options: LoadProfilesOptions = {}): {
     path: p.endpoint.path,
     method: p.endpoint.method,
     tags: p.tags,
+    planner: p.planner,
   }));
 
   return {

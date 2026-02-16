@@ -1,0 +1,256 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/accounts/bpoa.md",
+    "description": "Autocomplete suggestions for Beginning Period of Availability (BPOA) values for treasury account components used by Advanced Search.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/accounts/bpoa/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Optional treasury account component filters. Recognized keys: ata, aid, bpoa, epoa, a, main, sub. Strings match stored component values (bpoa uses prefix matching), null targets accounts missing that component.",
+          "constraints": "Optional. When supplied as an object, applies the provided component filters. If omitted or supplied as another JSON type (null, string, array, etc.), the API still succeeds but treats the request as unfiltered. Empty strings such as \"\" for bpoa are rejected with a 422 error."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Maximum number of suggestions returned.",
+          "constraints": "Optional. Defaults to 10. Accepts integers between 0 and 500 inclusive; numeric strings are coerced. Decimal numbers and booleans are rejected with 400. Values above 500 return 422. Negative integers, including numeric strings such as '-5', produce a 500 server error."
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": ["string", "null"]
+          },
+          "description": "Ascending list of matching Beginning Period of Availability values. Elements are four-digit year strings when present or null when the account lacks a BPOA. Null, when present, appears last. Count respects the limit parameter."
+        }
+      },
+      "required": ["results"]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/bpoa/",
+          "query": {},
+          "body": {
+            "filters": {
+              "bpoa": "201"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              "2010",
+              "2011",
+              "2012",
+              "2013",
+              "2014",
+              "2015",
+              "2016",
+              "2017",
+              "2018",
+              "2019"
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/bpoa/",
+          "query": {},
+          "body": {
+            "filters": {
+              "aid": "012",
+              "bpoa": "2014"
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              "2014"
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/accounts/bpoa/",
+          "query": {},
+          "body": {
+            "filters": {
+              "epoa": null
+            },
+            "limit": 20
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "results": [
+              null
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Filters provided as null, strings, or arrays are accepted and simply treated as no filtering.",
+      "Limit defaults to 10, accepts digit strings, rejects decimals and booleans with 400, returns 422 above 500, and negative values trigger a 500 server error.",
+      "Unfiltered responses are sorted ascending and append a null entry when accounts lack BPOA values.",
+      "Providing an empty string for bpoa yields a 422 validation error ('below min 1 items')."
+    ],
+    "risks": [
+      "Negative limit values (including numeric strings like '-5') cause a 500 response that clients must avoid.",
+      "Silent acceptance of malformed or misspelled filter payloads can mask mistakes and return broader results than expected.",
+      "Responses can include null entries that callers must handle alongside string values."
+    ],
+    "gaps": [
+      "Sorting order is only observed as ascending with null last; no guarantee is published.",
+      "Accepted formats and length constraints for non-bpoa component filters remain undefined beyond observed string/null behavior."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/bpoa/",
+        "query": {},
+        "body": {
+          "filters": {
+            "bpoa": "201"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"2010\",\"2011\",\"2012\",\"2013\",\"2014\",\"2015\",\"2016\",\"2017\",\"2018\",\"2019\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Default prefix filter returns 10 results, confirming the implicit limit of 10."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/bpoa/",
+        "query": {},
+        "body": {
+          "filters": {},
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Limit 0 is accepted and returns an empty list."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/bpoa/",
+        "query": {},
+        "body": {
+          "filters": {},
+          "limit": -5
+        }
+      },
+      "response": {
+        "status": 500,
+        "bodyExcerpt": "<!doctype html>...",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Negative limit triggers a server error instead of validation."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/bpoa/",
+        "query": {},
+        "body": {
+          "filters": {},
+          "limit": true
+        }
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'limit'. 'True' is not a valid type (integer)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Boolean limit values are rejected with a 400 validation error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/bpoa/",
+        "query": {},
+        "body": {
+          "filters": null
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"1993\",\"1995\",\"1996\",\"1997\",\"1998\",\"1999\",\"2000\",\"2001\",\"2002\",\"2003\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Null filters payload is accepted and treated as unfiltered."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/accounts/bpoa/",
+        "query": {},
+        "body": {
+          "filters": {
+            "aid": "012",
+            "bpoa": "2014"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"results\":[\"2014\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Combining aid and bpoa narrows the suggestions to a single value."
+    }
+  ],
+  "mismatches": [
+    "Docs require the filters component, but the live API accepts requests without it and still returns suggestions.",
+    "Docs describe limit as a generic number without capturing the enforced integer type and 0-500 bounds.",
+    "Docs imply filters must be an object, yet the API accepts strings, arrays, or null without error."
+  ],
+  "gaps": [
+    "Sorting order is only observed as ascending with null last; no guarantee is published.",
+    "Accepted formats and length constraints for non-bpoa component filters remain undefined beyond observed string/null behavior."
+  ],
+  "risks": [
+    "Negative limit values (including numeric strings like '-5') cause a 500 response that clients must avoid.",
+    "Silent acceptance of malformed or misspelled filter payloads can mask mistakes and return broader results than expected.",
+    "Responses can include null entries that callers must handle alongside string values."
+  ]
+}

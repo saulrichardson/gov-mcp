@@ -1,0 +1,311 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/autocomplete/recipient.md",
+    "description": "Recipient autocomplete search returning recipient name, UEI, and DUNS matches for advanced search filtering.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/autocomplete/recipient/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "search_text": {
+          "location": "body",
+          "type": "string",
+          "description": "Search term matched against recipient name, UEI, or DUNS.",
+          "constraints": "Required. Minimum length 1 (422 if empty). Rejects null or non-string values with 400. Whitespace-only strings are accepted but return zero results. Very long inputs (≈260+ characters) triggered 503 Service Unavailable."
+        },
+        "limit": {
+          "location": "body",
+          "type": "integer",
+          "description": "Requested per-match-type bucket size; the service returns up to this many recipient-name matches, plus up to the same number of UEI and DUNS matches.",
+          "constraints": "Optional. Default 10. Accepts positive integers 1–500. Numeric strings are coerced. Values above 500 return 422. Non-integer types return 400 (including booleans). Zero or negative integers currently trigger 503 Service Unavailable. Broad queries can return up to roughly three times the requested rows because each match type gets its own bucket."
+        },
+        "recipient_levels": {
+          "location": "body",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Filter results to specific recipient hierarchy levels (e.g., P, R, C).",
+          "constraints": "Optional. Must be a non-empty array of uppercase strings. Empty array returns 422. Null entries or non-string types produce 400. Values are case-sensitive; unrecognized codes simply yield no matches, and mixes of valid/invalid codes return the valid subset."
+        }
+      },
+      "required": [
+        "search_text"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "Number of items actually returned; always matches the length of results."
+        },
+        "results": {
+          "type": "array",
+          "description": "Array of recipient matches. Each object provides recipient_name (string), recipient_level (currently null due to deprecation), uei (string or null), and duns (string or null that may contain non-digit characters)."
+        },
+        "messages": {
+          "type": "array",
+          "description": "List of informational strings; observed constant deprecation notice about the recipient_level response field."
+        }
+      },
+      "required": [
+        "count",
+        "results",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/recipient/",
+          "query": {},
+          "body": {
+            "search_text": "lockheed"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 10,
+            "results": [
+              {
+                "recipient_name": "LOCKHEED MARTIN CORPORATION",
+                "recipient_level": null,
+                "uei": null,
+                "duns": null
+              },
+              {
+                "recipient_name": "LOCKHEED MARTIN INTEGRATED SYSTEMS, LLC",
+                "recipient_level": null,
+                "uei": null,
+                "duns": null
+              }
+            ],
+            "messages": [
+              "The response value of 'recipient_level' is deprecated to avoid to confusion when returning only a single Recipient in the response. The request value of 'recipient_levels' will continue to limit the response."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/recipient/",
+          "query": {},
+          "body": {
+            "search_text": "a",
+            "limit": 1
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "count": 3,
+            "results": [
+              {
+                "recipient_name": "HANGER PROSTHETICS & ORTHOTICS, INC.",
+                "recipient_level": null,
+                "uei": null,
+                "duns": null
+              },
+              {
+                "recipient_name": "PRECAST SYSTEMS ENGINEERING, LLC",
+                "recipient_level": null,
+                "uei": "C18ZAK5QLLP6",
+                "duns": null
+              },
+              {
+                "recipient_name": "OCFO-NATL FINANCE CTR A/S",
+                "recipient_level": null,
+                "uei": null,
+                "duns": "&90379A9N"
+              }
+            ],
+            "messages": [
+              "The response value of 'recipient_level' is deprecated to avoid to confusion when returning only a single Recipient in the response. The request value of 'recipient_levels' will continue to limit the response."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/autocomplete/recipient/",
+          "query": {},
+          "body": {
+            "search_text": "lockheed",
+            "limit": 600
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Field 'limit' value '600' is above max '500'"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Responses always include a deprecation message and the recipient_level field currently returns null despite being documented as required.",
+      "Successful payloads include a top-level count field that mirrors the number of returned results but is undocumented.",
+      "The limit applies separately to recipient name, UEI, and DUNS match buckets, so total results can reach roughly three times the requested value.",
+      "Zero or negative limit values trigger 503 Service Unavailable instead of a validation error.",
+      "DUNS values are not normalized and may include letters or punctuation characters.",
+      "Numeric strings for limit are coerced instead of rejected."
+    ],
+    "risks": [
+      "Broad searches can return far more data than expected because each call returns up to limit rows per match bucket, inflating payload size (limit=500 produced 1024 rows).",
+      "Input validation inconsistencies (503 vs 4xx) make error handling brittle for limit edge cases and oversized search_text values.",
+      "recipient_level output currently null despite filter usage, so consumers relying on that field may break if behavior changes again.",
+      "DUNS strings may contain non-digit characters, which can break consumers expecting digits only."
+    ],
+    "gaps": [
+      "Authoritative list of valid recipient_levels codes is unknown beyond observed samples.",
+      "Cause of 503 responses for limit <= 0 or very long search_text inputs remains unclear."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/recipient/",
+        "query": {},
+        "body": {
+          "search_text": "lockheed"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":10,\"results\":[{\"recipient_name\":\"LOCKHEED MARTIN CORPORATION\",\"recipient_level\":null,\"uei\":null,\"duns\":null},...],\"messages\":[\"The response value of 'recipient_level' is deprecated...\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Baseline request returned 10 results with undocumented count field and null recipient_level."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/recipient/",
+        "query": {},
+        "body": {
+          "search_text": "a",
+          "limit": 1
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":3,\"results\":[{\"recipient_name\":\"HANGER PROSTHETICS & ORTHOTICS, INC.\"...},{\"uei\":\"C18ZAK5QLLP6\"...},{\"duns\":\"&90379A9N\"...}],\"messages\":[\"The response value of 'recipient_level' is deprecated...\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Confirmed per-match-type limiting: limit=1 produced one name, one UEI, and one DUNS match."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/recipient/",
+        "query": {},
+        "body": {
+          "search_text": "a",
+          "limit": 500
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":1024,\"results\":[{\"recipient_name\":\"HANGER PROSTHETICS & ORTHOTICS, INC.\"...}],\"messages\":[\"The response value of 'recipient_level' is deprecated...\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "limit=500 produced 1024 results, demonstrating the per-bucket expansion."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/recipient/",
+        "query": {},
+        "body": {
+          "search_text": "lockheed",
+          "limit": 0
+        }
+      },
+      "response": {
+        "status": 503,
+        "bodyExcerpt": "",
+        "contentType": ""
+      },
+      "notes": "Zero limit triggered 503 Service Unavailable instead of a validation error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/recipient/",
+        "query": {},
+        "body": {
+          "search_text": "lockheed",
+          "limit": 600
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '600' is above max '500'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Validated documented maximum of 500."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/recipient/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Missing value: 'search_text' is a required field\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Missing search_text rejected with 422."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/autocomplete/recipient/",
+        "query": {},
+        "body": {
+          "search_text": "lockheed",
+          "limit": "5"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"count\":5,\"results\":[{\"recipient_name\":\"LOCKHEED MARTIN CORPORATION\"...}],\"messages\":[\"The response value of 'recipient_level' is deprecated...\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Numeric string for limit was coerced instead of rejected."
+    }
+  ],
+  "mismatches": [
+    "Docs omit the 'count' field, but every success response returned it alongside results.",
+    "Docs specify 'recipient_level' as required string in results, yet live responses always return null with a deprecation warning.",
+    "Docs describe 'limit' as the number of results to return, but the API enforces the limit per match type (name/UEI/DUNS) and can return up to three times the requested rows.",
+    "Docs describe 'limit' as a number to be validated; the API coerces numeric strings like '5' instead of rejecting them."
+  ],
+  "gaps": [
+    "Authoritative list of valid recipient_levels codes is unknown beyond observed samples.",
+    "Cause of 503 responses for limit <= 0 or very long search_text inputs remains unclear."
+  ],
+  "risks": [
+    "Broad searches can return far more data than expected because each call returns up to limit rows per match bucket, inflating payload size (limit=500 produced 1024 rows).",
+    "Input validation inconsistencies (503 vs 4xx) make error handling brittle for limit edge cases and oversized search_text values.",
+    "recipient_level output currently null despite filter usage, so consumers relying on that field may break if behavior changes again.",
+    "DUNS strings may contain non-digit characters, which can break consumers expecting digits only."
+  ]
+}

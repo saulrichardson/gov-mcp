@@ -1,0 +1,321 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/awards/funding_rollup.md",
+    "description": "Returns summed transaction obligations and counts of distinct awarding agencies, funding agencies, and federal accounts for a specific award.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/awards/funding_rollup/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "award_id": {
+          "location": "body",
+          "type": "string|integer",
+          "description": "Identifier for the award to roll up.",
+          "constraints": "required; accepts strings or integers; leading and trailing whitespace is trimmed; whitespace-only strings resolve to zero totals; rejects floats, booleans, null, arrays, and objects with HTTP 422; extraneous body keys are ignored; unknown ids return zero totals"
+        }
+      },
+      "required": [
+        "award_id"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "total_transaction_obligated_amount": {
+          "type": "number",
+          "description": "Sum of transaction obligated amounts for the award; may be negative."
+        },
+        "awarding_agency_count": {
+          "type": "integer",
+          "description": "Count of distinct awarding agencies linked to the award."
+        },
+        "funding_agency_count": {
+          "type": "integer",
+          "description": "Count of distinct funding agencies linked to the award."
+        },
+        "federal_account_count": {
+          "type": "integer",
+          "description": "Count of distinct federal accounts funding the award."
+        }
+      },
+      "required": [
+        "total_transaction_obligated_amount",
+        "awarding_agency_count",
+        "funding_agency_count",
+        "federal_account_count"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/awards/funding_rollup/",
+          "query": {},
+          "body": {
+            "award_id": "CONT_AWD_DEAC5206NA25396_8900_-NONE-_-NONE-"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "total_transaction_obligated_amount": 2729344672.23,
+            "awarding_agency_count": 1,
+            "funding_agency_count": 1,
+            "federal_account_count": 17
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/awards/funding_rollup/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Missing value: 'award_id' is a required field"
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/awards/funding_rollup/",
+          "query": {},
+          "body": {
+            "award_id": "INVALID_AWARD"
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "total_transaction_obligated_amount": 0.0,
+            "awarding_agency_count": 0,
+            "funding_agency_count": 0,
+            "federal_account_count": 0
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/awards/funding_rollup/",
+          "query": {},
+          "body": {
+            "award_id": 123.45
+          }
+        },
+        "response": {
+          "status": 422,
+          "body": {
+            "detail": "Invalid value in 'award_id'. '123.45' is not a valid type (integer, text)"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Additional body keys such as page, sort, order, and limit are ignored; the response always contains a single aggregate record.",
+      "award_id strings are trimmed of leading and trailing whitespace; whitespace-only strings resolve to zero totals while an empty string literal is rejected with HTTP 422.",
+      "Integer award_id values are accepted, but floats, booleans, null, arrays, and objects trigger HTTP 422 validation errors.",
+      "Unknown award identifiers return HTTP 200 with zero totals instead of signaling an error.",
+      "Requests must send application/json; other content types (e.g., text/plain) return HTTP 415.",
+      "total_transaction_obligated_amount can be negative for some awards."
+    ],
+    "risks": [
+      "Passing an incorrect award_id silently returns zeros, so clients must validate identifiers upstream.",
+      "Negative obligation totals can occur and may need handling in downstream analytics.",
+      "Clients must send application/json; other content types fail with HTTP 415."
+    ],
+    "gaps": [
+      "Did not confirm which award identifier formats (e.g., PIID vs FAIN vs URI) are accepted beyond tested samples.",
+      "Maximum tolerated payload size and rate limits were not exercised."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding_rollup/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_DEAC5206NA25396_8900_-NONE-_-NONE-"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"total_transaction_obligated_amount\":2729344672.23,\"awarding_agency_count\":1,\"funding_agency_count\":1,\"federal_account_count\":17}",
+        "contentType": "application/json"
+      },
+      "notes": "Valid award id returns aggregated totals."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding_rollup/",
+        "query": {},
+        "body": {
+          "award_id": "CONT_AWD_DEAC5206NA25396_8900_-NONE-_-NONE-",
+          "page": 1,
+          "limit": 5,
+          "sort": "reporting_fiscal_date",
+          "order": "asc"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"total_transaction_obligated_amount\":2729344672.23,\"awarding_agency_count\":1,\"funding_agency_count\":1,\"federal_account_count\":17}",
+        "contentType": "application/json"
+      },
+      "notes": "Extraneous pagination fields are ignored."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding_rollup/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Missing value: 'award_id' is a required field\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Omitting award_id yields a required field error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding_rollup/",
+        "query": {},
+        "body": {
+          "award_id": "INVALID_AWARD"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"total_transaction_obligated_amount\":0.0,\"awarding_agency_count\":0,\"funding_agency_count\":0,\"federal_account_count\":0}",
+        "contentType": "application/json"
+      },
+      "notes": "Unknown award id returns zero totals."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding_rollup/",
+        "query": {},
+        "body": {
+          "award_id": null
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'award_id'. 'None' is not a valid type (integer, text)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Null award_id is rejected."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding_rollup/",
+        "query": {},
+        "body": {
+          "award_id": ""
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'award_id'. '' is not a valid type (integer, text)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Empty string is invalid."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding_rollup/",
+        "query": {},
+        "body": {
+          "award_id": 123
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"total_transaction_obligated_amount\":0.0,\"awarding_agency_count\":0,\"funding_agency_count\":0,\"federal_account_count\":0}",
+        "contentType": "application/json"
+      },
+      "notes": "Integer award_id accepted but resolves to zero totals."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding_rollup/",
+        "query": {},
+        "body": {
+          "award_id": "\nCONT_AWD_DEAC5206NA25396_8900_-NONE-_-NONE-"
+        }
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"total_transaction_obligated_amount\":2729344672.23,\"awarding_agency_count\":1,\"funding_agency_count\":1,\"federal_account_count\":17}",
+        "contentType": "application/json"
+      },
+      "notes": "Leading newline is trimmed before lookup."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding_rollup/",
+        "query": {},
+        "body": {
+          "award_id": true
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'award_id'. 'True' is not a valid type (integer, text)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Boolean payload is rejected."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/awards/funding_rollup/",
+        "query": {},
+        "body": {
+          "award_id": 123.45
+        }
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Invalid value in 'award_id'. '123.45' is not a valid type (integer, text)\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Float payload is rejected."
+    }
+  ],
+  "mismatches": [
+    "Docs show page, sort, order, and limit in the request body, but the live endpoint ignores these fields and always returns a single aggregate object."
+  ],
+  "gaps": [
+    "Did not confirm which award identifier formats (e.g., PIID vs FAIN vs URI) are accepted beyond tested samples.",
+    "Maximum tolerated payload size and rate limits were not exercised."
+  ],
+  "risks": [
+    "Passing an incorrect award_id silently returns zeros, so clients must validate identifiers upstream.",
+    "Negative obligation totals can occur and may need handling in downstream analytics.",
+    "Clients must send application/json; other content types fail with HTTP 415."
+  ]
+}

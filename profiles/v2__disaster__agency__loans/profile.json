@@ -1,0 +1,396 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/disaster/agency/loans.md",
+    "description": "Aggregates disaster and emergency loan spending by toptier agency and, when loan award types are provided, exposes subtier children with the same metrics.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/disaster/agency/loans/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "required": [
+        "filter"
+      ],
+      "properties": {
+        "filter": {
+          "location": "body",
+          "type": "object",
+          "description": "Defines the disaster scope and optional refinements for loan-only aggregations.",
+          "required": [
+            "def_codes"
+          ],
+          "properties": {
+            "def_codes": {
+              "type": "array",
+              "description": "Non-empty array of Disaster Emergency Fund (DEFC) codes to include.",
+              "constraints": "Values must be chosen from the allowed DEFC list returned by the API; invalid entries yield HTTP 400 with the accepted codes. Empty arrays return HTTP 422."
+            },
+            "award_type_codes": {
+              "type": "array",
+              "description": "Optional list of loan award type codes.",
+              "constraints": "Only '07' and/or '08' are accepted; any other value returns HTTP 400. When present, responses may include subtier agency children and an 'id' sort warning in messages."
+            },
+            "query": {
+              "type": "string",
+              "description": "Optional keyword filter applied to agency descriptions when used with loan award types.",
+              "constraints": "Must be a non-empty string. Using query without loan award_type_codes causes an HTML 500 response; empty strings return HTTP 422."
+            }
+          }
+        },
+        "pagination": {
+          "location": "body",
+          "type": "object",
+          "description": "Optional pagination and sorting controls; defaults are page 1, limit 10, sort 'id', order 'desc'.",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "Page size in records.",
+              "constraints": "Accepted range is 1-100 inclusive. Values below 1 or above 100 return HTTP 422."
+            },
+            "page": {
+              "type": "integer",
+              "description": "1-based page index.",
+              "constraints": "Must be >= 1. Zero returns HTTP 422. Pages beyond the available results return HTTP 200 with an empty results array and hasPrevious=true."
+            },
+            "order": {
+              "type": "string",
+              "description": "Sort direction.",
+              "constraints": "Allowed values: 'asc', 'desc'. Any other value returns HTTP 400 with a detail message."
+            },
+            "sort": {
+              "type": "string",
+              "description": "Field used for ordering results.",
+              "constraints": "Allowed values: id, code, description, award_count, obligation, outlay, face_value_of_loan. Requests using 'id' are accepted but the API sorts by description and emits a warning message. Invalid values return HTTP 400 listing the accepted options."
+            }
+          }
+        },
+        "spending_type": {
+          "location": "body",
+          "type": "string",
+          "description": "Optional metric selector such as 'total', 'obligation', or 'face_value_of_loan'.",
+          "constraints": "The parameter is accepted but had no observable effect on totals or ordering in any probe."
+        }
+      }
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "totals": {
+          "type": "object",
+          "description": "Aggregate metrics across all matched agencies.",
+          "properties": {
+            "award_count": {
+              "type": "number",
+              "description": "Total number of loan awards; observed as integer values (may be 0)."
+            },
+            "obligation": {
+              "type": "number",
+              "description": "Sum of loan obligations across the filtered agencies."
+            },
+            "outlay": {
+              "type": "number",
+              "description": "Sum of loan outlays across the filtered agencies."
+            },
+            "face_value_of_loan": {
+              "type": "number",
+              "description": "Total face value of the filtered loan awards."
+            }
+          }
+        },
+        "results": {
+          "type": "array",
+          "description": "List of agency aggregates. Each entry includes numeric id, agency code string, description, award_count, obligation, outlay, face_value_of_loan, and a children array for subtier agencies (usually empty unless loan award types are supplied)."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata mirroring the request and result set size (page, total agency count, limit, optional next/previous numbers, hasNext, hasPrevious flags)."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Optional warning strings. Observed when sort='id' is requested, indicating the fallback to description ordering."
+        }
+      },
+      "required": [
+        "totals",
+        "results",
+        "page_metadata"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/agency/loans/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "totals": {
+              "obligation": 99043.63,
+              "outlay": 99043.63,
+              "award_count": 1,
+              "face_value_of_loan": 24486834.0
+            },
+            "results": [
+              {
+                "id": 1522,
+                "code": "077",
+                "description": "U.S. International Development Finance Corporation",
+                "children": [],
+                "award_count": 1,
+                "obligation": 99043.63,
+                "outlay": 99043.63,
+                "face_value_of_loan": 24486834.0
+              }
+            ],
+            "page_metadata": {
+              "page": 1,
+              "total": 1,
+              "limit": 10,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            }
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/agency/loans/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L",
+                "M",
+                "N",
+                "O",
+                "P",
+                "U"
+              ],
+              "award_type_codes": [
+                "07"
+              ],
+              "query": "Small"
+            },
+            "pagination": {
+              "limit": 1
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "totals": {
+              "obligation": 0.0,
+              "outlay": 0.0,
+              "face_value_of_loan": 0.0,
+              "award_count": 0
+            },
+            "results": [],
+            "page_metadata": {
+              "page": 1,
+              "total": 0,
+              "limit": 1,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "messages": [
+              "Notice! API Request to sort on 'id' field isn't fully implemented. Results were actually sorted using 'description' field."
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Requests that include sort:'id' return results ordered by description and add an explanatory string to the messages array.",
+      "Keyword searches must include loan award_type_codes; omitting them triggers a 500 HTML error.",
+      "The spending_type parameter is currently inert despite being accepted.",
+      "page_metadata.total reports the number of matched agencies, not the number of pages.",
+      "Responses set Set-Cookie headers even though the API is unauthenticated."
+    ],
+    "risks": [
+      "Using query without loan award_type_codes returns an HTML 500 error, which will break JSON parsers unless handled explicitly.",
+      "Sorting by 'id' silently falls back to description ordering; clients expecting numeric id ordering may misinterpret result sequences.",
+      "The service occasionally resets the connection (including the initial IPv6 attempt); callers should implement retries and prefer IPv4 where possible.",
+      "Responses include Set-Cookie headers that integrators should ignore to avoid unintended sticky sessions."
+    ],
+    "gaps": [
+      "The effect of spending_type values remains unknown; no probe observed a change in the aggregation."
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/agency/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"totals\":{\"obligation\":99043.63,\"outlay\":99043.63,\"award_count\":1,\"face_value_of_loan\":24486834.0},\"results\":[{\"id\":1522,\"code\":\"077\",\"description\":\"U.S. International Development Finance Corporation\"}],\"page_metadata\":{...}}"
+      },
+      "notes": "Minimal request with required def_codes returned aggregated totals for a single agency."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/agency/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L",
+              "M",
+              "N",
+              "O",
+              "P",
+              "U"
+            ],
+            "award_type_codes": [
+              "07"
+            ],
+            "query": "Small"
+          },
+          "pagination": {
+            "limit": 1
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"totals\":{\"obligation\":0.0,...},\"results\":[],\"messages\":[\"Notice! API Request to sort on 'id' field isn't fully implemented...\"]}"
+      },
+      "notes": "Keyword searches work when paired with loan award types and emit the sort warning."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/agency/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "query": "Small"
+          }
+        }
+      },
+      "response": {
+        "status": 500,
+        "contentType": "text/html; charset=utf-8",
+        "bodyExcerpt": "<!doctype html><html lang=\"en\"><head><title>Server Error (500)</title>..."
+      },
+      "notes": "Using query without loan award_type_codes results in an HTML 500 error page."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/agency/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ],
+            "award_type_codes": [
+              "09"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|award_type_codes' is outside valid values ['07', '08']\"}"
+      },
+      "notes": "Invalid loan award type codes are rejected with HTTP 400 and the accepted values."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/agency/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "L"
+            ]
+          },
+          "pagination": {
+            "limit": 0
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}"
+      },
+      "notes": "pagination.limit enforces a minimum value of 1."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/disaster/agency/loans/",
+        "query": {},
+        "body": {
+          "filter": {
+            "def_codes": [
+              "ZZ"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'filter|def_codes' is outside valid values ['1', '2', ... 'Z']\"}"
+      },
+      "notes": "Invalid DEFC codes return HTTP 400 with the allowed value list."
+    }
+  ],
+  "mismatches": [
+    "Docs describe Result.id as a string, but live responses use numeric ids.",
+    "Docs treat query as a generic optional string, yet the API returns a 500 HTML error unless loan award_type_codes are supplied.",
+    "Docs advertise sort 'id' as implemented, but the API falls back to description ordering and emits a warning."
+  ],
+  "gaps": [
+    "The effect of spending_type values remains unknown; no probe observed a change in the aggregation."
+  ],
+  "risks": [
+    "Using query without loan award_type_codes returns an HTML 500 error, which will break JSON parsers unless handled explicitly.",
+    "Sorting by 'id' silently falls back to description ordering; clients expecting numeric id ordering may misinterpret result sequences.",
+    "The service occasionally resets the connection (including the initial IPv6 attempt); callers should implement retries and prefer IPv4 where possible.",
+    "Responses include Set-Cookie headers that integrators should ignore to avoid unintended sticky sessions."
+  ]
+}

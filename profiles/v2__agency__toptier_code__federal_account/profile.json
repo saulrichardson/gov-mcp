@@ -1,0 +1,491 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/agency/toptier_code/federal_account.md",
+    "description": "Returns federal accounts for a toptier agency with obligated and gross outlay totals plus their treasury account children for a selected fiscal year.",
+    "endpoint": {
+      "method": "GET",
+      "host": "https://api.usaspending.gov",
+      "path": "\/api\/v2\/agency\/{toptier_code}\/federal_account\/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "location": "path",
+          "type": "string",
+          "description": "Numeric identifier for the toptier agency.",
+          "constraints": "Required; 3- or 4-digit numeric string. Unknown numeric codes return JSON 404 with detail; non-numeric segments produce the platform's HTML 404."
+        },
+        "fiscal_year": {
+          "location": "query",
+          "type": "integer",
+          "description": "Fiscal year to query.",
+          "constraints": "Optional; integer 2008-2026 inclusive. Defaults to the latest published year (2026 during probes). Values outside range raise 422, non-integers raise 400. Years before FY2017 succeed with empty results plus a warning message."
+        },
+        "filter": {
+          "location": "query",
+          "type": "string",
+          "description": "Case-insensitive substring filter applied to federal account names and codes.",
+          "constraints": "Optional; unmatched filters yield empty results without error."
+        },
+        "sort": {
+          "location": "query",
+          "type": "string",
+          "description": "Field used for sorting the federal accounts.",
+          "constraints": "Optional; allowed lowercase values: name, obligated_amount, gross_outlay_amount. Defaults to obligated_amount. Other inputs (including total_budgetary_resources) return 400."
+        },
+        "order": {
+          "location": "query",
+          "type": "string",
+          "description": "Sort direction for the selected field.",
+          "constraints": "Optional; allowed lowercase values: asc, desc. Defaults to desc and may be provided alone to flip the default ordering. Other casing (e.g., ASC) returns 400."
+        },
+        "page": {
+          "location": "query",
+          "type": "integer",
+          "description": "Result page to return (1-indexed).",
+          "constraints": "Optional; integer >= 1. Defaults to 1. Non-integers return 400, values below 1 return 422."
+        },
+        "limit": {
+          "location": "query",
+          "type": "integer",
+          "description": "Number of records per page.",
+          "constraints": "Optional; integer 1-100. Defaults to 10. Non-integers return 400, values outside range return 422."
+        }
+      },
+      "required": [
+        "toptier_code"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "toptier_code": {
+          "type": "string",
+          "description": "Echo of the requested toptier code."
+        },
+        "fiscal_year": {
+          "type": "integer",
+          "description": "Fiscal year used for the aggregation (defaults to the latest published year when omitted)."
+        },
+        "page_metadata": {
+          "type": "object",
+          "description": "Pagination metadata for the current request.",
+          "properties": {
+            "page": {
+              "type": "integer"
+            },
+            "total": {
+              "type": "integer",
+              "description": "Total number of matching federal accounts for the query."
+            },
+            "limit": {
+              "type": "integer"
+            },
+            "next": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Next page number when additional pages exist."
+            },
+            "previous": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Previous page number when page > 1."
+            },
+            "hasNext": {
+              "type": "boolean"
+            },
+            "hasPrevious": {
+              "type": "boolean"
+            }
+          }
+        },
+        "results": {
+          "type": "array",
+          "description": "Federal accounts with obligated and gross outlay totals plus their treasury account children. No responses exposed total_budgetary_resources despite documentation claims.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Federal account code (agency-main account)."
+              },
+              "name": {
+                "type": "string"
+              },
+              "obligated_amount": {
+                "type": "number"
+              },
+              "gross_outlay_amount": {
+                "type": "number"
+              },
+              "children": {
+                "type": "array",
+                "description": "Treasury account children for the federal account.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "obligated_amount": {
+                      "type": "number"
+                    },
+                    "gross_outlay_amount": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "messages": {
+          "type": "array",
+          "description": "Array of warning or info strings, e.g., availability notices for pre-FY2017 requests.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "toptier_code",
+        "fiscal_year",
+        "page_metadata",
+        "results",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "GET",
+          "path": "\/api\/v2\/agency\/086\/federal_account\/",
+          "query": {},
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2026,
+            "page_metadata": {
+              "page": 1,
+              "total": 44,
+              "limit": 10,
+              "next": 2,
+              "previous": null,
+              "hasNext": true,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "code": "086-0302",
+                "name": "Tenant-Based Rental Assistance, Public and Indian Housing, Housing and Urban Development",
+                "obligated_amount": 14126571894.0,
+                "gross_outlay_amount": 9357907183.44,
+                "children": [
+                  {
+                    "code": "086-X-0302-000",
+                    "name": "Tenant-Based Rental Assistance, Public and Indian Housing, Housing and Urban Development",
+                    "obligated_amount": 14126389688.0,
+                    "gross_outlay_amount": 9081446855.44
+                  },
+                  {
+                    "code": "086-2021\/2030-0302-000",
+                    "name": "Tenant-Based Rental Assistance, Public and Indian Housing, Housing and Urban Development",
+                    "obligated_amount": 156327.0,
+                    "gross_outlay_amount": 271746576.0
+                  },
+                  {
+                    "code": "086-2025\/2028-0302-000",
+                    "name": "Tenant-Based Rental Assistance, Public and Indian Housing, Housing and Urban Development",
+                    "obligated_amount": 25879.0,
+                    "gross_outlay_amount": 4713738.0
+                  }
+                ]
+              }
+            ],
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "\/api\/v2\/agency\/086\/federal_account\/",
+          "query": {
+            "fiscal_year": "2025",
+            "filter": "mortgage",
+            "limit": "50"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2025,
+            "page_metadata": {
+              "page": 1,
+              "total": 3,
+              "limit": 50,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "results": [
+              {
+                "code": "086-0183",
+                "name": "Mutual Mortgage Insurance Program Account, Federal Housing Administration, Housing and Urban Development",
+                "obligated_amount": 1655195897.95,
+                "gross_outlay_amount": 1642661501.28,
+                "children": [
+                  {
+                    "code": "086-X-0183-000",
+                    "name": "Mutual Mortgage Insurance Program Account, Federal Housing Administration, Housing and Urban Development",
+                    "obligated_amount": 1498163086.89,
+                    "gross_outlay_amount": 1498163086.89
+                  }
+                ]
+              },
+              {
+                "code": "086-0186",
+                "name": "Guarantees of Mortgage-Backed Securities Loan Guarantees, Program Account, Government National Mortgage Association, Housing and Urban Development",
+                "obligated_amount": 461749302.37,
+                "gross_outlay_amount": 504656896.12,
+                "children": [
+                  {
+                    "code": "086-X-0186-000",
+                    "name": "Guarantees of Mortgage-Backed Securities Loan Guarantee, Program Account, Government National Mortgage Association, Housing and Urban Development",
+                    "obligated_amount": 400742019.69,
+                    "gross_outlay_amount": 444330224.16
+                  }
+                ]
+              },
+              {
+                "code": "086-4238",
+                "name": "Guarantees of Mortgage-Backed Securities Fund, Government National Mortgage Association, Housing and Urban Development",
+                "obligated_amount": 40859.18,
+                "gross_outlay_amount": 113554.07,
+                "children": [
+                  {
+                    "code": "086-X-4238-000",
+                    "name": "Guarantees of Mortgage-Backed Securities Fund, Government National Mortgage Association, Housing and Urban Development",
+                    "obligated_amount": 40859.18,
+                    "gross_outlay_amount": 113554.07
+                  }
+                ]
+              }
+            ],
+            "messages": []
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "GET",
+          "path": "\/api\/v2\/agency\/086\/federal_account\/",
+          "query": {
+            "fiscal_year": "2008",
+            "limit": "5"
+          },
+          "body": {}
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "toptier_code": "086",
+            "fiscal_year": 2008,
+            "page_metadata": {
+              "page": 1,
+              "total": 0,
+              "limit": 5,
+              "next": null,
+              "previous": null,
+              "hasNext": false,
+              "hasPrevious": false
+            },
+            "results": [],
+            "messages": [
+              "Account data powering this endpoint were first collected in FY2017 Q2 under the DATA Act; as such, there are no data available for prior fiscal years."
+            ]
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Omitting fiscal_year defaults to the latest published year (2026 during probes).",
+      "Providing order without sort flips the default obligated_amount ordering to the requested direction.",
+      "Substring filters apply to both federal account names and codes (case-insensitive).",
+      "Requests for fiscal years before FY2017 return an empty result set with an availability warning in messages.",
+      "Requesting pages beyond available data returns 200 with empty results and metadata reflecting the requested page."
+    ],
+    "risks": [
+      "Documentation references a top-level totals object and total_budgetary_resources fields that are absent from live responses; clients depending on them will fail.",
+      "Non-numeric toptier_code segments return an HTML 404 page instead of JSON, which can break JSON-only error handling.",
+      "Strict validation on parameter ranges and enum casing (asc/desc, sort keys) causes 400/422 errors when callers send unsupported values or capitalization."
+    ],
+    "gaps": [],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-02-13"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/federal_account\/",
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2026,\"page_metadata\":{\"page\":1,\"total\":44,\"limit\":10,\"next\":2,\"previous\":null,\"hasNext\":true,\"hasPrevious\":false},\"results\":[{\"code\":\"086-0302\",\"name\":\"Tenant-Based Rental Assistance...\"}],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Default request returns FY2026 data without the documented totals object."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/federal_account\/",
+        "query": {
+          "fiscal_year": "2025",
+          "filter": "mortgage",
+          "limit": "50"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2025,\"page_metadata\":{\"page\":1,\"total\":3,\"limit\":50,...},\"results\":[{\"code\":\"086-0183\",\"name\":\"Mutual Mortgage Insurance Program Account...\"}],\"messages\":[]}",
+        "contentType": "application/json"
+      },
+      "notes": "Filter narrows results to mortgage accounts; pagination reflects total 3."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/federal_account\/",
+        "query": {
+          "fiscal_year": "2008",
+          "limit": "5"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "bodyExcerpt": "{\"toptier_code\":\"086\",\"fiscal_year\":2008,\"page_metadata\":{\"page\":1,\"total\":0,\"limit\":5,...},\"results\":[],\"messages\":[\"Account data powering this endpoint were first collected...\"]}",
+        "contentType": "application/json"
+      },
+      "notes": "Pre-FY2017 request returns empty results with a warning in messages."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/federal_account\/",
+        "query": {
+          "fiscal_year": "2025",
+          "limit": "0"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '0' is below min '1'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Limit values below 1 are rejected with 422."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/federal_account\/",
+        "query": {
+          "fiscal_year": "2025",
+          "limit": "200"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 422,
+        "bodyExcerpt": "{\"detail\":\"Field 'limit' value '200' is above max '100'\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Limit above 100 triggers max-bound validation error."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/federal_account\/",
+        "query": {
+          "fiscal_year": "2025",
+          "sort": "total_budgetary_resources"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'sort' is outside valid values ['name', 'obligated_amount', 'gross_outlay_amount']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Docs list total_budgetary_resources as sortable, but API rejects it with 400."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/086\/federal_account\/",
+        "query": {
+          "fiscal_year": "2025",
+          "order": "ASC"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 400,
+        "bodyExcerpt": "{\"detail\":\"Field 'order' is outside valid values ['asc', 'desc']\"}",
+        "contentType": "application/json"
+      },
+      "notes": "Order parameter is case-sensitive; uppercase ASC is rejected."
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "\/api\/v2\/agency\/HUD\/federal_account\/",
+        "query": {
+          "fiscal_year": "2025"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 404,
+        "bodyExcerpt": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Not Found</title>...",
+        "contentType": "text/html; charset=utf-8"
+      },
+      "notes": "Alphabetic toptier_code returns an HTML 404 page instead of JSON."
+    }
+  ],
+  "mismatches": [
+    "Documentation describes a top-level totals object, but live responses never include it.",
+    "Documentation states FederalAccount/TreasuryAccount items include total_budgetary_resources, but responses omit the field.",
+    "Documentation lists total_budgetary_resources as a valid sort key, yet the API returns HTTP 400 when it is requested."
+  ],
+  "gaps": [],
+  "risks": [
+    "Documentation references a top-level totals object and total_budgetary_resources fields that are absent from live responses; clients depending on them will fail.",
+    "Non-numeric toptier_code segments return an HTML 404 page instead of JSON, which can break JSON-only error handling.",
+    "Strict validation on parameter ranges and enum casing (asc/desc, sort keys) causes 400/422 errors when callers send unsupported values or capitalization."
+  ]
+}
