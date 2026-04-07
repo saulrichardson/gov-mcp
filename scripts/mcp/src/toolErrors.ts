@@ -67,7 +67,11 @@ export function classifyToolError(error: unknown, context?: Record<string, unkno
   if (combined.includes("unknown slug")) {
     return mk("UNKNOWN_ENDPOINT", "not_found", false, "Requested endpoint slug is not available.");
   }
-  if (combined.includes("prompt.md not found") || combined.includes("missing prompt")) {
+  if (
+    combined.includes("prompt.md not found") ||
+    combined.includes("missing prompt") ||
+    combined.includes("missing doc")
+  ) {
     return mk("MISSING_RESOURCE", "not_found", false, "Endpoint prompt/profile resource is missing.");
   }
   if (combined.includes("host_not_allowed")) {

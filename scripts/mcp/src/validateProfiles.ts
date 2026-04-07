@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { z } from "zod";
 import { loadProfiles } from "./loadProfiles.js";
 import { CANONICAL_SCHEMA_VERSION } from "./types.js";
+import { loadShippingManifest } from "./shipping.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -67,6 +68,7 @@ function main() {
   const manifest = ManifestSchema.parse(manifestRaw);
 
   const loaded = loadProfiles({ repoRoot, requirePrompts: true });
+  const shippingManifest = loadShippingManifest(repoRoot);
   const loadedSlugs = new Set(loaded.profiles.map((p) => p.slug));
   const manifestSlugs = new Set(manifest.profiles.map((p) => p.slug));
 
@@ -87,12 +89,20 @@ function main() {
     assert(existsSync(promptAbs), `manifest promptPath not found: ${entry.promptPath}`);
   }
 
+  for (const profile of shippingManifest.profiles) {
+    assert(loadedSlugs.has(profile.slug), `shipping profile slug missing from loaded profiles: ${profile.slug}`);
+    if (profile.docPath) {
+      assert(existsSync(join(repoRoot, profile.docPath)), `shipping docPath not found: ${profile.docPath}`);
+    }
+  }
+
   console.log(
     JSON.stringify(
       {
         event: "profiles_validated",
         schemaVersion: CANONICAL_SCHEMA_VERSION,
         profileCount: loaded.profiles.length,
+        representativeProfileCount: shippingManifest.profiles.length,
         slugs: loaded.profiles.map((p) => p.slug),
       },
       null,

@@ -16,7 +16,7 @@
           "location": "body",
           "type": "object",
           "description": "Search filter object aligned with shared search filter contract.",
-          "constraints": "Required."
+          "constraints": "Required; must include award_type_codes and any additional search filters needed to bound the result set."
         },
         "fields": {
           "location": "body",
@@ -60,7 +60,7 @@
       "properties": {
         "results": {
           "type": "array",
-          "description": "Award-level rows matching filters."
+          "description": "Award-level rows matching filters. Observed rows can include helper identifiers such as `generated_internal_id` and `internal_id` in addition to requested field-label columns."
         },
         "page_metadata": {
           "type": "object",
@@ -84,6 +84,11 @@
           "query": {},
           "body": {
             "filters": {
+              "award_type_codes": [
+                "A",
+                "B",
+                "C"
+              ],
               "time_period": [
                 {
                   "start_date": "2025-01-01",
@@ -117,6 +122,8 @@
     ],
     "quirks": [
       "Field names are API-defined labels rather than always being snake_case keys.",
+      "Observed search rows may include `generated_internal_id`, which is the safer follow-up identifier for `/api/v2/awards/{award_id}/` than the display field `Award ID`.",
+      "Helper columns other than `generated_internal_id` are opportunistic and may be absent across otherwise valid queries, so they should not be treated as stable joins without local verification.",
       "Filter behavior can evolve with upstream search index updates."
     ],
     "risks": [
@@ -138,6 +145,11 @@
         "query": {},
         "body": {
           "filters": {
+            "award_type_codes": [
+              "A",
+              "B",
+              "C"
+            ],
             "time_period": [
               {
                 "start_date": "2025-01-01",

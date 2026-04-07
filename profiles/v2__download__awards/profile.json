@@ -188,7 +188,7 @@
     ],
     "gaps": [
       "Impact of zero or negative limit values on the generated dataset remains unverified because resulting files were not downloaded.",
-      "Download job lifecycle beyond the initial POST (status polling and file retrieval) was not validated.",
+      "Status polling is now validated through the companion download status endpoint, but file retrieval from file_url was not re-verified here.",
       "Exact server-side handling of unfamiliar filter structures is unclear beyond the observed silent drops."
     ],
     "confidence": "confirmed",
@@ -361,7 +361,7 @@
   ],
   "gaps": [
     "Impact of zero or negative limit values on the generated dataset remains unverified because resulting files were not downloaded.",
-    "Download job lifecycle beyond the initial POST (status polling and file retrieval) was not validated.",
+    "Status polling is now validated through the companion download status endpoint, but file retrieval from file_url was not re-verified here.",
     "Exact server-side handling of unfamiliar filter structures is unclear beyond the observed silent drops."
   ],
   "risks": [

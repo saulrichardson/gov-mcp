@@ -3,6 +3,7 @@ export {
   HttpMethodSchema,
   ConfidenceSchema,
   LifecycleSchema,
+  ShipTierSchema,
   DiscoverSchema,
   ValidateSchema,
   ProfileSchema,

@@ -9,6 +9,8 @@ export const CANONICAL_SCHEMA_VERSION = SCHEMA_VERSION as string;
 export type ProfileReport = z.infer<typeof ProfileReportSchema>;
 
 export type ParamLocation = "query" | "body" | "path";
+export type ConfidenceLevel = "hypothesis" | "observed" | "confirmed";
+export type ShipTier = "representative" | "candidate" | "unshipped";
 
 export type PlannerParameter = {
   name: string;
@@ -32,6 +34,56 @@ export type PlannerMetadata = {
   parameters: PlannerParameter[];
 };
 
+export type AuthMetadata = {
+  type: "none" | "api_key" | "oauth2" | "unknown";
+  confidence: ConfidenceLevel;
+  notes?: string;
+};
+
+export type PaginationMetadata = {
+  strategy: "page_number" | "cursor" | "offset_limit" | "none";
+  pageParam?: string;
+  limitParam?: string;
+  cursorParam?: string;
+  offsetParam?: string;
+  resultsPath?: string;
+  metadataPath?: string;
+  nextFlag?: string;
+  previousFlag?: string;
+  notes?: string;
+};
+
+export type AsyncJobMetadata = {
+  statusField: string;
+  idField?: string;
+  downloadUrlField?: string;
+  runningStatuses: string[];
+  terminalStatuses: string[];
+  notes?: string;
+};
+
+export type EvidenceSummary = {
+  probeCount: number;
+  mismatchCount: number;
+  gapCount: number;
+  riskCount: number;
+  docPath?: string;
+  promptPath?: string;
+};
+
+export type EndpointHealth = {
+  slug: string;
+  shipTier: ShipTier;
+  overallStatus: "representative" | "attention_needed" | "candidate" | "stale" | "reference_only";
+  ageDays: number;
+  capabilities: string[];
+  tags: string[];
+  gapCount: number;
+  mismatchCount: number;
+  riskCount: number;
+  notes: string[];
+};
+
 export type Profile = {
   schemaVersion: string;
   slug: string;
@@ -46,14 +98,19 @@ export type Profile = {
   inputSchema: any;
   outputSchema: any;
   examples: { standard: any[]; edgeCases?: any[] };
+  probes?: any[];
   quirks?: string[];
   mismatches?: string[];
   risks?: string[];
   gaps?: string[];
   tags?: string[];
-  supports?: string[];
-  status?: string;
-  provenance?: any;
+  capabilities?: string[];
+  auth?: AuthMetadata;
+  pagination?: PaginationMetadata;
+  asyncJob?: AsyncJobMetadata;
+  evidence?: EvidenceSummary;
+  shipTier?: ShipTier;
+  docPath?: string;
   planner?: PlannerMetadata;
   lifecycle: "active" | "deprecated" | "unknown";
   lastVerified: string;
@@ -66,6 +123,8 @@ export type EndpointSummary = {
   path: string;
   method: string;
   tags?: string[];
+  capabilities?: string[];
+  shipTier?: ShipTier;
   planner?: PlannerMetadata;
 };
 

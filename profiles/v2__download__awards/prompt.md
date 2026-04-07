@@ -18,7 +18,7 @@ Initiates an award-download job and returns absolute URLs for polling job status
 
 ## How to interpret the response
 - Returns a JSON object with `status_url`, `file_name`, `file_url`, and `download_request`.
-- `status_url` and `file_url` are absolute HTTPS links; use `status_url` to poll job progress and `file_url` to download when ready.
+- `status_url` and `file_url` are absolute HTTPS links; use `status_url` to poll until the job reaches `finished`, then follow `file_url`.
 - `download_request` mirrors the processed request: it always includes `download_types` set to `['elasticsearch_awards', 'elasticsearch_sub_awards']`, injects a broad `award_type_codes` list, and echoes your effective filters, columns, limit, file_format, and `request_type`.
 
 ---

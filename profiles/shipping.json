@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-04-05",
+  "profiles": [
+    {
+      "slug": "v2__search__spending_by_award",
+      "shipTier": "representative",
+      "tags": ["awards", "search", "contracts", "screening", "competition", "sole_source"],
+      "capabilities": ["award_search", "contract_screening", "high_value_award_screening", "sole_source_screening"],
+      "auth": {
+        "type": "none",
+        "confidence": "observed",
+        "notes": "Representative profile observed without authentication."
+      },
+      "pagination": {
+        "strategy": "page_number",
+        "pageParam": "page",
+        "limitParam": "limit",
+        "resultsPath": "results",
+        "metadataPath": "page_metadata",
+        "nextFlag": "hasNext",
+        "previousFlag": "hasPrevious",
+        "notes": "Representative award search uses page_metadata.hasNext to discover the next page."
+      },
+      "docPath": "staging/docs/v2/search/spending_by_award.md"
+    },
+    {
+      "slug": "v2__awards__award_id",
+      "shipTier": "representative",
+      "tags": ["awards", "detail", "competition", "pricing", "sole_source"],
+      "capabilities": ["award_detail", "competition_review", "pricing_review", "sole_source_review"],
+      "auth": {
+        "type": "none",
+        "confidence": "observed",
+        "notes": "Representative award detail profile observed without authentication."
+      },
+      "docPath": "staging/docs/v2/awards/award_id.md"
+    },
+    {
+      "slug": "v2__download__awards",
+      "shipTier": "representative",
+      "tags": ["downloads", "awards"],
+      "capabilities": ["download_create"],
+      "auth": {
+        "type": "none",
+        "confidence": "observed",
+        "notes": "Representative download creation profile observed without authentication."
+      },
+      "docPath": "staging/docs/v2/download/awards.md"
+    },
+    {
+      "slug": "v2__download__status",
+      "shipTier": "representative",
+      "tags": ["downloads", "polling"],
+      "capabilities": ["download_status", "async_job"],
+      "auth": {
+        "type": "none",
+        "confidence": "observed",
+        "notes": "Representative download polling profile observed without authentication."
+      },
+      "asyncJob": {
+        "statusField": "status",
+        "idField": "file_name",
+        "downloadUrlField": "file_url",
+        "runningStatuses": ["running"],
+        "terminalStatuses": ["finished"],
+        "notes": "The shipped helper treats any non-running status as terminal, but only finished is directly observed in profile evidence."
+      },
+      "docPath": "staging/docs/v2/download/status.md"
+    },
+    {
+      "slug": "v2__search__spending_over_time",
+      "shipTier": "representative",
+      "tags": ["agency", "recipient", "time_series", "trends", "screening", "spike", "anomaly"],
+      "capabilities": ["agency_spending_trend", "recipient_spending_trend", "spending_trend", "time_series_analysis", "trend_screening", "spike_detection", "anomaly_screening"],
+      "auth": {
+        "type": "none",
+        "confidence": "observed",
+        "notes": "Representative spending trend profile observed without authentication."
+      },
+      "docPath": "staging/docs/v2/search/spending_over_time.md"
+    }
+  ]
+}

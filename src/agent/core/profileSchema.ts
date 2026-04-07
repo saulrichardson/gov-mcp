@@ -5,6 +5,7 @@ export const SCHEMA_VERSION = "1.0.0" as const;
 export const HttpMethodSchema = z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 export const ConfidenceSchema = z.enum(["hypothesis", "observed", "confirmed"]);
 export const LifecycleSchema = z.enum(["active", "deprecated", "unknown"]);
+export const ShipTierSchema = z.enum(["representative", "candidate", "unshipped"]);
 
 const DateYmdSchema = z
   .string()
@@ -21,6 +22,52 @@ const SchemaShape = z
     properties: z.record(z.any()).optional(),
   })
   .passthrough();
+
+const AuthMetadataSchema = z
+  .object({
+    type: z.enum(["none", "api_key", "oauth2", "unknown"]),
+    confidence: ConfidenceSchema,
+    notes: z.string().optional(),
+  })
+  .strict();
+
+const PaginationMetadataSchema = z
+  .object({
+    strategy: z.enum(["page_number", "cursor", "offset_limit", "none"]),
+    pageParam: z.string().optional(),
+    limitParam: z.string().optional(),
+    cursorParam: z.string().optional(),
+    offsetParam: z.string().optional(),
+    resultsPath: z.string().optional(),
+    metadataPath: z.string().optional(),
+    nextFlag: z.string().optional(),
+    previousFlag: z.string().optional(),
+    notes: z.string().optional(),
+  })
+  .strict();
+
+const AsyncJobMetadataSchema = z
+  .object({
+    statusField: z.string(),
+    idField: z.string().optional(),
+    downloadUrlField: z.string().optional(),
+    runningStatuses: z.array(z.string()).default([]),
+    terminalStatuses: z.array(z.string()).default([]),
+    notes: z.string().optional(),
+  })
+  .strict();
+
+const EvidenceMetadataSchema = z
+  .object({
+    probeCount: z.number().int().nonnegative(),
+    mismatchCount: z.number().int().nonnegative(),
+    gapCount: z.number().int().nonnegative(),
+    riskCount: z.number().int().nonnegative(),
+    docPath: z.string().optional(),
+    promptPath: z.string().optional(),
+    verificationReportPath: z.string().optional(),
+  })
+  .strict();
 
 const EndpointSchema = z
   .object({
@@ -75,6 +122,13 @@ const ContractBaseSchema = z
     quirks: z.array(z.string()).default([]),
     risks: z.array(z.string()).default([]),
     gaps: z.array(z.string()).default([]),
+    tags: z.array(z.string()).default([]),
+    capabilities: z.array(z.string()).default([]),
+    auth: AuthMetadataSchema.optional(),
+    pagination: PaginationMetadataSchema.optional(),
+    asyncJob: AsyncJobMetadataSchema.optional(),
+    evidence: EvidenceMetadataSchema.optional(),
+    shipTier: ShipTierSchema.optional(),
     confidence: ConfidenceSchema.optional(),
     lifecycle: LifecycleSchema.optional(),
     lastVerified: DateYmdSchema.optional(),
@@ -145,6 +199,7 @@ const profileSchemas = {
   HttpMethodSchema,
   ConfidenceSchema,
   LifecycleSchema,
+  ShipTierSchema,
   DiscoverSchema,
   ValidateSchema,
   ProfileSchema,

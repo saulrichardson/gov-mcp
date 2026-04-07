@@ -256,6 +256,15 @@
       "Keyword matching nuances beyond trimming and case-insensitive comparison (e.g., multi-term tokenization, partial-word rules) remain unverified.",
       "The claimed trailing twelve-month aggregation window is assumed from documentation but not independently validated."
     ],
+    "tags": [
+      "lookup",
+      "recipient",
+      "search"
+    ],
+    "capabilities": [
+      "recipient_lookup",
+      "recipient_resolution"
+    ],
     "confidence": "confirmed",
     "lifecycle": "active",
     "lastVerified": "2026-02-14"

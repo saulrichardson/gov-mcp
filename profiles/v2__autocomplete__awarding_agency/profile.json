@@ -209,6 +209,16 @@
       "Because non-string search_text values are coerced, unhealthy payloads may silently return zero results instead of failing."
     ],
     "gaps": [],
+    "tags": [
+      "agency",
+      "autocomplete",
+      "awarding_agency",
+      "lookup"
+    ],
+    "capabilities": [
+      "agency_autocomplete",
+      "agency_lookup"
+    ],
     "confidence": "confirmed",
     "lifecycle": "deprecated",
     "lastVerified": "2026-02-13"

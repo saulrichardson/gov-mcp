@@ -1,0 +1,405 @@
+{
+  "schemaVersion": "1.0.0",
+  "contract": {
+    "name": "v2/search/spending_over_time.md",
+    "description": "Aggregates spending over time into fiscal-year, calendar-year, quarter, or month buckets for a filtered search scope.",
+    "endpoint": {
+      "method": "POST",
+      "host": "https://api.usaspending.gov",
+      "path": "/api/v2/search/spending_over_time/"
+    },
+    "inputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "group": {
+          "location": "body",
+          "type": "string",
+          "description": "Time grouping for the returned series.",
+          "constraints": "Required. Canonical values are calendar_year, fiscal_year, quarter, and month. Production also accepts undocumented aliases cy, fy, q, and m. Invalid values return HTTP 400."
+        },
+        "filters": {
+          "location": "body",
+          "type": "object",
+          "description": "Advanced search filter object used to scope the time series.",
+          "constraints": "Required. Must be a JSON object. Observed successful shapes include keyword-only filters, time_period plus award_type_codes, agencies filters using type/tier/name objects, and recipient_search_text with a single canonical recipient name, DUNS, or UEI. Dates earlier than 2007-10-01 return HTTP 422."
+        },
+        "subawards": {
+          "location": "body",
+          "type": "boolean",
+          "description": "Whether to group subawards instead of prime-award/transaction spending.",
+          "constraints": "Optional. Documentation says it defaults to false; this behavior was not re-probed."
+        },
+        "spending_level": {
+          "location": "body",
+          "type": "string",
+          "description": "Controls whether the aggregate series is built from transactions, awards, or subawards.",
+          "constraints": "Optional. Documented values are transactions, awards, and subawards. Observed successful requests omitted the field and the service returned spending_level='transactions'."
+        }
+      },
+      "required": [
+        "group",
+        "filters"
+      ]
+    },
+    "outputSchema": {
+      "confidence": "observed",
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "description": "Canonical group name returned by the service."
+        },
+        "spending_level": {
+          "type": "string",
+          "description": "Resolved spending level for the returned series; observed as transactions."
+        },
+        "results": {
+          "type": "array",
+          "description": "Ascending time-series rows. Each row contains time_period plus aggregated_amount, category-specific obligation columns (Contract_Obligations, Grant_Obligations, Direct_Obligations, Idv_Obligations, Loan_Obligations, Other_Obligations), and nullable outlay columns such as total_outlays and Grant_Outlays."
+        },
+        "messages": {
+          "type": "array",
+          "description": "Warning messages about date limits, subaward-field deprecation, and possible extra award/subaward periods."
+        }
+      },
+      "required": [
+        "group",
+        "results",
+        "spending_level",
+        "messages"
+      ]
+    },
+    "examples": [
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/search/spending_over_time/",
+          "query": {},
+          "body": {
+            "group": "fiscal_year",
+            "filters": {
+              "award_type_codes": [
+                "A",
+                "B",
+                "C"
+              ],
+              "time_period": [
+                {
+                  "start_date": "2023-10-01",
+                  "end_date": "2025-09-30"
+                }
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "group": "fiscal_year",
+            "results": [
+              {
+                "aggregated_amount": 468340549275.33,
+                "time_period": {
+                  "fiscal_year": "2024"
+                }
+              },
+              {
+                "aggregated_amount": 475836845608.72,
+                "time_period": {
+                  "fiscal_year": "2025"
+                }
+              }
+            ],
+            "spending_level": "transactions",
+            "messages": [
+              "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+              "The 'subawards' field will be deprecated in the future. Set 'spending_level' to 'subawards' instead. See documentation for more information.",
+              "You may see additional month, quarter and year results when searching for Awards or Subawards. This is due to Awards or Subawards overlapping with the time period specified but having an 'action date' outside of that time period."
+            ]
+          }
+        }
+      },
+      {
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/search/spending_over_time/",
+          "query": {},
+          "body": {
+            "group": "bad",
+            "filters": {
+              "keywords": [
+                "infrastructure"
+              ]
+            }
+          }
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "detail": "Field 'group' is outside valid values ['calendar_year', 'cy', 'quarter', 'q', 'fiscal_year', 'fy', 'month', 'm']"
+          }
+        }
+      }
+    ],
+    "quirks": [
+      "Undocumented group aliases fy, cy, q, and m are accepted and normalized back to canonical group names in the response.",
+      "Observed successful responses always included the same trio of warning messages, even when the filter set was otherwise valid.",
+      "All observed successful responses returned total_outlays and category outlay columns as null.",
+      "The live output uses Grant_Outlays, while the staged contract docs spell that field Grant_outlays.",
+      "recipient_search_text matched canonical recipient names, DUNS, and UEI in live probes, but nearby autocomplete display strings were not guaranteed to return the same series."
+    ],
+    "risks": [
+      "Time-series requests are limited to start_date values on or after 2007-10-01; earlier historical analysis must switch to download or bulk_download endpoints.",
+      "Award- and subaward-level trend requests may include extra buckets outside the requested date range according to the service warning message.",
+      "Aggregated amounts can change as the USAspending search index is refreshed or corrected."
+    ],
+    "gaps": [
+      "calendar_year and quarter groupings were not directly re-probed.",
+      "Awards and subawards spending_level variants were not re-probed.",
+      "No successful response with non-null outlay fields was observed."
+    ],
+    "tags": [
+      "agency",
+      "recipient",
+      "time_series",
+      "trends"
+    ],
+    "capabilities": [
+      "agency_spending_trend",
+      "recipient_spending_trend",
+      "spending_trend",
+      "time_series_analysis"
+    ],
+    "confidence": "confirmed",
+    "lifecycle": "active",
+    "lastVerified": "2026-04-05"
+  },
+  "probes": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/search/spending_over_time/",
+        "query": {},
+        "body": {
+          "group": "fiscal_year",
+          "filters": {
+            "award_type_codes": [
+              "A",
+              "B",
+              "C"
+            ],
+            "time_period": [
+              {
+                "start_date": "2021-10-01",
+                "end_date": "2025-09-30"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"group\":\"fiscal_year\",\"results\":[{\"aggregated_amount\":389536274271.31,\"time_period\":{\"fiscal_year\":\"2022\"}},{\"aggregated_amount\":445528104427.61,\"time_period\":{\"fiscal_year\":\"2023\"}}],\"spending_level\":\"transactions\"}"
+      },
+      "notes": "Contract award types across FY2022-FY2025 returned an ascending fiscal-year series."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/search/spending_over_time/",
+        "query": {},
+        "body": {
+          "group": "month",
+          "filters": {
+            "award_type_codes": [
+              "A",
+              "B",
+              "C"
+            ],
+            "time_period": [
+              {
+                "start_date": "2024-10-01",
+                "end_date": "2025-03-31"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"group\":\"month\",\"results\":[{\"aggregated_amount\":25935378759.91,\"time_period\":{\"fiscal_year\":\"2025\",\"month\":\"1\"}},{\"aggregated_amount\":24394860343.98,\"time_period\":{\"fiscal_year\":\"2025\",\"month\":\"2\"}}],\"spending_level\":\"transactions\"}"
+      },
+      "notes": "Monthly grouping returned FY2025 month buckets in ascending order."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/search/spending_over_time/",
+        "query": {},
+        "body": {
+          "group": "fiscal_year",
+          "filters": {
+            "keywords": [
+              "infrastructure"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"group\":\"fiscal_year\",\"results\":[{\"aggregated_amount\":4090889459.33,\"time_period\":{\"fiscal_year\":\"2008\"}},{\"aggregated_amount\":5962223736.57,\"time_period\":{\"fiscal_year\":\"2009\"}}],\"spending_level\":\"transactions\"}"
+      },
+      "notes": "Keyword-only filters were accepted and returned a long fiscal-year series."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/search/spending_over_time/",
+        "query": {},
+        "body": {
+          "group": "fy",
+          "filters": {
+            "award_type_codes": [
+              "A",
+              "B",
+              "C"
+            ],
+            "time_period": [
+              {
+                "start_date": "2023-10-01",
+                "end_date": "2025-09-30"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"group\":\"fiscal_year\",\"results\":[{\"aggregated_amount\":468340549275.33,\"time_period\":{\"fiscal_year\":\"2024\"}},{\"aggregated_amount\":475836845608.72,\"time_period\":{\"fiscal_year\":\"2025\"}}],\"spending_level\":\"transactions\"}"
+      },
+      "notes": "Undocumented alias fy was accepted and normalized back to fiscal_year in the response."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/search/spending_over_time/",
+        "query": {},
+        "body": {
+          "group": "bad",
+          "filters": {
+            "keywords": [
+              "infrastructure"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"Field 'group' is outside valid values ['calendar_year', 'cy', 'quarter', 'q', 'fiscal_year', 'fy', 'month', 'm']\"}"
+      },
+      "notes": "Invalid group values are rejected with a 400 enum error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/search/spending_over_time/",
+        "query": {},
+        "body": {
+          "group": "fiscal_year",
+          "filters": {
+            "time_period": [
+              {
+                "start_date": "2001-10-01",
+                "end_date": "2002-09-30"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"detail\":\"start_date falls before the earliest available search date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints listed on https://api.usaspending.gov/docs/endpoints.\"}"
+      },
+      "notes": "Historical dates before 2007-10-01 are rejected with a 422 validation error."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/search/spending_over_time/",
+        "query": {},
+        "body": {
+          "group": "fiscal_year",
+          "filters": {
+            "agencies": [
+              {
+                "type": "awarding",
+                "tier": "toptier",
+                "name": "Department of Agriculture"
+              }
+            ],
+            "time_period": [
+              {
+                "start_date": "2021-10-01",
+                "end_date": "2025-09-30"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"group\":\"fiscal_year\",\"results\":[{\"aggregated_amount\":234838732046.77,\"time_period\":{\"fiscal_year\":\"2022\"}},{\"aggregated_amount\":206835472350.51,\"time_period\":{\"fiscal_year\":\"2023\"}}],\"spending_level\":\"transactions\"}"
+      },
+      "notes": "Awarding toptier agency filters using Department of Agriculture returned an agency-scoped fiscal-year series."
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/search/spending_over_time/",
+        "query": {},
+        "body": {
+          "group": "fiscal_year",
+          "filters": {
+            "recipient_search_text": [
+              "LOCKHEED MARTIN CORP"
+            ],
+            "time_period": [
+              {
+                "start_date": "2021-10-01",
+                "end_date": "2025-09-30"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "contentType": "application/json",
+        "bodyExcerpt": "{\"group\":\"fiscal_year\",\"results\":[{\"aggregated_amount\":47243434163.36,\"time_period\":{\"fiscal_year\":\"2022\"}},{\"aggregated_amount\":66172414475.21,\"time_period\":{\"fiscal_year\":\"2023\"}}],\"spending_level\":\"transactions\"}"
+      },
+      "notes": "Canonical recipient name from /api/v2/recipient/ returned a recipient-scoped fiscal-year series; the nearby autocomplete display string LOCKHEED MARTIN CORPORATION returned an empty result set."
+    }
+  ],
+  "mismatches": [
+    "Production accepts undocumented group aliases `cy`, `q`, `fy`, and `m`, while the staged contract documents only the canonical names.",
+    "The staged contract spells the outlay field `Grant_outlays`, but live responses use `Grant_Outlays`."
+  ],
+  "gaps": [
+    "calendar_year and quarter groupings were not directly re-probed.",
+    "Awards and subawards spending_level variants were not re-probed.",
+    "No successful response with non-null outlay fields was observed."
+  ],
+  "risks": [
+    "Time-series requests are limited to start_date values on or after 2007-10-01; earlier historical analysis must switch to download or bulk_download endpoints.",
+    "Award- and subaward-level trend requests may include extra buckets outside the requested date range according to the service warning message.",
+    "Aggregated amounts can change as the USAspending search index is refreshed or corrected."
+  ]
+}

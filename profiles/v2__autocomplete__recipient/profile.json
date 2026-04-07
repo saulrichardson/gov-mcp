@@ -171,6 +171,14 @@
       "Authoritative list of valid recipient_levels codes is unknown beyond observed samples.",
       "Cause of 503 responses for limit <= 0 or very long search_text inputs remains unclear."
     ],
+    "tags": [
+      "autocomplete",
+      "fuzzy_search",
+      "recipient"
+    ],
+    "capabilities": [
+      "recipient_autocomplete"
+    ],
     "confidence": "confirmed",
     "lifecycle": "active",
     "lastVerified": "2026-02-13"

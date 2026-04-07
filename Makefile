@@ -10,7 +10,7 @@ STAGE_KILL_GRACE_SECONDS ?= 20
 SKIP_OUTPUT_VALIDATION ?= 0
 FROM_JOB_DIR ?=
 
-.PHONY: discover validate profile pipeline clean-worktrees discover-all validate-all profile-all pipeline-all gather-runs merge-agent-branches mcp-server promote-profile verify codex-preflight pipeline-coverage pipeline-promote-finals pipeline-run-foreground pipeline-run-bg pipeline-retry-failed pipeline-audit pipeline-repair-stale pipeline-status pipeline-status-watch
+.PHONY: discover validate profile pipeline clean-worktrees discover-all validate-all profile-all pipeline-all gather-runs merge-agent-branches mcp-server promote-profile verify ship-verify codex-preflight pipeline-coverage pipeline-promote-finals pipeline-run-foreground pipeline-run-bg pipeline-retry-failed pipeline-audit pipeline-repair-stale pipeline-status pipeline-status-watch
 
 discover:
 	@$(REPO_ROOT)/scripts/codex/bin/run-agent.sh discover $(SLUG) $(BASE)
@@ -95,6 +95,9 @@ verify:
 	@python -m pytest -q scripts/tests/test_full_pipeline.py
 	@$(REPO_ROOT)/scripts/mcp/bin/validate-profiles
 	@$(REPO_ROOT)/scripts/mcp/bin/smoke-server
+
+# Full ship verification for the raw-only MCP surface.
+ship-verify: verify
 
 # Probe Codex auth + model config before launching bulk jobs.
 codex-preflight:

@@ -4,6 +4,8 @@
 
 POST `/api/v2/autocomplete/recipient/` returns recipient matches that power the Advanced Search autocomplete, searching names, UEIs, and DUNS and bundling them into one result list with a shared deprecation warning about `recipient_level`.
 
+Use it for fuzzy suggestion lists, not as a guaranteed canonical identifier source for downstream analysis.
+
 ---
 
 ## How to call it
@@ -23,6 +25,7 @@ POST `/api/v2/autocomplete/recipient/` returns recipient matches that power the 
 - `count` always equals the length of `results`.
 - `results` entries carry `recipient_name` (string), `recipient_level` (currently always null), `uei` (string|null), and `duns` (string|null; may include punctuation).
 - `messages` consistently contains the deprecation warning about `recipient_level`; no other status flags were observed.
+- Observed autocomplete display strings were not guaranteed to map 1:1 into `filters.recipient_search_text` for trend searches; if a downstream trend call returns empty, resolve the entity through `POST /api/v2/recipient/` and retry with canonical `name`, `duns`, or `uei`.
 
 ---
 
@@ -40,6 +43,7 @@ POST `/api/v2/autocomplete/recipient/` returns recipient matches that power the 
 - **Do:** set `limit` conservatively for broad queries to avoid unexpectedly large payloads.
 - **Do:** handle 503s for invalid `limit` values or oversized `search_text` as retryable/validation failures.
 - **Do:** treat `recipient_level` as deprecated until the API reintroduces real values.
+- **Do:** treat these results as fuzzy suggestions; use `/api/v2/recipient/` when you need a stable downstream filter value.
 - **Don’t:** assume DUNS values are strictly numeric; they may include symbols.
 - **Don’t:** rely on undocumented validation for `recipient_levels`; invalid codes simply vanish from results.
 

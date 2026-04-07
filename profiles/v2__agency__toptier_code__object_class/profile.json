@@ -3,6 +3,17 @@
   "contract": {
     "name": "v2/agency/toptier_code/object_class.md",
     "description": "Returns aggregated spending by major object class for a specified agency and fiscal year with optional substring filtering, sorting, and pagination.",
+    "tags": [
+      "agency",
+      "object_class",
+      "composition",
+      "screening"
+    ],
+    "capabilities": [
+      "object_class_mix",
+      "agency_composition",
+      "spending_composition"
+    ],
     "endpoint": {
       "method": "GET",
       "host": "https://api.usaspending.gov",

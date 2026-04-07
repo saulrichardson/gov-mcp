@@ -3,6 +3,17 @@
   "contract": {
     "name": "v2/award_spending/recipient.md",
     "description": "Aggregates prime award obligations by recipient for a given fiscal year and awarding toptier agency, returning recipients ordered by total obligated amount.",
+    "tags": [
+      "recipient",
+      "agency",
+      "concentration",
+      "screening"
+    ],
+    "capabilities": [
+      "recipient_concentration",
+      "agency_recipient_concentration",
+      "concentration_screening"
+    ],
     "endpoint": {
       "method": "GET",
       "host": "https://api.usaspending.gov",
@@ -264,6 +275,7 @@
       "page defaults to 1; zero or negative inputs are normalized to 1, while oversized page requests return empty result arrays with a 200 status.",
       "Results remain sorted by obligated_amount descending even when values are zero or negative, so later pages can contain only deobligations.",
       "recipient.recipient_name may be a real name, the literal 'REDACTED DUE TO PII', or null depending on disclosure rules.",
+      "A current raw-MCP bench did not validate any stable upstream join source for awarding_agency_id; DoD autocomplete id 1173 returned an empty FY2025 dataset.",
       "Non-integer query parameters trigger HTML 500 error pages instead of JSON validation errors."
     ],
     "risks": [
@@ -274,6 +286,7 @@
     ],
     "gaps": [
       "Additional award_category labels beyond the observed set (contract, idv, grant, direct payment, loans) may exist but were not verified.",
+      "A stable upstream raw endpoint for sourcing awarding_agency_id has not been documented or re-probed.",
       "Rules determining when recipient_name is null versus 'REDACTED DUE TO PII' remain undocumented.",
       "Supported fiscal_year range is unspecified; the API accepts any integer but returns empty data outside observed ranges."
     ],

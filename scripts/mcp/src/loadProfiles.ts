@@ -2,6 +2,7 @@ import fg from "fast-glob";
 import { existsSync, readFileSync } from "fs";
 import { basename, dirname, join } from "path";
 import { fileURLToPath } from "url";
+import * as stagingModule from "../../../src/agent/core/staging.ts";
 import {
   CANONICAL_SCHEMA_VERSION,
   EndpointSummary,
@@ -11,6 +12,9 @@ import {
   Profile,
   ProfileReportSchema,
 } from "./types.js";
+import { loadShippingManifest } from "./shipping.js";
+
+const { listStagedVersions, loadIndexForVersion } = (stagingModule as any).default ?? (stagingModule as any);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -78,6 +82,31 @@ function assertProfileDescription(slug: string, description: unknown): string {
     );
   }
   return text;
+}
+
+function uniqueStrings(values: Array<string | undefined | null>): string[] {
+  return Array.from(
+    new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
+}
+
+function buildDocPathIndex(repoRoot: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  try {
+    const versions: string[] = listStagedVersions(repoRoot);
+    for (const version of versions) {
+      const index = loadIndexForVersion(repoRoot, version) as Array<Record<string, any>>;
+      for (const row of index) {
+        if (row?.kind !== "contract") continue;
+        if (typeof row.slug !== "string" || !row.slug) continue;
+        if (typeof row.staged_path !== "string" || !row.staged_path) continue;
+        out[row.slug] = join(repoRoot, row.staged_path);
+      }
+    }
+  } catch {
+    return {};
+  }
+  return out;
 }
 
 function buildPlannerMetadata(slug: string, description: unknown, inputSchema: any): PlannerMetadata {
@@ -185,9 +214,13 @@ export function loadProfiles(options: LoadProfilesOptions = {}): {
   summaries: EndpointSummary[];
   profilePaths: Record<string, string>;
   promptPaths: Record<string, string>;
+  docPaths: Record<string, string>;
+  shippingManifest: ReturnType<typeof loadShippingManifest>;
 } {
   const repoRoot = options.repoRoot ?? defaultRepoRoot;
   const requirePrompts = options.requirePrompts ?? true;
+  const shippingManifest = loadShippingManifest(repoRoot);
+  const docPaths = buildDocPathIndex(repoRoot);
 
   const profileGlobEnv = options.profileGlob ?? process.env.USASPENDING_PROFILE_GLOB?.trim();
   const profilesRoot = join(repoRoot, "profiles");
@@ -257,20 +290,54 @@ export function loadProfiles(options: LoadProfilesOptions = {}): {
       if (requirePrompts && !existsSync(promptCandidate)) {
         throw new Error(`missing prompt.md at ${promptCandidate}`);
       }
+      const shippingProfile = shippingManifest.profiles.find((profile) => profile.slug === slug);
+      const docPath =
+        (shippingProfile?.docPath ? join(repoRoot, shippingProfile.docPath) : undefined) ||
+        docPaths[slug];
+      const tags = uniqueStrings([
+        ...(Array.isArray((c as any).tags) ? (c as any).tags : []),
+        ...(shippingProfile?.tags || []),
+      ]);
+      const capabilities = uniqueStrings([
+        ...(Array.isArray((c as any).capabilities) ? (c as any).capabilities : []),
+        ...(shippingProfile?.capabilities || []),
+      ]);
+      const auth = shippingProfile?.auth ?? (c as any).auth;
+      const pagination = shippingProfile?.pagination ?? (c as any).pagination;
+      const asyncJob = shippingProfile?.asyncJob ?? (c as any).asyncJob;
+      const shipTier = shippingProfile?.shipTier ?? (c as any).shipTier ?? "unshipped";
+      const evidence = {
+        ...(typeof (c as any).evidence === "object" && !Array.isArray((c as any).evidence) ? (c as any).evidence : {}),
+        probeCount: Array.isArray(pr.probes) ? pr.probes.length : 0,
+        mismatchCount: Array.isArray(pr.mismatches) ? pr.mismatches.length : 0,
+        gapCount: Array.isArray(pr.gaps) ? pr.gaps.length : 0,
+        riskCount: Array.isArray(pr.risks) ? pr.risks.length : 0,
+        ...(docPath ? { docPath } : {}),
+        ...(promptCandidate ? { promptPath: promptCandidate } : {}),
+      };
 
       const prof: Profile = {
         schemaVersion: pr.schemaVersion,
         slug,
         name: c.name,
-        endpoint: { ...c.endpoint, auth: (c as any).auth },
+        endpoint: { ...c.endpoint, auth },
         description: c.description,
         inputSchema: c.inputSchema,
         outputSchema: c.outputSchema,
         examples: { standard: c.examples || [] },
+        probes: pr.probes,
         quirks: c.quirks,
         risks: c.risks,
         gaps: c.gaps,
         mismatches: pr.mismatches,
+        tags,
+        capabilities,
+        auth,
+        pagination,
+        asyncJob,
+        evidence,
+        shipTier,
+        docPath,
         planner,
         lifecycle: c.lifecycle,
         lastVerified: c.lastVerified,
@@ -301,6 +368,8 @@ export function loadProfiles(options: LoadProfilesOptions = {}): {
     path: p.endpoint.path,
     method: p.endpoint.method,
     tags: p.tags,
+    capabilities: p.capabilities,
+    shipTier: p.shipTier,
     planner: p.planner,
   }));
 
@@ -310,5 +379,7 @@ export function loadProfiles(options: LoadProfilesOptions = {}): {
     summaries,
     profilePaths,
     promptPaths,
+    docPaths,
+    shippingManifest,
   };
 }

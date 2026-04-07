@@ -90,6 +90,42 @@ function writeProfile(root: string, slug: string, opts: { withPrompt?: boolean; 
   }
 }
 
+function writeShippingManifest(root: string, slug: string) {
+  const profilesDir = join(root, "profiles");
+  mkdirSync(profilesDir, { recursive: true });
+  writeFileSync(
+    join(profilesDir, "shipping.json"),
+    JSON.stringify(
+      {
+        schemaVersion: SCHEMA_VERSION,
+        generatedAt: "2026-04-04",
+        profiles: [
+          {
+            slug,
+            shipTier: "representative",
+            tags: ["fixtures", "representative"],
+            capabilities: ["award_search"],
+            auth: {
+              type: "none",
+              confidence: "observed",
+            },
+            pagination: {
+              strategy: "page_number",
+              pageParam: "page",
+              limitParam: "limit",
+              resultsPath: "results",
+            },
+            docPath: "staging/docs/v2/awards/last_updated.md",
+          },
+        ],
+      },
+      null,
+      2
+    ),
+    "utf-8"
+  );
+}
+
 describe("loadProfiles", () => {
   it("fails when zero profiles are available", () => {
     const root = mkdtempSync(join(tmpdir(), "mcp-load-empty-"));
@@ -162,6 +198,7 @@ describe("loadProfiles", () => {
         doc.contract.inputSchema.required = ["page"];
       },
     });
+    writeShippingManifest(root, "v2__awards__last_updated");
 
     const loaded = loadProfiles({ repoRoot: root });
     expect(loaded.schemaVersion).toBe(SCHEMA_VERSION);
@@ -170,5 +207,10 @@ describe("loadProfiles", () => {
     expect(loaded.profiles[0]?.planner?.requiredParams).toEqual(["page"]);
     expect(loaded.profiles[0]?.planner?.bodyParams).toEqual(["filters"]);
     expect(loaded.profiles[0]?.planner?.supportsPagination).toBe(true);
+    expect(loaded.profiles[0]?.shipTier).toBe("representative");
+    expect(loaded.profiles[0]?.capabilities).toEqual(["award_search"]);
+    expect(loaded.profiles[0]?.auth?.type).toBe("none");
+    expect(loaded.profiles[0]?.evidence?.probeCount).toBe(1);
+    expect(loaded.summaries[0]?.shipTier).toBe("representative");
   });
 });

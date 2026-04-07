@@ -16,7 +16,7 @@
           "type": "string",
           "location": "path",
           "description": "Identifier segment inserted into the path; accepts generated unique award hashes (for example `CONT_AWD_...`) or numeric internal award ids.",
-          "constraints": "Required path segment; case-sensitive; canonical endpoint expects a trailing slash (requests without it receive 301 redirects); invalid numeric ids return a JSON 404 payload, while malformed slugs return an HTML 404 page."
+          "constraints": "Required path segment; case-sensitive; canonical endpoint expects a trailing slash (requests without it receive 301 redirects); invalid numeric ids return a JSON 404 payload, while malformed slugs return an HTML 404 page. For follow-up from `search/spending_by_award`, observed successful joins used `generated_internal_id` rather than the display field `Award ID`."
         }
       },
       "required": [
@@ -387,6 +387,7 @@
       "Financial assistance responses omit contract-specific sections such as latest_transaction_contract_data and the NAICS/PSC hierarchies.",
       "Funding agency can be null for assistance payloads despite documentation marking it required.",
       "Responses include a total_outlay field that is absent from the published contract schema.",
+      "Competition and pricing fields can be terse enums instead of friendly labels; live responses included values such as A, NP, MAFO, U, R, and S.",
       "Assistance hashes in requests may be normalized (for example, agency suffix adjustments) before being echoed back in generated_unique_award_id."
     ],
     "risks": [

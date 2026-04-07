@@ -4,6 +4,8 @@
 
 Returns aggregated trailing 12-month federal spending totals for recipients, supporting pagination, sorting, keyword search, and high-level award-type filtering. Responses power USAspending recipient profile pages and always include pagination metadata and a recipient summary list.
 
+This is the more reliable recipient-resolution endpoint when you need a stable `name`, `duns`, `uei`, or `id` for downstream filters such as `filters.recipient_search_text` in spending trend searches.
+
 ---
 
 ## How to call it
@@ -27,6 +29,7 @@ Returns aggregated trailing 12-month federal spending totals for recipients, sup
 - `results` is an array of recipient aggregates. Each item has `id`, `duns`, `uei`, `name`, `recipient_level` (`R`/`P`/`C`), and `amount`.
 - `name`, `duns`, and `uei` may be `null` or empty strings; fall back to other identifiers when needed.
 - `amount` can be zero or negative. Do not assume totals are positive.
+- For downstream trend analysis, observed successful `recipient_search_text` inputs included canonical recipient names from this endpoint plus returned `duns` and `uei` values.
 
 ---
 
@@ -43,6 +46,7 @@ Returns aggregated trailing 12-month federal spending totals for recipients, sup
   - Keep `limit` reasonable (≤1000) and paginate rather than requesting massive pages.
   - Lowercase user-provided `award_type` and `order` values before sending to avoid 400 errors.
   - Handle missing recipient names by displaying DUNS, UEI, or `id` instead.
+  - Prefer this endpoint over autocomplete when you need a recipient value to reuse in another endpoint.
 - **Don’t:**
   - Don’t assume keyword input is restrictive—whitespace-only keywords effectively remove the filter.
   - Don’t rely on amounts being positive when performing aggregations or visualizations.

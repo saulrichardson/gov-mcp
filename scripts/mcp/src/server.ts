@@ -6,6 +6,8 @@ import { loadProfiles } from "./loadProfiles.js";
 import { callEndpoint } from "./call.js";
 import { buildToolInputSchema } from "./zodFromProfile.js";
 import { createToolErrorResult } from "./toolErrors.js";
+import { buildEndpointHealth } from "./shipping.js";
+import { scoreSearchQuery } from "./search.js";
 
 type LoadedProfiles = ReturnType<typeof loadProfiles>;
 
@@ -41,9 +43,21 @@ function endpointToolDescription(profile: any): string {
   return `${base}. Strategy: ${strategy}.`;
 }
 
+function sortBySearchScore<T>(items: T[], score: (item: T) => number): T[] {
+  return items
+    .map((item, index) => ({ item, index, score: score(item) }))
+    .filter((candidate) => candidate.score > 0)
+    .sort((left, right) => {
+      if (right.score !== left.score) return right.score - left.score;
+      return left.index - right.index;
+    })
+    .map((candidate) => candidate.item);
+}
+
 function registerEndpoints(server: any, loaded: LoadedProfiles) {
-  const { profiles, summaries, profilePaths, promptPaths } = loaded;
+  const { profiles, summaries, profilePaths, promptPaths, docPaths } = loaded;
   const profilesBySlug = Object.fromEntries(profiles.map((p) => [p.slug, p]));
+  const representativeProfiles = profiles.filter((profile) => profile.shipTier === "representative");
 
   server.registerPrompt(
     "usaspending.endpointUsage",
@@ -91,7 +105,7 @@ function registerEndpoints(server: any, loaded: LoadedProfiles) {
   server.registerTool(
     "usaspending.findEndpoints",
     {
-      description: "Search USAspending endpoints by slug, path, description, tags, and planner strategy metadata.",
+      description: "Search USAspending endpoints by slug, path, description, tags, capabilities, and planner strategy metadata.",
       inputSchema: {
         query: z.string().optional(),
         limit: z.number().int().positive().optional(),
@@ -99,14 +113,28 @@ function registerEndpoints(server: any, loaded: LoadedProfiles) {
     },
     async ({ query, limit }: { query?: string; limit?: number }) => {
       try {
-        const q = (query || "").toLowerCase();
         const n = limit ?? 20;
-        const matches = summaries.filter((s) => {
-          if (!q) return true;
-          const strategy = plannerStrategyHint((s as any).planner);
-          const hay = `${s.slug} ${s.path} ${s.description || ""} ${(s.tags || []).join(" ")} ${strategy}`.toLowerCase();
-          return hay.includes(q);
-        });
+        const matches = summaries
+          .map((summary, index) => ({
+            summary,
+            index,
+            representative: summary.shipTier === "representative" ? 1 : 0,
+            score: scoreSearchQuery(query, [
+              summary.slug,
+              summary.path,
+              summary.description || "",
+              ...(summary.tags || []),
+              ...(summary.capabilities || []),
+              plannerStrategyHint((summary as any).planner),
+            ]),
+          }))
+          .filter((candidate) => candidate.score > 0)
+          .sort((left, right) => {
+            if (right.score !== left.score) return right.score - left.score;
+            if (right.representative !== left.representative) return right.representative - left.representative;
+            return left.index - right.index;
+          })
+          .map((candidate) => candidate.summary);
         const results = matches.slice(0, n);
         const resultsWithHints = results.map((s) => ({
           ...s,
@@ -121,6 +149,190 @@ function registerEndpoints(server: any, loaded: LoadedProfiles) {
         };
       } catch (error) {
         return createToolErrorResult(error, { tool: "usaspending.findEndpoints", query, limit });
+      }
+    }
+  );
+
+  server.registerTool(
+    "usaspending.findCapabilities",
+    {
+      description:
+        "Search endpoint capability metadata and return raw endpoint tool names only. Set representativeOnly=true to restrict results to the curated shipped subset.",
+      inputSchema: {
+        query: z.string().optional(),
+        capability: z.string().optional(),
+        limit: z.number().int().positive().optional(),
+        representativeOnly: z.boolean().optional(),
+      },
+    },
+    async ({
+      query,
+      capability,
+      limit,
+      representativeOnly,
+    }: {
+      query?: string;
+      capability?: string;
+      limit?: number;
+      representativeOnly?: boolean;
+    }) => {
+      try {
+        const requiredCapability = (capability || "").trim().toLowerCase();
+        const useRepresentativeOnly = representativeOnly === true;
+        const filtered = (useRepresentativeOnly ? representativeProfiles : profiles).filter((profile) => {
+          const profileCapabilities = profile.capabilities || [];
+          if (requiredCapability && !profileCapabilities.some((item) => item.toLowerCase() === requiredCapability)) {
+            return false;
+          }
+          return true;
+        });
+        const candidates = filtered
+          .map((profile, index) => {
+            const score = scoreSearchQuery(query, [
+              profile.slug,
+              `usaspending.${profile.slug}`,
+              profile.endpoint.path,
+              profile.description || "",
+              ...(profile.tags || []),
+              ...(profile.capabilities || []),
+              plannerStrategyHint(profile.planner),
+            ]);
+            return {
+              profile,
+              index,
+              score,
+              representative: profile.shipTier === "representative" ? 1 : 0,
+            };
+          })
+          .filter((candidate) => candidate.score > 0)
+          .sort((left, right) => {
+            if (right.score !== left.score) return right.score - left.score;
+            if (right.representative !== left.representative) return right.representative - left.representative;
+            return left.index - right.index;
+          })
+          .map((candidate) => candidate.profile);
+
+        const results = candidates.slice(0, limit ?? 20).map((profile) => {
+          const toolName = `usaspending.${profile.slug}`;
+          return {
+            slug: profile.slug,
+            description: profile.description,
+            shipTier: profile.shipTier || "unshipped",
+            tags: profile.tags || [],
+            capabilities: profile.capabilities || [],
+            preferredToolName: toolName,
+            toolName,
+            endpointToolName: toolName,
+            promptUri: `usaspending://prompts/${profile.slug}`,
+            evidenceUri: `usaspending://evidence/${profile.slug}`,
+            healthUri: `usaspending://health/${profile.slug}`,
+          };
+        });
+
+        return {
+          content: [{ type: "text", text: JSON.stringify({ results }, null, 2) }],
+          structuredContent: { results },
+        };
+      } catch (error) {
+        return createToolErrorResult(error, { tool: "usaspending.findCapabilities", query, capability, limit });
+      }
+    }
+  );
+
+  server.registerTool(
+    "usaspending.getEvidence",
+    {
+      description: "Get probe evidence, mismatches, gaps, and risks for a shipped endpoint profile.",
+      inputSchema: {
+        slug: z.string(),
+      },
+    },
+    async ({ slug }: { slug: string }) => {
+      try {
+        const profile = profilesBySlug[slug];
+        if (!profile) {
+          throw new Error(`unknown slug: ${slug}`);
+        }
+        const payload = {
+          slug: profile.slug,
+          lastVerified: profile.lastVerified,
+          evidence: profile.evidence || null,
+          probes: profile.probes || [],
+          mismatches: profile.mismatches || [],
+          gaps: profile.gaps || [],
+          risks: profile.risks || [],
+        };
+        return {
+          content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+          structuredContent: payload,
+        };
+      } catch (error) {
+        return createToolErrorResult(error, { tool: "usaspending.getEvidence", slug });
+      }
+    }
+  );
+
+  server.registerTool(
+    "usaspending.getDoc",
+    {
+      description: "Get the staged contract markdown and semantic prompt for a shipped endpoint profile.",
+      inputSchema: {
+        slug: z.string(),
+      },
+    },
+    async ({ slug }: { slug: string }) => {
+      try {
+        const profile = profilesBySlug[slug];
+        if (!profile) {
+          throw new Error(`unknown slug: ${slug}`);
+        }
+        const docPath = docPaths[slug];
+        if (!docPath || !existsSync(docPath)) {
+          throw new Error(`missing doc for slug '${slug}' at: ${docPath || "<unknown>"}`);
+        }
+        const promptPath = promptPaths[slug];
+        if (!promptPath || !existsSync(promptPath)) {
+          throw new Error(`prompt.md not found for slug '${slug}' at: ${promptPath || "<unknown>"}`);
+        }
+
+        const payload = {
+          slug,
+          docPath,
+          promptPath,
+          contractDoc: readFileSync(docPath, "utf-8"),
+          semanticGuide: readFileSync(promptPath, "utf-8"),
+        };
+        return {
+          content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+          structuredContent: payload,
+        };
+      } catch (error) {
+        return createToolErrorResult(error, { tool: "usaspending.getDoc", slug });
+      }
+    }
+  );
+
+  server.registerTool(
+    "usaspending.getEndpointHealth",
+    {
+      description: "Summarize freshness, ship tier, and recorded profile issues for a profile.",
+      inputSchema: {
+        slug: z.string(),
+      },
+    },
+    async ({ slug }: { slug: string }) => {
+      try {
+        const profile = profilesBySlug[slug];
+        if (!profile) {
+          throw new Error(`unknown slug: ${slug}`);
+        }
+        const health = buildEndpointHealth(profile);
+        return {
+          content: [{ type: "text", text: JSON.stringify(health, null, 2) }],
+          structuredContent: health as any,
+        };
+      } catch (error) {
+        return createToolErrorResult(error, { tool: "usaspending.getEndpointHealth", slug });
       }
     }
   );
@@ -218,6 +430,40 @@ function registerEndpoints(server: any, loaded: LoadedProfiles) {
     );
 
     server.registerResource(
+      `evidence_${slug}`,
+      `usaspending://evidence/${slug}`,
+      {
+        mimeType: "application/json",
+        description: "Probe evidence, mismatches, gaps, and risks for this endpoint profile.",
+      },
+      async (uri: any) => {
+        const profile = profilesBySlug[slug];
+        if (!profile) throw new Error(`unknown profile: ${slug}`);
+        return {
+          contents: [
+            {
+              uri: uri.toString(),
+              mimeType: "application/json",
+              text: JSON.stringify(
+                {
+                  slug: profile.slug,
+                  lastVerified: profile.lastVerified,
+                  evidence: profile.evidence || null,
+                  probes: profile.probes || [],
+                  mismatches: profile.mismatches || [],
+                  gaps: profile.gaps || [],
+                  risks: profile.risks || [],
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      }
+    );
+
+    server.registerResource(
       `prompt_${slug}`,
       `usaspending://prompts/${slug}`,
       {
@@ -238,6 +484,52 @@ function registerEndpoints(server: any, loaded: LoadedProfiles) {
         };
       }
     );
+
+    if (docPaths[slug]) {
+      server.registerResource(
+        `doc_${slug}`,
+        `usaspending://docs/${slug}`,
+        {
+          mimeType: "text/markdown",
+          description: "Raw staged contract markdown for this endpoint.",
+        },
+        async (uri: any) => {
+          const path = docPaths[slug];
+          if (!path) throw new Error(`unknown doc: ${slug}`);
+          return {
+            contents: [
+              {
+                uri: uri.toString(),
+                mimeType: "text/markdown",
+                text: readFileSync(path, "utf-8"),
+              },
+            ],
+          };
+        }
+      );
+    }
+
+    server.registerResource(
+      `health_${slug}`,
+      `usaspending://health/${slug}`,
+      {
+        mimeType: "application/json",
+        description: "Derived freshness and ship-readiness health for this endpoint.",
+      },
+      async (uri: any) => {
+        const profile = profilesBySlug[slug];
+        if (!profile) throw new Error(`unknown profile: ${slug}`);
+        return {
+          contents: [
+            {
+              uri: uri.toString(),
+              mimeType: "application/json",
+              text: JSON.stringify(buildEndpointHealth(profile), null, 2),
+            },
+          ],
+        };
+      }
+    );
   }
 }
 
@@ -251,6 +543,8 @@ async function main() {
     event: "mcp_startup",
     schemaVersion: loaded.schemaVersion,
     profileCount: loaded.profiles.length,
+    representativeProfileCount: loaded.profiles.filter((profile) => profile.shipTier === "representative").length,
+    publicToolMode: "raw_only",
     slugs: loaded.profiles.map((p) => p.slug),
     buildVersion: process.env.BUILD_VERSION || "dev",
   };
@@ -269,6 +563,8 @@ async function main() {
       event: "mcp_listening",
       schemaVersion: loaded.schemaVersion,
       profileCount: loaded.profiles.length,
+      representativeProfileCount: loaded.profiles.filter((profile) => profile.shipTier === "representative").length,
+      publicToolMode: "raw_only",
       buildVersion: process.env.BUILD_VERSION || "dev",
     })
   );

@@ -31,6 +31,7 @@ Aggregates prime award obligations by recipient for a specified fiscal year and 
 - Docs describe `awarding_agency_id` as a recipient identifier, but production requires a valid awarding toptier agency ID.
 - Docs imply `award_category` will be `contracts`, yet production uses lower-case labels such as `contract`, `idv`, `grant`, `direct payment`, and `loans`.
 - Docs omit the default, floor, and cap logic around `limit` (defaults to 100, normalized to ≥1, capped at 500).
+- Current raw-MCP analyst testing did not validate a stable upstream source for `awarding_agency_id`; the Department of Defense autocomplete id `1173` returned an empty FY2025 response, and award search did not consistently expose a helper column for the join.
 
 ---
 
@@ -40,9 +41,11 @@ Aggregates prime award obligations by recipient for a specified fiscal year and 
   - Validate and coerce numeric query parameters client-side to avoid HTML 500 error pages.
   - Set an explicit `limit` tuned to your bandwidth needs; large agencies can exceed thousands of recipients at the default 100-per-page.
   - Watch `page_metadata.has_next_page` to drive pagination rather than assuming a fixed number of pages.
+  - Verify the agency identifier source locally before depending on this endpoint in a multi-step analysis.
 - **Don’t:**
   - Don’t assume `recipient_name` is always present or human-readable—handle `null` and `REDACTED DUE TO PII`.
   - Don’t treat empty result sets as errors; they may indicate unsupported fiscal years or pages past the dataset.
+  - Don’t assume `autocomplete/awarding_agency` ids are valid `awarding_agency_id` inputs for this endpoint unless you have re-probed that join.
 
 ---
 
