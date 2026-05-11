@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -26,6 +28,9 @@ jobs:
 
       - name: Install Python test dependencies
         run: python -m pip install pytest
+
+      - name: Stage USAspending docs
+        run: python scripts/stage_docs.py --version v2
 
       - name: Verify
         run: make verify
