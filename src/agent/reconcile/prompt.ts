@@ -194,7 +194,24 @@ Rules:
 ### 3.2 Input schema
 
 Concise but precise: locations, types, constraints, defaults, required list.
-Drop fields you cannot evidence; put uncertainties in \`gaps\` instead.
+Do **not** delete a material documented request field merely because probes did
+not cover it. Preserve the distinction between:
+
+* \`documented_and_observed\` fields: docs and probes agree.
+* \`observed\` fields: probes show behavior the docs did not clearly describe.
+* \`contradicted\` fields: docs and probes disagree; do not encode the doc claim
+  as reality, but keep the contradiction in \`mismatches\`.
+* \`documented_unverified\` fields: docs mention the field but probes did not
+  verify it; keep the field in \`inputSchema.properties\` with cautious language
+  and record the uncertainty in \`gaps\`.
+* \`observed_unavailable\` fields/endpoints: the docs describe a callable surface
+  but live probes show the endpoint or behavior is unavailable.
+
+Where the v1 schema has no dedicated status field, include status/evidence notes
+inside the field description/constraints and mirror them in \`gaps\`,
+\`mismatches\`, or \`risks\`. A missing field in \`inputSchema.properties\` becomes
+an MCP-level rejection, so omission is only acceptable when the field is
+irrelevant, duplicated, or demonstrably not part of the endpoint surface.
 
 ### 3.3 Output schema
 

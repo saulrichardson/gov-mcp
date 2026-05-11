@@ -1,0 +1,250 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__disaster__spending_by_geography",
+  "generatedAt": "2026-05-10T12:21:00+00:00",
+  "endpointRef": "v2__disaster__spending_by_geography",
+  "summary": "This endpoint is a live-verified geography aggregation surface for disaster-designated spending. It rolls DEFC-filtered awards into state, county, or district totals and can switch between recipient geography and place of performance geography.",
+  "businessPurpose": "Use this endpoint to answer where disaster-designated federal spending was directed geographically for a chosen DEFC set and spending measure, especially for maps, ranking lists, and per-capita comparisons.",
+  "analyticalGrain": "One row per returned geography shape_code at the requested geo_layer and scope, with a live-observed uncoded aggregate bucket when geography assignment is missing and geo_layer_filters are omitted.",
+  "primaryEntities": [
+    {
+      "name": "disaster geography aggregate",
+      "description": "A rolled-up spending record for one geography code at the selected state, county, or district layer after applying disaster filters.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-current-profile",
+        "geo-live-state-obligation"
+      ]
+    },
+    {
+      "name": "DEFC-filtered award population",
+      "description": "The set of awards included in the geography rollup, defined primarily by filter.def_codes and optionally narrowed by award type or shared search filters.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-current-profile",
+        "geo-live-state-obligation"
+      ]
+    }
+  ],
+  "measures": [
+    {
+      "name": "amount",
+      "description": "Summed dollars for the requested spending_type, such as obligation, outlay, or face value of loan.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation",
+        "geo-live-filtered-state-outlay-pop"
+      ]
+    },
+    {
+      "name": "award_count",
+      "description": "Number of awards contributing to each geography total.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation",
+        "geo-live-filtered-state-outlay-pop"
+      ]
+    },
+    {
+      "name": "per_capita",
+      "description": "Per-capita geography metric derived from amount and population when population is available.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation",
+        "geo-live-filtered-state-outlay-pop"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "geography layer",
+      "description": "Choose state, county, or district to set the response grain and the interpretation of shape_code.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation",
+        "geo-live-filtered-state-outlay-pop"
+      ]
+    },
+    {
+      "name": "geographic scope",
+      "description": "Switch between recipient location and place of performance geography before aggregating the spending.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation",
+        "geo-live-filtered-state-outlay-pop"
+      ]
+    },
+    {
+      "name": "DEFC code",
+      "description": "Disaster Emergency Fund Codes determine which disaster-designated spending population is included.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation",
+        "geo-live-empty-defc",
+        "geo-live-lowercase-defc"
+      ]
+    },
+    {
+      "name": "award type",
+      "description": "Optional award_type_codes can narrow the rollup to contracts, grants, loans, and related award categories.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-current-profile"
+      ]
+    },
+    {
+      "name": "time period and recipient filters",
+      "description": "The current raw profile indicates that shared search-filter keys such as time_period, recipient_scope, and recipient_locations can further narrow the aggregated award population.",
+      "evidenceRefs": [
+        "geo-current-profile"
+      ]
+    }
+  ],
+  "suitableQuestions": [
+    {
+      "name": "Which states received the most disaster obligations for a DEFC?",
+      "description": "Use geo_layer=state and spending_type=obligation to rank state totals for one or more DEFC codes.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation"
+      ]
+    },
+    {
+      "name": "How do recipient-location and place-of-performance geographies differ?",
+      "description": "Compare the same DEFC and spending_type across different scope values to see where money was received versus where work was performed.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation",
+        "geo-live-filtered-state-outlay-pop"
+      ]
+    },
+    {
+      "name": "Which geographies have the highest disaster spending per capita?",
+      "description": "Use the returned per_capita metric to compare geography burden or concentration where population is available.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation",
+        "geo-live-filtered-state-outlay-pop"
+      ]
+    }
+  ],
+  "notSuitableFor": [
+    {
+      "name": "Award-level or transaction-level detail",
+      "description": "The endpoint returns aggregates by geography and does not include award identifiers, recipient names, or transaction records.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation",
+        "geo-derived-mcp-gaps"
+      ]
+    },
+    {
+      "name": "General federal spending outside disaster-designated funds",
+      "description": "The request is anchored on DEFC filtering, so it is not the right surface for all-spending geographic analysis.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation"
+      ]
+    },
+    {
+      "name": "Trend analysis over time in a single response",
+      "description": "Although shared time filters may narrow the population, the response grain is geography only and has no time bucket dimension.",
+      "evidenceRefs": [
+        "geo-current-profile",
+        "geo-live-state-obligation",
+        "geo-derived-mcp-gaps"
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "from": "results.shape_code",
+      "to": "reference geography tables or external map shapes",
+      "on": [
+        "geo_layer + shape_code"
+      ],
+      "confidence": "medium",
+      "description": "Map or enrich the returned geography rows by joining shape_code to the appropriate geography reference for the selected layer.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation",
+        "geo-live-filtered-state-outlay-pop"
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Map first, drill down second",
+      "description": "Use this endpoint to identify high-spending geographies, then reuse the same DEFC filter with non-null state shape_code values translated into downstream award-search location filters.",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Call this endpoint with filter.def_codes, geo_layer, scope, and spending_type to identify notable geography rows.",
+          "endpointSlug": "v2__disaster__spending_by_geography",
+          "evidenceRefs": [
+            "geo-live-state-obligation",
+            "geo-live-filtered-state-outlay-pop"
+          ]
+        },
+        {
+          "order": 2,
+          "action": "For state-level follow-up, keep the same filter.def_codes and map each non-null state shape_code into a downstream award-search location object such as {\"country\":\"USA\",\"state\":\"MD\"}. When this endpoint used recipient_location scope or its default, place those objects under recipient_locations with recipient_scope=domestic; when this endpoint used place_of_performance scope, place them under place_of_performance_locations with place_of_performance_scope=domestic.",
+          "evidenceRefs": [
+            "geo-doc-award-search-state-filter-mapping",
+            "geo-live-state-obligation",
+            "geo-live-filtered-state-outlay-pop"
+          ]
+        },
+        {
+          "order": 3,
+          "action": "Insert that filter block into the downstream award-search request template (for example POST /api/v2/search/spending_by_award/) and do not translate the uncoded null shape_code bucket into a state filter because it is not a usable state code.",
+          "evidenceRefs": [
+            "geo-doc-award-search-state-filter-mapping",
+            "geo-live-state-obligation",
+            "geo-derived-mcp-gaps"
+          ]
+        }
+      ],
+      "evidenceRefs": [
+        "geo-doc-award-search-state-filter-mapping",
+        "geo-live-state-obligation",
+        "geo-live-filtered-state-outlay-pop",
+        "geo-derived-mcp-gaps"
+      ]
+    }
+  ],
+  "caveats": [
+    {
+      "statement": "The staged markdown internally disagrees about whether the POST body is a string or an object; live probes confirm you must send the object form shown in the example body.",
+      "status": "contradicted",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation"
+      ]
+    },
+    {
+      "statement": "The response can include an uncoded aggregate bucket with null shape_code and display_name when geography assignment is missing and geo_layer_filters are omitted.",
+      "status": "contradicted",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation"
+      ]
+    },
+    {
+      "statement": "DEFC validation is case-sensitive and not uniform across bad inputs: lowercase values returned 400 while an empty array returned 422.",
+      "status": "documented_and_observed",
+      "evidenceRefs": [
+        "geo-live-empty-defc",
+        "geo-live-lowercase-defc"
+      ]
+    },
+    {
+      "statement": "County and district layers, face_value_of_loan, and shared filter passthrough fields remain documented or inferred but were not reverified in this run.",
+      "status": "unknown",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-current-profile"
+      ]
+    }
+  ]
+}

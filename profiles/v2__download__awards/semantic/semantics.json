@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__download__awards",
+  "generatedAt": "2026-05-09T22:45:00.000Z",
+  "endpointRef": "POST https://api.usaspending.gov/api/v2/download/awards/",
+  "summary": "Starts an asynchronous award-summary and subaward ZIP download for a filtered USAspending search population.",
+  "businessPurpose": "Use this endpoint when the user needs exported award data files rather than interactive API result pages, especially when the desired result set is too large or too detailed for search endpoints.",
+  "analyticalGrain": "The immediate response grain is one download job. The eventual ZIP contains award-summary and subaward files shaped by filters, columns, file_format, and limit.",
+  "primaryEntities": [
+    {
+      "name": "Download job",
+      "description": "The backend job represented by status_url, file_name, and file_url.",
+      "evidenceRefs": ["daw-doc-contract", "daw-source-base", "daw-probe-baseline"]
+    },
+    {
+      "name": "Exported award population",
+      "description": "The prime awards and subawards selected by the filters and written into generated files.",
+      "evidenceRefs": ["daw-doc-contract", "daw-source-view", "daw-probe-baseline"]
+    }
+  ],
+  "measures": [
+    {
+      "name": "Row limit",
+      "description": "Maximum records included in generated files; live probe accepted limit 1.",
+      "evidenceRefs": ["daw-probe-baseline", "daw-current-profile"]
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "filters",
+      "description": "Search filters such as keywords, time_period, agencies, award_type_codes, locations, recipient attributes, TAS, PSC, and NAICS.",
+      "evidenceRefs": ["daw-doc-contract"]
+    },
+    {
+      "name": "columns",
+      "description": "Selected export column IDs echoed into download_request.",
+      "evidenceRefs": ["daw-probe-baseline"]
+    },
+    {
+      "name": "file_format",
+      "description": "Generated file format: csv, tsv, or pstxt.",
+      "evidenceRefs": ["daw-doc-contract", "daw-probe-bad-format"]
+    }
+  ],
+  "suitableQuestions": [
+    {
+      "name": "Export award records for offline analysis",
+      "description": "Use this endpoint when a workflow needs a file rather than paginated JSON rows.",
+      "evidenceRefs": ["daw-doc-contract", "daw-probe-baseline"]
+    },
+    {
+      "name": "Create a bounded sample download",
+      "description": "Use filters plus a small limit to test columns and downstream parsing without generating a large file.",
+      "evidenceRefs": ["daw-probe-baseline"]
+    }
+  ],
+  "notSuitableFor": [
+    {
+      "name": "Immediate award row inspection",
+      "description": "This endpoint returns job metadata. Use spending_by_award for immediate JSON award rows.",
+      "evidenceRefs": ["daw-doc-contract", "daw-probe-baseline"]
+    },
+    {
+      "name": "Counting awards before export",
+      "description": "Use download/count or search count endpoints to estimate size before starting a broad job.",
+      "evidenceRefs": ["daw-source-base", "daw-current-profile"]
+    }
+  ],
+  "joins": [
+    {
+      "from": "v2__download__awards",
+      "to": "v2__download__status",
+      "on": ["file_name"],
+      "confidence": "high",
+      "description": "The response status_url includes file_name; use it to poll the status endpoint.",
+      "evidenceRefs": ["daw-doc-contract", "daw-source-base", "daw-probe-baseline"]
+    },
+    {
+      "from": "v2__download__awards",
+      "to": "v2__search__spending_by_award",
+      "on": ["filters"],
+      "confidence": "medium",
+      "description": "Use compatible filters on spending_by_award when a caller needs immediate JSON preview rows before export.",
+      "evidenceRefs": ["daw-doc-contract", "daw-current-profile"]
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Preview then download",
+      "description": "Use a search endpoint for a quick preview, then start a bounded award download and poll for the generated ZIP.",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Build filters and preview a small sample with spending_by_award.",
+          "endpointSlug": "v2__search__spending_by_award",
+          "evidenceRefs": ["daw-current-profile"]
+        },
+        {
+          "order": 2,
+          "action": "Call download/awards with the same filters, requested columns, file_format, and an intentional limit.",
+          "endpointSlug": "v2__download__awards",
+          "evidenceRefs": ["daw-probe-baseline"]
+        },
+        {
+          "order": 3,
+          "action": "Poll the returned status_url or v2__download__status with file_name until the ZIP is ready.",
+          "endpointSlug": "v2__download__status",
+          "evidenceRefs": ["daw-doc-contract", "daw-source-base"]
+        }
+      ],
+      "evidenceRefs": ["daw-probe-baseline", "daw-source-base"]
+    }
+  ],
+  "caveats": [
+    {
+      "statement": "The response is a job descriptor, not data rows.",
+      "impact": "A caller must poll status_url and then retrieve file_url when ready.",
+      "status": "documented_and_observed",
+      "evidenceRefs": ["daw-doc-contract", "daw-probe-baseline"]
+    },
+    {
+      "statement": "The service injects default award_type_codes; the observed default list changed beyond the older profile's examples.",
+      "impact": "Use download_request as the effective request and avoid hard-coding stale defaults.",
+      "status": "observed",
+      "evidenceRefs": ["daw-probe-baseline", "daw-current-profile"]
+    }
+  ]
+}

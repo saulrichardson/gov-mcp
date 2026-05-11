@@ -1,0 +1,1173 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__search__spending_by_geography",
+  "generatedAt": "2026-05-09T12:00:00+00:00",
+  "endpoint": {
+    "method": "POST",
+    "host": "https://api.usaspending.gov",
+    "path": "/api/v2/search/spending_by_geography/"
+  },
+  "availability": {
+    "status": "available",
+    "confidence": "high",
+    "lastVerified": "2026-05-09",
+    "summary": "Live POST probes returned HTTP 200 for both transaction-default and awards-level requests, confirming the endpoint is available.",
+    "evidenceRefs": ["ev-doc-endpoint-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+  },
+  "provenance": {
+    "sources": [
+      {
+        "id": "src-doc-staged",
+        "kind": "documentation",
+        "title": "Staged docs for Spending by Geography",
+        "locator": "staging/docs/v2/search/spending_by_geography.md",
+        "retrievedAt": "2026-05-09T12:00:00+00:00"
+      },
+      {
+        "id": "src-current-profile",
+        "kind": "current_profile",
+        "title": "Current raw profile path for spending by geography",
+        "locator": "profiles/v2__search__spending_by_geography/profile.json",
+        "retrievedAt": "2026-05-09T12:00:00+00:00"
+      },
+      {
+        "id": "src-derived-coverage",
+        "kind": "derived_check",
+        "title": "Derived coverage ledger for spending by geography",
+        "locator": "derived-from-staged-docs-and-current-profile-context",
+        "retrievedAt": "2026-05-09T12:00:00+00:00"
+      },
+      {
+        "id": "src-live-probe-search-geo",
+        "kind": "live_probe",
+        "title": "Live probe for spending by geography requests",
+        "locator": "POST /api/v2/search/spending_by_geography/",
+        "retrievedAt": "2026-05-09T12:00:00+00:00"
+      }
+    ]
+  },
+  "request": {
+    "contentType": "application/json",
+    "parameters": [
+      {
+        "path": "filters",
+        "direction": "request",
+        "location": "body",
+        "type": "object",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Advanced search filter object that scopes the geography aggregation.",
+        "documented": {
+          "type": "AdvancedFilterObject",
+          "required": true
+        },
+        "observed": {
+          "examples": [
+            {
+              "time_period": [
+                {
+                  "start_date": "2023-01-01",
+                  "end_date": "2023-12-31"
+                }
+              ]
+            }
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-filter-surface", "ev-derived-coverage", "ev-probe-baseline-state-ca-transactions"]
+      },
+      {
+        "path": "subawards",
+        "direction": "request",
+        "location": "body",
+        "type": "boolean",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Legacy flag to group by subawards instead of awards; docs say it defaults to false and live messages warn it will be deprecated.",
+        "documented": {
+          "type": "boolean",
+          "required": false,
+          "default": "false",
+          "notes": "Deprecated per documented sample warning; prefer spending_level=subawards."
+        },
+        "observed": {
+          "defaultBehavior": "When omitted, responses still include a warning that the subawards field will be deprecated and point callers to spending_level=subawards.",
+          "notes": "The probes did not send subawards=true, so acceptance of true remains unverified."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-response-surface", "ev-derived-coverage", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "spending_level",
+        "direction": "request",
+        "location": "body",
+        "type": "string",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Grouping level and data source selector for the totals.",
+        "documented": {
+          "type": "enum[string]",
+          "required": false,
+          "default": "transactions",
+          "allowedValues": ["transactions", "awards", "subawards"]
+        },
+        "observed": {
+          "acceptedValues": ["transactions", "awards"],
+          "defaultBehavior": "When omitted in the baseline probe, the response reported spending_level=transactions.",
+          "examples": ["awards"]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-response-surface", "ev-derived-coverage", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "scope",
+        "direction": "request",
+        "location": "body",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Chooses whether geography is based on place of performance or recipient location.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "allowedValues": ["place_of_performance", "recipient_location"]
+        },
+        "observed": {
+          "acceptedValues": ["place_of_performance"],
+          "examples": ["place_of_performance"]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-derived-coverage", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "geo_layer",
+        "direction": "request",
+        "location": "body",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Requested geography level for the grouped output.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "allowedValues": ["state", "county", "district", "country"]
+        },
+        "observed": {
+          "acceptedValues": ["state"],
+          "examples": ["state"]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-derived-coverage", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "geo_layer_filters",
+        "direction": "request",
+        "location": "body",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Optional list of geography identifiers to limit which state, county, district, or country rows are returned.",
+        "documented": {
+          "type": "array[string]",
+          "required": false,
+          "notes": "Uses U.S. state codes, U.S. county codes, U.S. Congressional districts, or ISO 3166-1 alpha-3 country codes depending on geo_layer."
+        },
+        "observed": {
+          "examples": [
+            ["CA"]
+          ],
+          "notes": "State-level probes filtered to CA returned one geography row."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-derived-coverage", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "filters.keywords",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Keyword search terms for the advanced filter.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.description",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Description text filter within the advanced filter object.",
+        "documented": {
+          "type": "string",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.time_period",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[TimePeriodObject]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Time period filter whose exact object shape depends on whether the search is transaction-based or subaward-based.",
+        "documented": {
+          "type": "array[TimePeriodObject]",
+          "required": false,
+          "notes": "Uses transaction-search time periods unless spending_level=subawards or subawards=true."
+        },
+        "observed": {
+          "examples": [
+            [
+              {
+                "start_date": "2023-01-01",
+                "end_date": "2023-12-31"
+              }
+            ]
+          ],
+          "notes": "A start_date/end_date time period was accepted in both transaction-default and awards requests."
+        },
+        "constraints": [
+          "Shape is shared from search_filters documentation and is polymorphic based on spending_level/subawards."
+        ],
+        "evidenceRefs": ["ev-doc-filter-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "filters.place_of_performance_scope",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Domestic or foreign place-of-performance scope filter.",
+        "documented": {
+          "type": "enum[string]",
+          "required": false,
+          "default": "domestic",
+          "allowedValues": ["domestic", "foreign"],
+          "notes": "The documented default applies only when geo_layer is county, district, or state."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.place_of_performance_locations",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[LocationObject]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Location filters for place of performance using the shared StandardLocationObject shape.",
+        "documented": {
+          "type": "array[LocationObject]",
+          "required": false,
+          "notes": "Detailed member fields live in shared search_filters documentation."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.agencies",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[AgencyObject]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Awarding or funding agency filters.",
+        "documented": {
+          "type": "array[AgencyObject]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.agencies[].type",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": true,
+        "status": "documented_unverified",
+        "description": "Agency filter role.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "allowedValues": ["awarding", "funding"]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.agencies[].tier",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": true,
+        "status": "documented_unverified",
+        "description": "Agency hierarchy tier.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "allowedValues": ["toptier", "subtier"]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.agencies[].name",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": true,
+        "status": "documented_unverified",
+        "description": "Agency name in an AgencyObject.",
+        "documented": {
+          "type": "string",
+          "required": true
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.agencies[].toptier_name",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Optional parent toptier name to disambiguate a subtier with a common name.",
+        "documented": {
+          "type": "string",
+          "required": false,
+          "notes": "Ignored when tier=toptier and only applicable when tier=subtier."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.recipient_search_text",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Free-text recipient terms matched against recipient name, UEI, and DUNS.",
+        "documented": {
+          "type": "array[string]",
+          "required": false,
+          "notes": "Text searched across a recipient's name, UEI, and DUNS."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.recipient_scope",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Domestic or foreign recipient-location scope filter.",
+        "documented": {
+          "type": "enum[string]",
+          "required": false,
+          "default": "domestic",
+          "allowedValues": ["domestic", "foreign"],
+          "notes": "The documented default applies only when geo_layer is county, district, or state."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.recipient_locations",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[LocationObject]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Recipient geography filters using the shared StandardLocationObject shape.",
+        "documented": {
+          "type": "array[LocationObject]",
+          "required": false,
+          "notes": "Detailed member fields live in shared search_filters documentation."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.recipient_type_names",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Recipient type category filters.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.award_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Award type code filter list.",
+        "documented": {
+          "type": "FilterObjectAwardTypes",
+          "required": false,
+          "default": "02,03,04,05,06,07,08,09,10,11,A,B,C,D,IDV_A,IDV_B,IDV_B_A,IDV_B_B,IDV_B_C,IDV_C,IDV_D,IDV_E"
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.award_ids",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Award identifier filter supporting quoted exact-match semantics in docs.",
+        "documented": {
+          "type": "array[string]",
+          "required": false,
+          "notes": "Wrapping an award id in double quotes is documented to force exact matching."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.award_amounts",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[AwardAmounts]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Award amount band filters.",
+        "documented": {
+          "type": "array[AwardAmounts]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.award_amounts[].lower_bound",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "number",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Lower bound for an award amount range.",
+        "documented": {
+          "type": "number",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.award_amounts[].upper_bound",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "number",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Upper bound for an award amount range.",
+        "documented": {
+          "type": "number",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.program_numbers",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Federal program number filters.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.naics_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "object",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "NAICS code include/exclude object.",
+        "documented": {
+          "type": "NAICSCodeObject",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.naics_codes.require",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "NAICS codes to require.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.naics_codes.exclude",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "NAICS codes to exclude.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.tas_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[TASCodeObject]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Treasury Account Symbol include/exclude filters.",
+        "documented": {
+          "type": "array[TASCodeObject]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.psc_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "PSCCodeObject | array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "PSC filters supporting either the newer structured object or a legacy array of codes.",
+        "documented": {
+          "type": "enum[PSCCodeObject, array[string]]",
+          "required": false,
+          "notes": "Supports new PSCCodeObject or legacy array of codes."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.contract_pricing_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Contract pricing type code filters.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.set_aside_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Set-aside type code filters.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.extent_competed_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Extent competed code filters.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.treasury_account_components",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[TreasuryAccountComponentsObject]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Treasury account component filters.",
+        "documented": {
+          "type": "array[TreasuryAccountComponentsObject]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.treasury_account_components[].ata",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string | null",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Allocation Transfer Agency Identifier.",
+        "documented": {
+          "type": "string, nullable",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.treasury_account_components[].aid",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": true,
+        "status": "documented_unverified",
+        "description": "Agency Identifier in a TreasuryAccountComponentsObject.",
+        "documented": {
+          "type": "string",
+          "required": true
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.treasury_account_components[].bpoa",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string | null",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Beginning period of availability.",
+        "documented": {
+          "type": "string, nullable",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.treasury_account_components[].epoa",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string | null",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Ending period of availability.",
+        "documented": {
+          "type": "string, nullable",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.treasury_account_components[].a",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string | null",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Availability type code.",
+        "documented": {
+          "type": "string, nullable",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.treasury_account_components[].main",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": true,
+        "status": "documented_unverified",
+        "description": "Main account code in a TreasuryAccountComponentsObject.",
+        "documented": {
+          "type": "string",
+          "required": true
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.treasury_account_components[].sub",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string | null",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Sub-account code.",
+        "documented": {
+          "type": "string, nullable",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.object_class",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Object class filters.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.program_activity",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[number]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Legacy program activity code filter array.",
+        "documented": {
+          "type": "array[number]",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.program_activities",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[ProgramActivityObject]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Program activity name/code filters using an object that requires at least one member.",
+        "documented": {
+          "type": "array[ProgramActivityObject]",
+          "required": false,
+          "notes": "At least one of name or code is required in each ProgramActivityObject when used."
+        },
+        "constraints": [
+          "At least one of program_activities[].name or program_activities[].code must be provided when this filter is used."
+        ],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.program_activities[].name",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Program activity name in ProgramActivityObject.",
+        "documented": {
+          "type": "string",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.program_activities[].code",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "number",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Program activity code in ProgramActivityObject.",
+        "documented": {
+          "type": "number",
+          "required": false
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "path": "filters.def_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Disaster Emergency Fund Code filters.",
+        "documented": {
+          "type": "array[DEFC]",
+          "required": false,
+          "notes": "COVID-19 and IIJA code groups impose an action_date floor based on the associated public law enactment date."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      }
+    ],
+    "templates": [
+      {
+        "name": "minimal_state_transactions",
+        "description": "Live-verified transaction-level state aggregation using place of performance and a bounded state filter.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/search/spending_by_geography/",
+          "query": {},
+          "body": {
+            "filters": {
+              "time_period": [
+                {
+                  "start_date": "2023-01-01",
+                  "end_date": "2023-12-31"
+                }
+              ]
+            },
+            "scope": "place_of_performance",
+            "geo_layer": "state",
+            "geo_layer_filters": ["CA"]
+          }
+        },
+        "evidenceRefs": ["ev-probe-baseline-state-ca-transactions"]
+      },
+      {
+        "name": "recipient_county_awards",
+        "description": "Documented shape for county-level award aggregation by recipient location with an explicit spending level.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/search/spending_by_geography/",
+          "query": {},
+          "body": {
+            "filters": {
+              "recipient_scope": "domestic",
+              "recipient_search_text": ["school district"]
+            },
+            "scope": "recipient_location",
+            "geo_layer": "county",
+            "spending_level": "awards"
+          }
+        },
+        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-filter-surface"]
+      }
+    ]
+  },
+  "response": {
+    "contentType": "application/json",
+    "shapeSummary": "Top-level metadata echoes scope, geo_layer, and spending_level, with an array of geography rows containing aggregated amounts and optional per-capita/population metrics.",
+    "fields": [
+      {
+        "path": "scope",
+        "direction": "response",
+        "location": "response",
+        "type": "string",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Echo of the request scope.",
+        "documented": {
+          "type": "string",
+          "required": false
+        },
+        "observed": {
+          "examples": ["place_of_performance"]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "geo_layer",
+        "direction": "response",
+        "location": "response",
+        "type": "string",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Echo of the request geo_layer.",
+        "documented": {
+          "type": "string",
+          "required": false
+        },
+        "observed": {
+          "examples": ["state"]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "spending_level",
+        "direction": "response",
+        "location": "response",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Reported grouping level used by the response.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "allowedValues": ["transactions", "awards", "subawards"]
+        },
+        "observed": {
+          "acceptedValues": ["transactions", "awards"],
+          "examples": ["transactions", "awards"]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "results",
+        "direction": "response",
+        "location": "response",
+        "type": "array[GeographyTypeResult]",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Grouped geography result rows.",
+        "documented": {
+          "type": "array[GeographyTypeResult]",
+          "required": true
+        },
+        "observed": {
+          "notes": "Both live probes returned one row when geo_layer_filters was limited to CA."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "messages",
+        "direction": "response",
+        "location": "response",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Warning or instructional messages for consumers.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "observed": {
+          "notes": "Observed warnings matched the documented 2007-10-01 floor and subawards deprecation guidance in both probes."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "results[].shape_code",
+        "direction": "response",
+        "location": "response.results",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Geography identifier for the selected layer.",
+        "documented": {
+          "type": "string",
+          "required": true
+        },
+        "observed": {
+          "examples": ["CA"]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "results[].aggregated_amount",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Aggregated obligation amount for the geography row.",
+        "documented": {
+          "type": "number",
+          "required": true
+        },
+        "observed": {
+          "examples": [427176736718.63, 1579090012877.23]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "results[].display_name",
+        "direction": "response",
+        "location": "response.results",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Human-readable geography label.",
+        "documented": {
+          "type": "string",
+          "required": true
+        },
+        "observed": {
+          "examples": ["California"]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "results[].population",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number | null",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Population for the geography row when available.",
+        "documented": {
+          "type": "number, nullable",
+          "required": true
+        },
+        "observed": {
+          "examples": [39538223]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "results[].per_capita",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number | null",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Per-capita spending metric for the geography row when population is available.",
+        "documented": {
+          "type": "number, nullable",
+          "required": true
+        },
+        "observed": {
+          "examples": [10804.15, 39938.32]
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "path": "results[].total_outlays",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Optional outlay measure that appears for the observed awards-level response and is documented to exist only when spending_level is awards.",
+        "documented": {
+          "type": "number",
+          "required": false,
+          "notes": "Only included when response spending_level is awards."
+        },
+        "observed": {
+          "examples": [790463952358.41],
+          "notes": "Observed in the awards-level CA response."
+        },
+        "constraints": [],
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-awards-state-ca"]
+      }
+    ],
+    "pagination": {
+      "strategy": "none",
+      "fields": [],
+      "notes": "The docs do not describe page, limit, or sort controls; both observed responses returned direct result sets without page metadata.",
+      "evidenceRefs": ["ev-derived-coverage", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+    }
+  },
+  "mcpToolCoverage": {
+    "currentProfilePath": "profiles/v2__search__spending_by_geography/profile.json",
+    "exposedTopLevelRequestFields": [],
+    "missingImportantRequestFields": [
+      "filters",
+      "scope",
+      "geo_layer",
+      "spending_level",
+      "geo_layer_filters",
+      "subawards",
+      "filters.time_period",
+      "filters.agencies",
+      "filters.place_of_performance_scope",
+      "filters.recipient_scope"
+    ],
+    "notes": [
+      "Loaded endpoint context did not include a current raw profile for this slug, so there is no legacy confirmed request schema to expose these fields.",
+      "The semantic bundle preserves documented top-level controls and major nested filter families even though only part of the filter surface has been live-probed."
+    ],
+    "evidenceRefs": ["ev-current-profile-missing", "ev-derived-coverage"]
+  },
+  "behavior": {
+    "contradictions": [],
+    "quirks": [
+      {
+        "statement": "The top-level subawards flag is still documented, but live response messages instruct callers to use spending_level=subawards instead.",
+        "impact": "Prefer spending_level for forward-compatible request construction.",
+        "status": "documented_and_observed",
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "statement": "place_of_performance_scope and recipient_scope document a default of domestic only for county, district, and state geo layers.",
+        "impact": "Do not assume the same default semantics for country-level requests.",
+        "status": "documented_unverified",
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      }
+    ],
+    "gaps": [
+      {
+        "statement": "The detailed member fields for shared LocationObject and TimePeriodObject shapes are referenced from search_filters documentation rather than restated on this endpoint page.",
+        "impact": "Request builders may need shared filter documentation or endpoint-specific live probes to validate the exact nested shapes.",
+        "status": "documented_unverified",
+        "evidenceRefs": ["ev-doc-filter-surface"]
+      },
+      {
+        "statement": "No current raw MCP profile exists in the loaded context for this slug.",
+        "impact": "Without the semantic bundle, MCP callers would lack a maintained request surface for this endpoint.",
+        "status": "observed",
+        "evidenceRefs": ["ev-current-profile-missing"]
+      }
+    ],
+    "risks": [
+      {
+        "statement": "The response warns that search time periods are currently limited to an earliest start date of 2007-10-01 for searches.",
+        "impact": "Analyses requiring earlier data should switch to download or bulk-download workflows rather than relying on this endpoint.",
+        "status": "documented_and_observed",
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      },
+      {
+        "statement": "total_outlays is not part of every geography row and appears when spending_level is awards.",
+        "impact": "Consumers should not assume the outlay measure is present when spending_level is transactions or subawards.",
+        "status": "documented_and_observed",
+        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-awards-state-ca"]
+      }
+    ]
+  }
+}

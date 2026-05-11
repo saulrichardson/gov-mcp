@@ -69,6 +69,10 @@ async function main() {
 
     assert(toolNames.includes("usaspending.findEndpoints"), "missing tool: usaspending.findEndpoints");
     assert(toolNames.includes("usaspending.getEndpoint"), "missing tool: usaspending.getEndpoint");
+    assert(toolNames.includes("usaspending.findConcepts"), "missing tool: usaspending.findConcepts");
+    assert(toolNames.includes("usaspending.getEndpointSemantics"), "missing tool: usaspending.getEndpointSemantics");
+    assert(toolNames.includes("usaspending.validateRequest"), "missing tool: usaspending.validateRequest");
+    assert(toolNames.includes("usaspending.callEndpoint"), "missing tool: usaspending.callEndpoint");
 
     const expectedEndpointTool = `usaspending.${smokeSlug}`;
     assert(
@@ -116,6 +120,35 @@ async function main() {
     );
     assert(Array.isArray((usageRes as any)?.messages) && (usageRes as any).messages.length > 0, "prompt returned no messages");
 
+    const semanticSlug = "v2__search__spending_over_time";
+    const semanticRes = await withTimeout(
+      client.callTool({
+        name: "usaspending.getEndpointSemantics",
+        arguments: { slug: semanticSlug },
+      }),
+      timeoutMs,
+      `timeout calling usaspending.getEndpointSemantics after ${timeoutMs}ms; stderr=${serverStderr}`
+    );
+    const semantics = (semanticRes as any)?.structuredContent as any;
+    assert(semantics && semantics.slug === semanticSlug, `getEndpointSemantics returned unexpected payload for ${semanticSlug}`);
+
+    const validationRes = await withTimeout(
+      client.callTool({
+        name: "usaspending.validateRequest",
+        arguments: {
+          slug: semanticSlug,
+          request: {
+            group: "bad",
+            filters: { keywords: ["infrastructure"] },
+          },
+        },
+      }),
+      timeoutMs,
+      `timeout calling usaspending.validateRequest after ${timeoutMs}ms; stderr=${serverStderr}`
+    );
+    const validation = (validationRes as any)?.structuredContent as any;
+    assert(validation && validation.valid === false, "validateRequest did not reject known bad group value");
+
     let apiStatus: number | null = null;
     if (callApi) {
       const apiRes = await withTimeout(
@@ -160,4 +193,3 @@ main().catch((err) => {
   console.error(`[MCP_SMOKE_CLIENT_FAILED] ${detail}`);
   process.exit(1);
 });
-

@@ -1,0 +1,1099 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__search__spending_by_award_count",
+  "generatedAt": "2026-05-11T15:16:46Z",
+  "endpoint": {
+    "method": "POST",
+    "host": "https://api.usaspending.gov",
+    "path": "/api/v2/search/spending_by_award_count/"
+  },
+  "availability": {
+    "status": "available",
+    "confidence": "high",
+    "lastVerified": "2026-05-09",
+    "summary": "Live award-level and subaward-level POST probes both succeeded with HTTP 200 and returned the documented aggregate response variants.",
+    "evidenceRefs": [
+      "ev-live-baseline-awards",
+      "ev-live-subawards",
+      "ev-source-route",
+      "ev-doc-endpoint"
+    ]
+  },
+  "provenance": {
+    "sources": [
+      {
+        "id": "staged-doc",
+        "kind": "documentation",
+        "title": "Staged docs for spending by award count",
+        "locator": "staging/docs/v2/search/spending_by_award_count.md"
+      },
+      {
+        "id": "repo-search",
+        "kind": "source_code",
+        "title": "Route and test hits for spending_by_award_count",
+        "locator": "usaspending-api/usaspending_api/search/v2/urls.py; usaspending-api/usaspending_api/search/v2/views/spending_by_award_count.py; usaspending-api/usaspending_api/search/tests/integration/test_spending_by_award_count.py"
+      },
+      {
+        "id": "current-profile",
+        "kind": "current_profile",
+        "title": "Current raw profile lookup for spending_by_award_count",
+        "locator": "profiles/v2__search__spending_by_award_count/profile.json"
+      },
+      {
+        "id": "derived-mcp-gap",
+        "kind": "derived_check",
+        "title": "Derived MCP coverage gap assessment",
+        "locator": "Derived from staged docs plus missing current raw profile"
+      },
+      {
+        "id": "live-api",
+        "kind": "live_probe",
+        "title": "Live probes for award-level and subaward-level count responses",
+        "locator": "POST https://api.usaspending.gov/api/v2/search/spending_by_award_count/"
+      },
+      {
+        "id": "review-repair-1",
+        "kind": "review_report",
+        "title": "Reviewer report for disaster-code plus recipient-state award-count drilldown",
+        "locator": "Structured reviewer report selecting repair-1 for v2__search__spending_by_award_count"
+      },
+      {
+        "id": "review-repair-2",
+        "kind": "review_report",
+        "title": "Reviewer report for disaster-geography state drilldown template",
+        "locator": "Structured reviewer report selecting repair-2 for v2__search__spending_by_award_count"
+      },
+      {
+        "id": "review-repair-3",
+        "kind": "review_report",
+        "title": "Reviewer report for award-count filters parent status",
+        "locator": "Structured reviewer report selecting repair-award-count-filters-parent-status for v2__search__spending_by_award_count"
+      }
+    ]
+  },
+  "request": {
+    "contentType": "application/json",
+    "parameters": [
+      {
+        "path": "filters",
+        "direction": "request",
+        "location": "body",
+        "type": "object",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Advanced search filter object used to constrain the award or subaward population before counting results by award type bucket.",
+        "documented": {
+          "type": "AdvancedFilterObject",
+          "required": true
+        },
+        "constraints": [
+          "Request body must include filters."
+        ],
+        "evidenceRefs": [
+          "ev-doc-endpoint",
+          "ev-doc-filters",
+          "ev-review-repair-3-filters-parent-status"
+        ],
+        "observed": {
+          "examples": [
+            {
+              "def_codes": [
+                "L"
+              ],
+              "recipient_scope": "domestic",
+              "recipient_locations": [
+                {
+                  "country": "USA",
+                  "state": "VA"
+                }
+              ]
+            }
+          ],
+          "notes": "A reviewer-reported promoted disaster-geography follow-up request with def_codes=[\"L\"], recipient_scope=\"domestic\", and recipient_locations=[{\"country\":\"USA\",\"state\":\"VA\"}] validated successfully and returned HTTP 200 award counts, so the parent filters object is live-proven for this request shape."
+        }
+      },
+      {
+        "path": "spending_level",
+        "direction": "request",
+        "location": "body",
+        "type": "enum[string]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Chooses whether counts are grouped from award-level records or subaward-level records.",
+        "documented": {
+          "type": "enum[string]",
+          "required": false,
+          "default": "awards",
+          "allowedValues": [
+            "awards",
+            "subawards"
+          ],
+          "notes": "Also determines the data source used for totals."
+        },
+        "observed": {
+          "acceptedValues": [
+            "awards",
+            "subawards"
+          ],
+          "defaultBehavior": "When omitted in a successful probe, the response reported spending_level as awards.",
+          "notes": "A second successful probe accepted spending_level=subawards together with subawards=true."
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-endpoint",
+          "ev-derived-mcp-gap",
+          "ev-live-baseline-awards",
+          "ev-live-subawards"
+        ]
+      },
+      {
+        "path": "subawards",
+        "direction": "request",
+        "location": "body",
+        "type": "boolean",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Boolean switch for grouping by subawards instead of prime awards.",
+        "documented": {
+          "type": "boolean",
+          "required": false,
+          "default": "false unless spending_level is subawards",
+          "notes": "Documentation says the default becomes true when spending_level is set to subawards."
+        },
+        "observed": {
+          "acceptedValues": [
+            "true"
+          ],
+          "notes": "A live subaward probe with subawards=true succeeded and returned the subaward result shape."
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-endpoint",
+          "ev-doc-filters",
+          "ev-derived-mcp-gap",
+          "ev-live-subawards"
+        ]
+      },
+      {
+        "path": "filters.keywords",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Keyword search terms applied within the advanced search filters.",
+        "documented": {
+          "type": "array[string]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.description",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Award description text filter.",
+        "documented": {
+          "type": "string"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.time_period",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Time period filter whose internal shape depends on whether the request searches awards or subawards.",
+        "documented": {
+          "type": "array[TimePeriodObject]",
+          "notes": "Uses award-search time period rules unless subawards is true, in which case subaward search time period rules apply."
+        },
+        "observed": {
+          "examples": [
+            [
+              {
+                "start_date": "2025-10-01",
+                "end_date": "2026-09-30"
+              }
+            ]
+          ],
+          "notes": "Award-level and subaward-level requests containing only filters.time_period both succeeded. Both returned a warning that searches are currently limited to an earliest date of 2007-10-01."
+        },
+        "constraints": [
+          "TimePeriodObject category changes when subawards is true.",
+          "Live warning says search start and end dates are currently limited to an earliest date of 2007-10-01."
+        ],
+        "evidenceRefs": [
+          "ev-doc-filters",
+          "ev-derived-mcp-gap",
+          "ev-live-baseline-awards",
+          "ev-live-subawards"
+        ]
+      },
+      {
+        "path": "filters.place_of_performance_scope",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "enum[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Limits place of performance to domestic or foreign locations.",
+        "documented": {
+          "type": "enum[string]",
+          "allowedValues": [
+            "domestic",
+            "foreign"
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.place_of_performance_locations",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Structured place of performance location filters using the shared StandardLocationObject shape.",
+        "documented": {
+          "type": "array[LocationObject]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.agencies",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Filters awards by awarding or funding agency, with toptier or subtier scoping.",
+        "documented": {
+          "type": "array[AgencyObject]"
+        },
+        "constraints": [
+          "Each agency object requires type, tier, and name."
+        ],
+        "evidenceRefs": [
+          "ev-doc-filters",
+          "ev-derived-mcp-gap"
+        ]
+      },
+      {
+        "path": "filters.recipient_search_text",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Recipient text terms searched across recipient name, UEI, and DUNS.",
+        "documented": {
+          "type": "array[string]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters",
+          "ev-derived-mcp-gap"
+        ]
+      },
+      {
+        "path": "filters.recipient_scope",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "enum[string]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Limits recipients to domestic or foreign recipients.",
+        "documented": {
+          "type": "enum[string]",
+          "allowedValues": [
+            "domestic",
+            "foreign"
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters",
+          "ev-review-repair-1-disaster-state-slice"
+        ],
+        "observed": {
+          "acceptedValues": [
+            "domestic"
+          ],
+          "notes": "A reviewer-reported award-level request accepted recipient_scope=domestic together with def_codes=[\"L\"] and recipient_locations=[{\"country\":\"USA\",\"state\":\"VA\"}] and returned HTTP 200."
+        }
+      },
+      {
+        "path": "filters.recipient_locations",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Structured recipient location filters using the shared StandardLocationObject shape.",
+        "documented": {
+          "type": "array[LocationObject]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters",
+          "ev-review-repair-1-disaster-state-slice"
+        ],
+        "observed": {
+          "examples": [
+            [
+              {
+                "country": "USA",
+                "state": "VA"
+              }
+            ]
+          ],
+          "notes": "A reviewer-reported award-level request accepted recipient_locations=[{\"country\":\"USA\",\"state\":\"VA\"}] together with recipient_scope=domestic and def_codes=[\"L\"] and returned HTTP 200."
+        }
+      },
+      {
+        "path": "filters.recipient_type_names",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Recipient type category filters such as business-category codes.",
+        "documented": {
+          "type": "array[string]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.award_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Restricts the search to specific award type codes before the endpoint rolls counts into its broader type buckets.",
+        "documented": {
+          "type": "FilterObjectAwardTypes",
+          "default": "02,03,04,05,06,07,08,09,10,11,A,B,C,D,IDV_A,IDV_B,IDV_B_A,IDV_B_B,IDV_B_C,IDV_C,IDV_D,IDV_E"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters",
+          "ev-derived-mcp-gap"
+        ]
+      },
+      {
+        "path": "filters.award_ids",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Filters by award identifiers, with quoted values documented as exact-match search terms.",
+        "documented": {
+          "type": "array[string]",
+          "notes": "Quoted award IDs perform exact matches instead of the default fuzzy full-text search."
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.award_amounts",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Amount-range filters using lower_bound and upper_bound bounds.",
+        "documented": {
+          "type": "array[AwardAmounts]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.program_numbers",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Filters by assistance program numbers such as CFDA/Assistance Listing values.",
+        "documented": {
+          "type": "array[string]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.naics_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "object",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "NAICS include/exclude filter object.",
+        "documented": {
+          "type": "NAICSCodeObject"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.tas_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Treasury Account Symbol include/exclude filter objects.",
+        "documented": {
+          "type": "array[TASCodeObject]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.psc_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "object|array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Product and Service Code filters supporting either the newer include/exclude object or a legacy array of codes.",
+        "documented": {
+          "type": "enum[PSCCodeObject, array[string]]",
+          "notes": "Supports new PSCCodeObject or legacy array of codes."
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.contract_pricing_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Contract pricing type code filters.",
+        "documented": {
+          "type": "array[string]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.set_aside_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Set-aside type code filters.",
+        "documented": {
+          "type": "array[string]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.extent_competed_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Extent competed code filters.",
+        "documented": {
+          "type": "array[string]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.treasury_account_components",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Treasury account component filters by ATA/AID/BPOA/EPOA/availability/main/sub-account parts.",
+        "documented": {
+          "type": "array[TreasuryAccountComponentsObject]"
+        },
+        "constraints": [
+          "aid and main are required within each object."
+        ],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.object_class",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Object class filters.",
+        "documented": {
+          "type": "array[string]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.program_activity",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[number]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Legacy program activity code array filter.",
+        "documented": {
+          "type": "array[number]"
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.program_activities",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Program activity filter objects supporting activity name or code.",
+        "documented": {
+          "type": "array[ProgramActivityObject]",
+          "notes": "At least one of name or code must be supplied within each object."
+        },
+        "constraints": [
+          "At least one of name or code is required when using ProgramActivityObject."
+        ],
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "path": "filters.def_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Disaster Emergency Fund Code filters with documented special behavior for COVID-19 and IIJA codes depending on whether the request targets awards or subawards.",
+        "documented": {
+          "type": "array[DEFC]",
+          "notes": "COVID-19 and IIJA codes have special filtering semantics tied to subawards and File C/sub_action_date behavior."
+        },
+        "constraints": [
+          "COVID-19 and IIJA DEFC filters behave differently for prime awards versus subawards."
+        ],
+        "evidenceRefs": [
+          "ev-doc-filters",
+          "ev-derived-mcp-gap",
+          "ev-review-repair-1-disaster-state-slice"
+        ],
+        "observed": {
+          "examples": [
+            [
+              "L"
+            ]
+          ],
+          "notes": "A reviewer-reported award-level request accepted def_codes=[\"L\"] together with recipient_scope=domestic and recipient_locations=[{\"country\":\"USA\",\"state\":\"VA\"}] and returned HTTP 200."
+        }
+      }
+    ],
+    "templates": [
+      {
+        "name": "award-counts-default",
+        "description": "Count filtered prime awards into the documented award-type buckets using the default award-level behavior.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/search/spending_by_award_count/",
+          "query": {},
+          "body": {
+            "filters": {
+              "time_period": [
+                {
+                  "start_date": "2025-10-01",
+                  "end_date": "2026-09-30"
+                }
+              ]
+            }
+          }
+        },
+        "evidenceRefs": [
+          "ev-doc-endpoint",
+          "ev-doc-filters",
+          "ev-live-baseline-awards"
+        ]
+      },
+      {
+        "name": "subaward-counts",
+        "description": "Group the filtered population at the subaward level and return the subaward-type count buckets.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/search/spending_by_award_count/",
+          "query": {},
+          "body": {
+            "spending_level": "subawards",
+            "subawards": true,
+            "filters": {
+              "time_period": [
+                {
+                  "start_date": "2025-10-01",
+                  "end_date": "2026-09-30"
+                }
+              ]
+            }
+          }
+        },
+        "evidenceRefs": [
+          "ev-doc-endpoint",
+          "ev-doc-response",
+          "ev-live-subawards"
+        ]
+      },
+      {
+        "name": "disaster-geography-recipient-state-award-counts",
+        "description": "Follow a non-null state row from v2__disaster__spending_by_geography when that upstream request used recipient geography or its default recipient_location scope. Keep the same DEFC and map the returned state shape_code into recipient_locations with recipient_scope=domestic.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/search/spending_by_award_count/",
+          "query": {},
+          "body": {
+            "filters": {
+              "def_codes": [
+                "L"
+              ],
+              "recipient_scope": "domestic",
+              "recipient_locations": [
+                {
+                  "country": "USA",
+                  "state": "VA"
+                }
+              ]
+            }
+          }
+        },
+        "evidenceRefs": [
+          "ev-review-repair-2-disaster-geography-state-mapping",
+          "ev-review-repair-2-disaster-recipient-state-award-counts"
+        ]
+      },
+      {
+        "name": "disaster-geography-place-of-performance-state-award-counts",
+        "description": "Follow a non-null state row from v2__disaster__spending_by_geography when that upstream request used scope=place_of_performance. Keep the same DEFC and map each returned state shape_code into place_of_performance_locations with place_of_performance_scope=domestic; replace the sample state with one from the geography response.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/search/spending_by_award_count/",
+          "query": {},
+          "body": {
+            "filters": {
+              "def_codes": [
+                "L"
+              ],
+              "place_of_performance_scope": "domestic",
+              "place_of_performance_locations": [
+                {
+                  "country": "USA",
+                  "state": "CA"
+                }
+              ]
+            }
+          }
+        },
+        "evidenceRefs": [
+          "ev-review-repair-2-disaster-geography-state-mapping"
+        ]
+      }
+    ]
+  },
+  "response": {
+    "contentType": "application/json",
+    "shapeSummary": "Live probing confirmed two single-object response variants: award-level requests return numeric counts for contracts, direct_payments, grants, idvs, loans, and other; subaward-level requests return numeric counts for subgrants and subcontracts. Both variants include spending_level and may include warning messages.",
+    "fields": [
+      {
+        "path": "results",
+        "direction": "response",
+        "location": "response",
+        "type": "object",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Container for award-type or subaward-type count measures.",
+        "documented": {
+          "type": "AwardTypeResult|SubawardTypeResult"
+        },
+        "observed": {
+          "notes": "Observed as an object containing award-level count buckets in one successful probe and subaward-level count buckets in another."
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-endpoint",
+          "ev-doc-response",
+          "ev-live-baseline-awards",
+          "ev-live-subawards"
+        ]
+      },
+      {
+        "path": "results.grants",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Count of filtered grant awards.",
+        "documented": {
+          "type": "number"
+        },
+        "observed": {
+          "examples": [
+            198979
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-response",
+          "ev-live-baseline-awards"
+        ]
+      },
+      {
+        "path": "results.loans",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Count of filtered loan awards.",
+        "documented": {
+          "type": "number"
+        },
+        "observed": {
+          "examples": [
+            490703
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-response",
+          "ev-live-baseline-awards"
+        ]
+      },
+      {
+        "path": "results.contracts",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Count of filtered contract awards.",
+        "documented": {
+          "type": "number"
+        },
+        "observed": {
+          "examples": [
+            2086708
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-response",
+          "ev-live-baseline-awards"
+        ]
+      },
+      {
+        "path": "results.direct_payments",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Count of filtered direct payment awards.",
+        "documented": {
+          "type": "number"
+        },
+        "observed": {
+          "examples": [
+            1088268
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-response",
+          "ev-live-baseline-awards"
+        ]
+      },
+      {
+        "path": "results.other",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Count of filtered awards that roll up to the other bucket.",
+        "documented": {
+          "type": "number"
+        },
+        "observed": {
+          "examples": [
+            78498
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-response",
+          "ev-live-baseline-awards"
+        ]
+      },
+      {
+        "path": "results.idvs",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Count of filtered IDV awards.",
+        "documented": {
+          "type": "number"
+        },
+        "observed": {
+          "examples": [
+            60540
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-response",
+          "ev-live-baseline-awards"
+        ]
+      },
+      {
+        "path": "results.subgrants",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Count of filtered subgrants when the endpoint is grouped at the subaward level.",
+        "documented": {
+          "type": "number",
+          "notes": "Defined in SubawardTypeResult."
+        },
+        "observed": {
+          "examples": [
+            75553
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-response",
+          "ev-live-subawards"
+        ]
+      },
+      {
+        "path": "results.subcontracts",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Count of filtered subcontracts when the endpoint is grouped at the subaward level.",
+        "documented": {
+          "type": "number",
+          "notes": "Defined in SubawardTypeResult."
+        },
+        "observed": {
+          "examples": [
+            27974
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-response",
+          "ev-live-subawards"
+        ]
+      },
+      {
+        "path": "spending_level",
+        "direction": "response",
+        "location": "response",
+        "type": "enum[string]",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Echoed or defaulted spending_level value for the request.",
+        "documented": {
+          "type": "enum[string]",
+          "allowedValues": [
+            "awards",
+            "subawards"
+          ]
+        },
+        "observed": {
+          "examples": [
+            "awards",
+            "subawards"
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-endpoint",
+          "ev-doc-response",
+          "ev-live-baseline-awards",
+          "ev-live-subawards"
+        ]
+      },
+      {
+        "path": "messages",
+        "direction": "response",
+        "location": "response",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Optional warnings or debugging/instructional messages from the endpoint.",
+        "documented": {
+          "type": "array[string]"
+        },
+        "observed": {
+          "examples": [
+            [
+              "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. "
+            ]
+          ],
+          "notes": "The same warning text appeared in both award and subaward mode probes."
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-response",
+          "ev-live-baseline-awards",
+          "ev-live-subawards"
+        ]
+      }
+    ],
+    "pagination": {
+      "strategy": "none",
+      "fields": [],
+      "notes": "Live aggregate responses returned no page metadata, and neither docs nor the current evidence indicate any pagination controls.",
+      "evidenceRefs": [
+        "ev-derived-mcp-gap",
+        "ev-doc-response",
+        "ev-live-baseline-awards",
+        "ev-live-subawards"
+      ]
+    }
+  },
+  "mcpToolCoverage": {
+    "currentProfilePath": "profiles/v2__search__spending_by_award_count/profile.json",
+    "exposedTopLevelRequestFields": [],
+    "missingImportantRequestFields": [
+      "filters",
+      "spending_level",
+      "subawards",
+      "filters.time_period",
+      "filters.agencies",
+      "filters.recipient_search_text",
+      "filters.award_type_codes",
+      "filters.def_codes"
+    ],
+    "notes": [
+      "No current raw profile content was loaded for this slug.",
+      "Until a semantic bundle is promoted, the current MCP surface for this slug does not expose the documented advanced-search request structure."
+    ],
+    "evidenceRefs": [
+      "ev-current-profile-missing",
+      "ev-derived-mcp-gap"
+    ]
+  },
+  "behavior": {
+    "contradictions": [],
+    "quirks": [
+      {
+        "statement": "The meaning of filters.time_period depends on whether the request is run against awards or subawards.",
+        "impact": "Callers should not reuse award-level time period assumptions for subaward requests without checking the shared search filter definitions.",
+        "status": "documented_unverified",
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "statement": "Quoted award_ids are documented to perform exact matching, while unquoted values use fuzzier full-text matching.",
+        "impact": "This can materially change counts for award identifiers containing spaces or delimiters.",
+        "status": "documented_unverified",
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "statement": "COVID-19 and IIJA def_codes are documented to change filtering logic depending on whether the endpoint is counting prime awards or subawards.",
+        "impact": "Counts may not be directly comparable across award and subaward requests when DEFC filters are present.",
+        "status": "documented_unverified",
+        "evidenceRefs": [
+          "ev-doc-filters"
+        ]
+      },
+      {
+        "statement": "Live responses can include a warning that search time periods are limited to an earliest date of 2007-10-01 and direct users to download endpoints for older data.",
+        "impact": "Historical analyses reaching back before FY 2008 may need download workflows instead of relying solely on this search endpoint.",
+        "status": "observed",
+        "evidenceRefs": [
+          "ev-live-baseline-awards",
+          "ev-live-subawards"
+        ]
+      }
+    ],
+    "gaps": [],
+    "risks": [
+      {
+        "statement": "There is no current raw profile for this slug, so MCP clients relying only on promoted raw profiles may miss the endpoint entirely or lack the documented filter structure.",
+        "impact": "Semantic promotion is required before the MCP can offer reliable request construction help for this endpoint.",
+        "status": "inferred",
+        "evidenceRefs": [
+          "ev-current-profile-missing",
+          "ev-derived-mcp-gap"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,181 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__search__spending_by_award_count",
+  "generatedAt": "2026-05-09T12:00:00-04:00",
+  "endpointRef": "POST /api/v2/search/spending_by_award_count/",
+  "summary": "Counts a filtered advanced-search result set into broad award-type buckets. Live probing confirmed the award-level response shape and default spending_level=awards; the documented subaward variant remains unverified in this bundle.",
+  "businessPurpose": "Use this endpoint to quickly answer how many filtered results fall into each major award category before drilling into records or dollar totals. It is a classification-count view over the advanced search filter system, not a spending-total endpoint.",
+  "analyticalGrain": "One aggregate response object per request for the entire filtered population, broken into broad type buckets such as contracts, grants, loans, direct payments, other, and IDVs; a documented subaward variant may instead return subgrants and subcontracts.",
+  "primaryEntities": [
+    {
+      "name": "Filtered award population",
+      "description": "The set of prime awards matched by the advanced-search filters when spending_level is awards or subawards is false/default.",
+      "evidenceRefs": ["ev-doc-endpoint", "ev-doc-filters", "ev-live-baseline-awards"]
+    },
+    {
+      "name": "Filtered subaward population",
+      "description": "The set of subawards matched by the advanced-search filters when spending_level is subawards or subawards is true, subject to the documented subaward-specific time-period and DEFC semantics.",
+      "evidenceRefs": ["ev-doc-endpoint", "ev-doc-filters", "ev-doc-response"]
+    },
+    {
+      "name": "Award type bucket",
+      "description": "A high-level category such as contracts, grants, loans, direct payments, other, or IDVs that the endpoint uses as output buckets.",
+      "evidenceRefs": ["ev-doc-endpoint", "ev-doc-response", "ev-live-baseline-awards"]
+    }
+  ],
+  "measures": [
+    {
+      "name": "Award count by bucket",
+      "description": "Numeric counts of filtered awards in each documented award-type bucket: grants, loans, contracts, direct_payments, other, and idvs.",
+      "evidenceRefs": ["ev-doc-endpoint", "ev-doc-response", "ev-live-baseline-awards"]
+    },
+    {
+      "name": "Subaward count by bucket",
+      "description": "A documented but not yet observed response variant that may count subgrants and subcontracts when grouping at the subaward level.",
+      "evidenceRefs": ["ev-doc-response"]
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "Award versus subaward level",
+      "description": "The request can target award-level or subaward-level counting via spending_level and subawards.",
+      "evidenceRefs": ["ev-doc-endpoint", "ev-live-baseline-awards"]
+    },
+    {
+      "name": "Advanced search filter set",
+      "description": "Counts can be sliced by the same advanced search dimensions documented for filters, including time period, agencies, recipient filters, award type filters, location filters, program filters, and disaster codes.",
+      "evidenceRefs": ["ev-doc-filters"]
+    },
+    {
+      "name": "Response type bucket",
+      "description": "The response itself is dimensioned by broad categorical buckets rather than by individual award records or geographic rows.",
+      "evidenceRefs": ["ev-doc-response", "ev-live-baseline-awards"]
+    }
+  ],
+  "suitableQuestions": [
+    {
+      "name": "How many filtered results are contracts versus grants versus loans?",
+      "description": "Use this endpoint when you need category counts for an advanced-search slice before deciding which detailed endpoint to query next.",
+      "evidenceRefs": ["ev-doc-endpoint", "ev-doc-response", "ev-live-baseline-awards"]
+    },
+    {
+      "name": "Does my filter set mostly return IDVs or non-IDV awards?",
+      "description": "The response includes an IDV bucket alongside the other broad award categories.",
+      "evidenceRefs": ["ev-doc-response", "ev-live-baseline-awards"]
+    },
+    {
+      "name": "At a high level, how many subawards match these filters?",
+      "description": "The documented subaward mode suggests a compact count view of subgrants versus subcontracts when subaward grouping is requested.",
+      "evidenceRefs": ["ev-doc-endpoint", "ev-doc-response"]
+    }
+  ],
+  "notSuitableFor": [
+    {
+      "name": "Dollar totals or obligations/outlays analysis",
+      "description": "This endpoint is about counts by type, not spending amounts. Use a spending-total or award-detail endpoint for dollars.",
+      "evidenceRefs": ["ev-doc-endpoint", "ev-doc-response"]
+    },
+    {
+      "name": "Record-level award listings",
+      "description": "The response is one aggregate object, not a paginated list of awards or subawards.",
+      "evidenceRefs": ["ev-doc-response", "ev-derived-mcp-gap", "ev-live-baseline-awards"]
+    },
+    {
+      "name": "Fine-grained subtype or code-level distribution",
+      "description": "The endpoint rolls filtered results into broad output buckets; it does not expose counts by every award_type_code in the response.",
+      "evidenceRefs": ["ev-doc-filters", "ev-doc-response"]
+    },
+    {
+      "name": "Pre-2008 historical search coverage",
+      "description": "A live warning says search time periods are currently limited to an earliest date of 2007-10-01, so older-period analysis may need download endpoints.",
+      "evidenceRefs": ["ev-live-baseline-awards"]
+    }
+  ],
+  "joins": [
+    {
+      "from": "v2__search__spending_by_award_count",
+      "to": "advanced search detail endpoints",
+      "on": ["Reuse the same filters object"],
+      "confidence": "medium",
+      "description": "Use this endpoint as a preflight classification step, then send the same advanced-search filters to detail or amount-oriented search endpoints when you need records or dollars instead of counts.",
+      "evidenceRefs": ["ev-doc-endpoint", "ev-doc-filters"]
+    },
+    {
+      "from": "v2__search__spending_by_award_count",
+      "to": "download or bulk download endpoints",
+      "on": ["Switch workflows when the needed time period predates 2007-10-01"],
+      "confidence": "high",
+      "description": "The live warning explicitly recommends custom award download or download endpoints for data going back to 2000-10-01.",
+      "evidenceRefs": ["ev-live-baseline-awards"]
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Preflight award-type mix for an advanced search",
+      "description": "Check the category mix of a planned advanced-search slice before selecting a more detailed downstream endpoint.",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Build the advanced-search filters object for the population you care about.",
+          "evidenceRefs": ["ev-doc-filters"]
+        },
+        {
+          "order": 2,
+          "action": "Call this endpoint to get broad count buckets for the filtered population.",
+          "endpointSlug": "v2__search__spending_by_award_count",
+          "evidenceRefs": ["ev-doc-endpoint", "ev-doc-response", "ev-live-baseline-awards"]
+        },
+        {
+          "order": 3,
+          "action": "If you need record details or dollar totals, reuse the same filters with a more detailed search endpoint rather than treating this count response as the final analytical output.",
+          "evidenceRefs": ["ev-doc-endpoint", "ev-doc-filters"]
+        }
+      ],
+      "evidenceRefs": ["ev-doc-endpoint", "ev-doc-filters", "ev-doc-response", "ev-live-baseline-awards"]
+    },
+    {
+      "name": "Historical-data fallback",
+      "description": "Switch to download-style workflows when your requested period predates the search endpoint's current lower date limit.",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Attempt the search workflow only for periods at or after 2007-10-01.",
+          "endpointSlug": "v2__search__spending_by_award_count",
+          "evidenceRefs": ["ev-live-baseline-awards"]
+        },
+        {
+          "order": 2,
+          "action": "Use custom award download or other download endpoints for data going back to 2000-10-01 when older history is required.",
+          "evidenceRefs": ["ev-live-baseline-awards"]
+        }
+      ],
+      "evidenceRefs": ["ev-live-baseline-awards"]
+    }
+  ],
+  "caveats": [
+    {
+      "statement": "The subaward response shape is only implied by documentation in this bundle; live behavior has not yet confirmed whether results switches to subgrants and subcontracts exactly as documented.",
+      "impact": "Treat subaward-mode response parsing as provisional until observed live.",
+      "status": "unknown",
+      "evidenceRefs": ["ev-doc-response"]
+    },
+    {
+      "statement": "DEFC filters have documented special rules that differ between prime-award and subaward counting.",
+      "impact": "Counts may shift for reasons beyond simple population size when COVID-19 or IIJA disaster codes are present.",
+      "status": "documented_unverified",
+      "evidenceRefs": ["ev-doc-filters"]
+    },
+    {
+      "statement": "Quoted award_ids are documented to behave as exact matches while unquoted award_ids use fuzzier matching.",
+      "impact": "Seemingly small request-format differences can materially change the resulting counts.",
+      "status": "documented_unverified",
+      "evidenceRefs": ["ev-doc-filters"]
+    },
+    {
+      "statement": "Live responses can warn that search dates are currently limited to an earliest date of 2007-10-01.",
+      "impact": "For older historical analysis, plan a download workflow instead of assuming this endpoint covers the full 2000-forward period.",
+      "status": "observed",
+      "evidenceRefs": ["ev-live-baseline-awards"]
+    }
+  ]
+}

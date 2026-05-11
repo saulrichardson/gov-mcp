@@ -1,0 +1,427 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__search__spending_over_time",
+  "generatedAt": "2026-05-09T22:45:00.000Z",
+  "endpoint": {
+    "method": "POST",
+    "host": "https://api.usaspending.gov",
+    "path": "/api/v2/search/spending_over_time/"
+  },
+  "availability": {
+    "status": "available",
+    "confidence": "high",
+    "lastVerified": "2026-05-09",
+    "summary": "Live probes returned 200 for fiscal-year trend, undocumented group alias, and subaward spending-level requests; invalid group values returned 400 with the live accepted value set.",
+    "evidenceRefs": ["sot-probe-baseline-fy", "sot-probe-alias-fy", "sot-probe-subawards", "sot-probe-bad-group"]
+  },
+  "provenance": {
+    "sources": [
+      {
+        "id": "sot-doc-contract-src",
+        "kind": "documentation",
+        "title": "Staged USAspending spending_over_time contract",
+        "locator": "staging/docs/v2/search/spending_over_time.md"
+      },
+      {
+        "id": "sot-current-profile-src",
+        "kind": "current_profile",
+        "title": "Current promoted raw MCP profile",
+        "locator": "profiles/v2__search__spending_over_time/profile.json"
+      },
+      {
+        "id": "sot-source-view-src",
+        "kind": "source_code",
+        "title": "USAspending SpendingOverTimeVisualizationViewSet",
+        "locator": "usaspending-api/usaspending_api/search/v2/views/spending_over_time.py"
+      },
+      {
+        "id": "sot-live-probes-src",
+        "kind": "live_probe",
+        "title": "Live API probes run on 2026-05-09",
+        "locator": "https://api.usaspending.gov/api/v2/search/spending_over_time/",
+        "retrievedAt": "2026-05-09T22:45:00.000Z"
+      }
+    ]
+  },
+  "request": {
+    "contentType": "application/json",
+    "parameters": [
+      {
+        "path": "group",
+        "direction": "request",
+        "location": "body",
+        "type": "string",
+        "required": true,
+        "status": "contradicted",
+        "description": "Time bucket for the returned series. Documentation lists canonical names; live/source validation also accepts short aliases and normalizes them in the response.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "default": "fiscal_year",
+          "allowedValues": ["calendar_year", "fiscal_year", "quarter", "month"],
+          "notes": "The staged contract omits short aliases."
+        },
+        "observed": {
+          "acceptedValues": ["calendar_year", "cy", "fiscal_year", "fy", "quarter", "q", "month", "m"],
+          "rejectedValues": ["bad"],
+          "defaultBehavior": "Alias 'fy' is accepted and response group is canonicalized to 'fiscal_year'.",
+          "examples": ["fiscal_year", "fy", "quarter"],
+          "notes": "Invalid values return HTTP 400 with the live enum set."
+        },
+        "constraints": ["Use canonical names in generated requests unless reproducing live UI behavior that emits aliases."],
+        "evidenceRefs": ["sot-doc-contract", "sot-source-view", "sot-probe-alias-fy", "sot-probe-bad-group"]
+      },
+      {
+        "path": "filters",
+        "direction": "request",
+        "location": "body",
+        "type": "AdvancedFilterObject",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Advanced search filter object scoping the award, transaction, or subaward population used for the time series.",
+        "documented": {
+          "type": "AdvancedFilterObject",
+          "required": true,
+          "notes": "The contract says filters is required and then defines many nested filter structures."
+        },
+        "observed": {
+          "examples": [
+            {
+              "award_type_codes": ["A", "B", "C"],
+              "time_period": [
+                {
+                  "start_date": "2023-10-01",
+                  "end_date": "2025-09-30"
+                }
+              ]
+            },
+            {
+              "keywords": ["infrastructure"]
+            }
+          ]
+        },
+        "constraints": ["Must be a JSON object.", "Live service returns an error when filters is absent."],
+        "evidenceRefs": ["sot-doc-contract", "sot-source-view", "sot-probe-baseline-fy", "sot-probe-alias-fy"]
+      },
+      {
+        "path": "filters.time_period",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[TimePeriodObject]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Optional date ranges used to bound the spending population before aggregation.",
+        "documented": {
+          "type": "array[TimePeriodObject]",
+          "required": false,
+          "notes": "Date semantics differ for transaction and subaward searches."
+        },
+        "observed": {
+          "examples": [
+            [
+              {
+                "start_date": "2023-10-01",
+                "end_date": "2025-09-30"
+              }
+            ]
+          ],
+          "notes": "The live response includes a message that search dates are limited to an earliest date of 2007-10-01."
+        },
+        "constraints": ["Dates are strings in YYYY-MM-DD form.", "Use download endpoints for pre-2007 history."],
+        "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy"]
+      },
+      {
+        "path": "filters.award_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Optional award type filter, commonly used to isolate contracts, grants, loans, IDVs, direct payments, or other assistance.",
+        "documented": {
+          "type": "FilterObjectAwardTypes",
+          "required": false
+        },
+        "observed": {
+          "examples": [["A", "B", "C"], ["A", "B", "C", "D"]]
+        },
+        "constraints": ["Use USAspending award type codes, not business labels."],
+        "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy", "sot-probe-subawards"]
+      },
+      {
+        "path": "filters.keywords",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Optional text search filter applied before aggregation.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "observed": {
+          "examples": [["infrastructure"]]
+        },
+        "constraints": ["Keyword searches can produce broad time series and should usually be combined with date or award-type filters."],
+        "evidenceRefs": ["sot-doc-contract", "sot-probe-alias-fy"]
+      },
+      {
+        "path": "filters.program_activities",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[ProgramActivityObject]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Optional filter by program activity name or code. Source validation requires at least one member in each object.",
+        "documented": {
+          "type": "array[ProgramActivityObject]",
+          "required": false,
+          "notes": "The contract says at least one ProgramActivityObject member must be provided."
+        },
+        "observed": {
+          "notes": "Not live-probed in this bundle."
+        },
+        "constraints": ["Each object should include name or code."],
+        "evidenceRefs": ["sot-doc-contract", "sot-source-view"]
+      },
+      {
+        "path": "subawards",
+        "direction": "request",
+        "location": "body",
+        "type": "boolean",
+        "required": false,
+        "status": "inferred",
+        "description": "Legacy boolean that asks for subaward grouping instead of prime-award/transaction spending.",
+        "documented": {
+          "type": "boolean",
+          "required": false,
+          "default": "false"
+        },
+        "observed": {
+          "defaultBehavior": "Live responses now warn that the subawards field will be deprecated; set spending_level='subawards' instead."
+        },
+        "constraints": ["Prefer spending_level='subawards' for new callers."],
+        "evidenceRefs": ["sot-doc-contract", "sot-source-view", "sot-probe-baseline-fy"]
+      },
+      {
+        "path": "spending_level",
+        "direction": "request",
+        "location": "body",
+        "type": "string",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Controls whether the series is calculated from transactions, award summaries, or subawards.",
+        "documented": {
+          "type": "enum[string]",
+          "required": false,
+          "default": "transactions",
+          "allowedValues": ["transactions", "awards", "subawards"]
+        },
+        "observed": {
+          "acceptedValues": ["transactions", "awards", "subawards"],
+          "defaultBehavior": "Omitted spending_level returns spending_level='transactions'.",
+          "examples": ["subawards"]
+        },
+        "constraints": ["Subaward responses contain fewer award-category columns than transaction/award responses."],
+        "evidenceRefs": ["sot-doc-contract", "sot-source-view", "sot-probe-baseline-fy", "sot-probe-subawards"]
+      }
+    ],
+    "templates": [
+      {
+        "name": "contract_obligations_by_fiscal_year",
+        "description": "Two-fiscal-year contract obligation trend for a bounded search period.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/search/spending_over_time/",
+          "query": {},
+          "body": {
+            "group": "fiscal_year",
+            "filters": {
+              "award_type_codes": ["A", "B", "C"],
+              "time_period": [
+                {
+                  "start_date": "2023-10-01",
+                  "end_date": "2025-09-30"
+                }
+              ]
+            }
+          }
+        },
+        "evidenceRefs": ["sot-probe-baseline-fy"]
+      },
+      {
+        "name": "subaward_quarter_series",
+        "description": "Quarterly subaward trend using the modern spending_level field.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/search/spending_over_time/",
+          "query": {},
+          "body": {
+            "group": "quarter",
+            "spending_level": "subawards",
+            "filters": {
+              "time_period": [
+                {
+                  "start_date": "2023-10-01",
+                  "end_date": "2024-09-30"
+                }
+              ],
+              "award_type_codes": ["A", "B", "C", "D"]
+            }
+          }
+        },
+        "evidenceRefs": ["sot-probe-subawards"]
+      }
+    ]
+  },
+  "response": {
+    "contentType": "application/json",
+    "shapeSummary": "A time-series object with canonical group, resolved spending_level, ascending results rows, and warning messages. Each result row is one time bucket with aggregate amount plus category obligation/outlay columns.",
+    "fields": [
+      {
+        "path": "group",
+        "direction": "response",
+        "location": "response",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Canonical group name used in the result.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "allowedValues": ["calendar_year", "fiscal_year", "quarter", "month"]
+        },
+        "observed": {
+          "examples": ["fiscal_year", "quarter"],
+          "notes": "Alias request group 'fy' is returned as 'fiscal_year'."
+        },
+        "constraints": [],
+        "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy", "sot-probe-alias-fy", "sot-probe-subawards"]
+      },
+      {
+        "path": "spending_level",
+        "direction": "response",
+        "location": "response",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Resolved spending level used to calculate the series.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "allowedValues": ["transactions", "awards", "subawards"]
+        },
+        "observed": {
+          "examples": ["transactions", "subawards"]
+        },
+        "constraints": [],
+        "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy", "sot-probe-subawards"]
+      },
+      {
+        "path": "results",
+        "direction": "response",
+        "location": "response.results",
+        "type": "array[TimeResult]",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Ascending time buckets; each bucket contains time_period, aggregated_amount, category obligations, and nullable outlay columns.",
+        "documented": {
+          "type": "array[TimeResult]",
+          "required": true
+        },
+        "observed": {
+          "examples": [
+            {
+              "time_period": {
+                "fiscal_year": "2024"
+              },
+              "aggregated_amount": 468384691181.51
+            },
+            {
+              "time_period": {
+                "fiscal_year": "2024",
+                "quarter": "1"
+              },
+              "aggregated_amount": 39626176461490.99
+            }
+          ],
+          "notes": "Transaction/award rows include Direct/Idv/Loan/Other columns; subaward rows observed only Contract and Grant columns."
+        },
+        "constraints": ["Do not treat results as award-level rows; the grain is one time bucket."],
+        "evidenceRefs": ["sot-doc-contract", "sot-source-view", "sot-probe-baseline-fy", "sot-probe-subawards"]
+      },
+      {
+        "path": "messages",
+        "direction": "response",
+        "location": "response",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Warnings and development notes returned by the live API, including date-limit and subawards deprecation guidance.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "observed": {
+          "examples": [
+            "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.",
+            "The 'subawards' field will be deprecated in the future. Set 'spending_level' to 'subawards' instead."
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy", "sot-probe-subawards"]
+      }
+    ]
+  },
+  "mcpToolCoverage": {
+    "currentProfilePath": "profiles/v2__search__spending_over_time/profile.json",
+    "exposedTopLevelRequestFields": ["filters", "group", "spending_level", "subawards"],
+    "missingImportantRequestFields": ["filters.time_period", "filters.award_type_codes", "filters.program_activities", "filters.keywords"],
+    "notes": [
+      "The raw MCP exposes filters as an object but does not make the nested filter semantics searchable or status-classified.",
+      "The raw profile describes aliases in prose; the semantic bundle exposes them as machine-readable acceptedValues."
+    ],
+    "evidenceRefs": ["sot-current-profile", "sot-doc-contract", "sot-probe-alias-fy"]
+  },
+  "behavior": {
+    "contradictions": [
+      {
+        "statement": "The staged contract lists only canonical group values, but source and live validation also accept cy, fy, q, and m.",
+        "impact": "Agents reading only the docs may reject valid UI-style requests; agents writing new requests should still prefer canonical group names.",
+        "status": "contradicted",
+        "evidenceRefs": ["sot-doc-contract", "sot-source-view", "sot-probe-alias-fy", "sot-probe-bad-group"]
+      }
+    ],
+    "quirks": [
+      {
+        "statement": "The live API returns a deprecation warning for the legacy subawards field and directs callers to spending_level='subawards'.",
+        "impact": "New generated requests should use spending_level rather than subawards.",
+        "status": "observed",
+        "evidenceRefs": ["sot-probe-baseline-fy", "sot-probe-subawards"]
+      },
+      {
+        "statement": "Subaward result rows observed fewer category columns than transaction result rows.",
+        "impact": "Consumers should not assume every TimeResult has Direct, Idv, Loan, or Other columns when spending_level is subawards.",
+        "status": "observed",
+        "evidenceRefs": ["sot-probe-subawards"]
+      }
+    ],
+    "gaps": [
+      {
+        "statement": "The full AdvancedFilterObject is large; this bundle records the major filters needed for MCP discovery and request construction, not every nested search filter.",
+        "impact": "Agents should use getEvidence/getDoc when constructing obscure filters not listed by listRequestFields.",
+        "status": "unknown",
+        "evidenceRefs": ["sot-doc-contract"]
+      }
+    ],
+    "risks": [
+      {
+        "statement": "Very broad keyword-only trend requests can scan the full indexed date range and produce long series.",
+        "impact": "Prefer explicit time_period and award_type_codes for repeatable analytical calls.",
+        "status": "inferred",
+        "evidenceRefs": ["sot-probe-alias-fy", "sot-doc-contract"]
+      }
+    ]
+  }
+}

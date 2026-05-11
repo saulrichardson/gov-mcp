@@ -1,151 +1,174 @@
 # gov-gpt
 
-`gov-gpt` generates evidence-backed USAspending endpoint profiles and serves them as MCP tools.
+`gov-gpt` builds an evidence-backed semantic MCP for the USAspending API.
 
-## What This Is
+The product is not a thin HTTP wrapper. The goal is a tool surface that lets a
+coding or analysis agent discover the right USAspending endpoint, understand the
+business meaning of its inputs and outputs, construct valid requests, inspect
+evidence, and make bounded live calls.
 
-This repository is a profile pipeline, not the USAspending API itself.
+## Direction
 
-- Input: API contract markdown from the `usaspending-api` submodule.
-- Processing: a 3-pass Codex pipeline per endpoint slug.
-- Output: validated profile fixtures in `profiles/`.
-- Runtime: an MCP stdio server exposing each profile as a tool/resource/prompt.
+The primary workflow is agentic:
+
+- Agents SDK producers in `scripts/agents` author Semantic Profile V2 bundles.
+- The model owns endpoint investigation, reconciliation, and semantic synthesis.
+- Local code supplies tools, broad YOLO shell access, artifact writes, generic
+  validators, MCP smoke tests, and promotion.
+- Deterministic code is allowed as a gate. It should not be the author of
+  endpoint-specific semantics.
+
+The durable artifact is a four-file semantic bundle:
+
+```text
+profiles/<slug>/semantic/
+  endpoint.json
+  semantics.json
+  evidence.jsonl
+  usage.md
+```
+
+These bundles are loaded by the MCP server and exposed through semantic
+discovery, understanding, request-construction, validation, and execution tools.
 
 ```mermaid
 flowchart LR
-    A["Contract docs\nusaspending-api/.../api_contracts/contracts/v2"] --> B["Stage\npython scripts/stage_docs.py --version v2"]
-    B --> C["Probe + reconcile\nmake pipeline SLUG=<slug>\nor make pipeline-run-bg ..."]
-    C --> D["Promote\nmake promote-profile SLUG=<slug>\nor python scripts/full_pipeline.py promote-finals ..."]
-    D --> E["Serve\nscripts/mcp/bin/stdio-server"]
-    E --> F["Clients\nCodex / Cursor / Claude"]
+    A["USAspending docs and source"] --> B["Agents SDK producer\nYOLO autonomy"]
+    B --> C["Semantic Profile V2 bundle"]
+    C --> D["Generic validators\nreview/repair/story gates"]
+    D --> E["profiles/<slug>/semantic"]
+    E --> F["MCP server\nsemantic + raw tools"]
+    F --> G["Coding agents and analysts"]
 ```
 
-## Fast Start
+## Quick Start
 
-### 1. Prerequisites
+Prerequisites:
 
 - Node.js 22+
 - npm
 - Python 3.11+
-- `CODEX_API_KEY` in environment or `.env`
+- `OPENAI_API_KEY` or `CODEX_API_KEY` in `.env`
 
-### 2. Install dependencies
+Install dependencies:
 
 ```bash
+npm --prefix scripts/agents install --silent
 npm --prefix scripts/codex install --silent
 npm --prefix scripts/mcp install --silent
 ```
 
-### 3. Configure environment
+Run one endpoint through the semantic producer:
 
 ```bash
-cp .env.example .env
-# set CODEX_API_KEY
+make agents-semantic \
+  SLUG=v2__search__spending_by_geography \
+  AGENTS_OUT_ROOT=runs/agents-sdk-demo \
+  AGENTS_AUTONOMY=yolo
 ```
 
-### 4. Stage docs and choose a slug
+Validate the generated bundle:
 
 ```bash
-python scripts/stage_docs.py --version v2
-python scripts/list_staged_slugs.py
+make semantic-validate SEMANTIC_ROOT=runs/agents-sdk-demo
 ```
 
-### 5. Run one endpoint through the pipeline
+Review, repair, and story-test when a bundle is important enough to promote:
 
 ```bash
-make pipeline SLUG=v2__awards__last_updated
+make agents-review \
+  SLUG=v2__search__spending_by_geography \
+  AGENTS_OUT_ROOT=runs/agents-sdk-demo \
+  > runs/review.json
+
+make agents-repair \
+  SLUG=v2__search__spending_by_geography \
+  AGENTS_OUT_ROOT=runs/agents-sdk-demo \
+  AGENTS_REVIEW_REPORT=runs/review.json \
+  AGENTS_REPAIR_TASK_ID=<task-id>
+
+make agents-story \
+  AGENTS_BUNDLE_GLOB="/Users/saulrichardson/projects/gov-gpt/runs/agents-sdk-demo/*/endpoint.json" \
+  AGENTS_STORY_OUTPUT=runs/story.json
 ```
 
-### 6. Promote and validate fixtures
+Promote semantic bundles into the MCP-loaded profile directories only after the
+bundle passes the generic gates. Then validate and smoke-test the server:
 
 ```bash
-make promote-profile SLUG=v2__awards__last_updated
-scripts/mcp/bin/validate-profiles
-# bulk option: promote every staged slug that already has a valid final artifact
-python scripts/full_pipeline.py promote-finals --version v2 --parallel 8 --json
-```
-
-### 7. Start MCP server
-
-```bash
+scripts/mcp/bin/validate-semantic-bundles
+scripts/mcp/bin/smoke-client
 scripts/mcp/bin/stdio-server
 ```
 
-### 8. Connect from MCP clients
+## Runtime MCP
 
-This repo ships preconfigured MCP client configs:
+The MCP server in `scripts/mcp` exposes:
 
-- `.mcp.json` (Claude Code)
-- `.cursor/mcp.json` (Cursor)
+- semantic discovery tools such as `usaspending.findConcepts`,
+  `usaspending.findEndpoints`, and `usaspending.findWorkflows`
+- semantic inspection tools such as `usaspending.getEndpointSchema`,
+  `usaspending.getEndpointSemantics`, `usaspending.getEvidence`, and
+  `usaspending.getUsageGuide`
+- request helpers such as `usaspending.getRequestTemplate`,
+  `usaspending.validateRequest`, `usaspending.explainValidationError`, and
+  `usaspending.listRequestFields`
+- execution through `usaspending.callEndpoint`
+- raw endpoint aliases like `usaspending.v2__search__spending_by_award`
 
-For a copy-paste config snippet for other clients (including Codex Desktop), run:
+Client config snippets:
 
 ```bash
 scripts/mcp/bin/print-client-configs
 ```
 
-## Daily Commands
+## Supporting Raw-Profile Pipeline
+
+The older `scripts/codex` pipeline still supports raw endpoint profile
+generation through `discover`, `validate`, and `reconcile`. It remains useful for
+raw MCP coverage, staged docs, and the shared Semantic Profile V2 validator.
+
+It is not the semantic MCP authoring path. New semantic endpoint knowledge should
+be produced through `scripts/agents`.
+
+Raw-profile flow:
 
 ```bash
-# one stage
-make discover SLUG=<slug>
-make validate SLUG=<slug>
-make profile SLUG=<slug>
-
-# all staged slugs
-make discover-all PARALLEL=2
-make validate-all PARALLEL=2
-make profile-all PARALLEL=2
-make pipeline-promote-finals PIPELINE_VERSION=v2 PARALLEL=8
-
-# full gate
-make verify
-```
-
-## Prove Full Coverage (Background)
-
-Run a Codex preflight first (auth + model smoke), then start a detached full-contract job:
-
-```bash
-make codex-preflight
-make pipeline-run-bg PARALLEL=4 PIPELINE_VERSION=v2
-```
-
-The background command prints a `jobDir`. Use it to monitor progress:
-
-```bash
-make pipeline-status-watch JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>
-tail -f /absolute/path/to/runs/_jobs/<job-id>/runner.log
-```
-
-Stage output validation (schema + freshness) is enabled by default. To bypass it temporarily:
-
-```bash
-make pipeline-run-bg PARALLEL=4 PIPELINE_VERSION=v2 SKIP_OUTPUT_VALIDATION=1
-```
-
-At any point, compute proof-of-coverage:
-
-```bash
-make pipeline-coverage PIPELINE_VERSION=v2
-# aggressively expand promoted coverage from already-valid finals
-make pipeline-promote-finals PIPELINE_VERSION=v2 PARALLEL=8
-```
-
-Replay only failed slugs from a previous job and run an offline audit:
-
-```bash
-make pipeline-retry-failed FROM_JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>
-make pipeline-audit JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>
+python scripts/stage_docs.py --version v2
+make pipeline SLUG=v2__awards__last_updated
+make promote-profile SLUG=v2__awards__last_updated
+scripts/mcp/bin/validate-profiles
 ```
 
 ## Documentation Map
 
-- Deep architecture and internals: `docs/architecture.md`
-- Operator runbook and remediation: `OPERATIONS.md`
+- Engineering approach: `docs/engineering-approach.md`
+- Target MCP shape: `docs/mcp-target-shape.md`
+- Semantic Profile V2 contract: `docs/semantic-profile-v2.md`
+- Agent operating model: `docs/semantic-agent-operating-model.md`
+- YOLO access audit and stress test: `docs/agents-sdk-yolo-access-audit.md`
+- Agents SDK runner: `scripts/agents/README.md`
+- MCP runtime: `scripts/mcp/README.md`
+- Raw Codex profile pipeline: `scripts/codex/README.md`
+- Profile fixtures: `profiles/README.md`
+- Operator runbook: `OPERATIONS.md`
 
-## Current Snapshot
+## Verification
 
-- Staged v2 contracts in `staging/docs/v2/index.jsonl`: 172 contracts, 1 supporting doc.
-- Final artifacts in `runs/v2/*/final`: 83 slugs.
-- Promoted profile fixtures in `profiles/manifest.json`: 86 slugs.
+Full repo verification:
+
+```bash
+make verify
+```
+
+Focused checks used most often while working on the semantic MCP:
+
+```bash
+npm --prefix scripts/agents run typecheck
+npm --prefix scripts/agents run test
+npm --prefix scripts/agents run smoke
+npm --prefix scripts/codex run semantic:validate -- --root runs/agents-sdk
+npm --prefix scripts/mcp run typecheck
+npm --prefix scripts/mcp run test
+scripts/mcp/bin/validate-semantic-bundles
+```

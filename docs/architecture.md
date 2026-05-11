@@ -2,121 +2,137 @@
 
 ## Purpose
 
-`gov-gpt` converts USAspending endpoint markdown into validated, runtime-safe MCP tools.
+`gov-gpt` converts scattered USAspending documentation, source behavior, live API
+observations, and agent-authored semantic analysis into an MCP surface that a
+coding agent can use reliably.
 
 System goals:
 
-- Preserve evidence from probing as first-class artifacts.
-- Fail fast on schema drift or missing outputs.
-- Expose a strict, deterministic MCP interface for downstream agents.
+- Keep evidence as first-class artifacts.
+- Let a general coding agent author endpoint semantics with broad autonomy.
+- Use deterministic code for validation, loading, guardrails, and repeatable MCP
+  execution, not for endpoint-specific semantic synthesis.
+- Expose both semantic helpers and raw endpoint calls through MCP.
+- Fail loudly on invalid artifacts, schema drift, missing evidence, or unsafe
+  requests.
 
-## End-to-End Dataflow
+## Primary Dataflow
 
 ```mermaid
 flowchart TD
-    A["Submodule docs\nusaspending-api/usaspending_api/api_contracts/contracts/v2"] --> B["staging/docs/v2\nindex.jsonl + supporting_manifest.json"]
-    B --> C["discover pass\nruns/v2/<slug>/discover/summary.json"]
-    C --> D["validate pass\nruns/v2/<slug>/validate/summary.json"]
-    D --> E["final pass\nruns/v2/<slug>/final/profile.json + prompt.md"]
-    E --> F["promote-profile\nprofiles/<slug>/profile.json + prompt.md"]
-    F --> G["profiles/manifest.json"]
-    F --> H["MCP server registration\nusaspending.<slug>"]
+    A["USAspending docs\nusaspending-api/.../contracts/v2"] --> B["staging/docs/v2"]
+    S["USAspending source\nlocal submodule"] --> C["Agents SDK producer"]
+    B --> C
+    R["current raw profile\nprofiles/<slug>/profile.json"] --> C
+    C --> D["runs/agents-sdk/<slug>\nendpoint.json\nsemantics.json\nevidence.jsonl\nusage.md"]
+    D --> E["generic validation\nreview\nrepair\nstory gate"]
+    E --> F["profiles/<slug>/semantic"]
+    F --> G["MCP semantic loader"]
+    H["raw profiles\nprofiles/<slug>/profile.json"] --> G
+    G --> I["stdio MCP server"]
 ```
+
+The semantic bundle is the source of truth for the higher-level MCP behavior.
+The framework that produced it is replaceable; the bundle contract and gates are
+not.
 
 ## Component Boundaries
 
-- `usaspending-api/`
-  - Submodule source for contract markdown only.
-- `scripts/stage_docs.py`
-  - Copies versioned docs into `staging/docs/<version>/`.
-  - Emits `index.jsonl` with canonical slug per contract.
-  - Emits `supporting_manifest.json` for always-include supporting docs.
-- `scripts/codex/`
-  - Pipeline runner scripts invoked through `run-agent.sh`.
-  - Stages:
-    - `discover.ts`: initial probe and hypothesis summary.
-    - `validate.ts`: second pass stress-check and deltas.
-    - `reconcile.ts`: final profile + semantic prompt synthesis.
-- `src/agent/core/`
-  - Shared configuration loading, schema contracts, path helpers, staging index resolution.
+- `scripts/agents/`
+  - Primary Semantic Profile V2 producer, reviewer, repairer, and story-gate
+    implementation using the OpenAI Agents SDK.
+  - Default autonomy is `yolo`, which grants each role shell access through
+    `yolo_shell_command`.
+  - The TypeScript code supplies tools and gates. The model owns endpoint
+    understanding and artifact content.
+- `src/agent/core/semanticProfileSchema.ts`
+  - Canonical Semantic Profile V2 schema used by validators and loaders.
 - `scripts/mcp/`
-  - Profile loading, validation, promotion, and MCP stdio server runtime.
+  - MCP runtime, semantic bundle loading, request helpers, validation, raw calls,
+    smoke clients, and promotion utilities.
+- `scripts/codex/`
+  - Supporting raw-profile pipeline: `discover`, `validate`, `reconcile`.
+  - Also owns the shared `semantic:validate` command for run-root validation.
+  - It is not the semantic authoring path.
+- `profiles/`
+  - Published raw profile fixtures and promoted semantic bundles.
+- `usaspending-api/`
+  - Local source and contract-doc submodule used as evidence.
 
-## Canonical Identifiers and Paths
+## Semantic Bundle Contract
 
-Slug format is strict and version-prefixed.
+Each promoted semantic endpoint contains:
 
-- Format: `v<version>__<path_parts_joined_by__>`
-- Example: `v2__awards__last_updated`
+```text
+profiles/<slug>/semantic/
+  endpoint.json
+  semantics.json
+  evidence.jsonl
+  usage.md
+```
 
-Path conventions:
+`endpoint.json` captures the callable surface, availability, request facts,
+response facts, request templates, MCP coverage gaps, contradictions, quirks,
+gaps, and risks.
 
-- Staging: `staging/docs/<version>/...`
-- Run artifacts: `runs/<version>/<slug>/{discover,validate,final}/...`
-- Published fixtures: `profiles/<slug>/{profile.json,prompt.md}`
-- Fixture manifest: `profiles/manifest.json`
+`semantics.json` captures business purpose, analytical grain, entities,
+measures, dimensions, suitable questions, unsuitable questions, joins,
+workflows, and caveats.
 
-## Stage Contracts
+`evidence.jsonl` backs every material claim.
 
-Schemas are defined in `src/agent/core/profileSchema.ts` and re-exported via `src/agent/core/schema.ts`.
+`usage.md` is a derived guide for a downstream agent using the MCP.
 
-- `DiscoverSchema`
-  - Requires `schemaVersion`, `contract`, `probes`, `mismatches`, `gaps`, `risks`.
-- `ValidateSchema`
-  - `DiscoverSchema` plus `deltas`.
-  - Super-refine requires at least one probe where `meta.newFromPass2 === true`.
-- `ProfileSchema`
-  - Final contract requires:
-    - `contract.confidence = "confirmed"`
-    - `contract.lifecycle`
-    - `contract.lastVerified` in `YYYY-MM-DD`
+## Agent Runtime
 
-If a stage emits missing/invalid output, `ensureValid()` attempts a constrained repair and fails with explicit error code if unresolved.
+The producer receives an endpoint slug and a final artifact contract. It can:
 
-## Per-Stage Runtime
+- load staged docs and current raw/semantic profiles
+- read repository files
+- search source and tests
+- run bounded USAspending probes through narrow tools
+- run arbitrary shell commands in YOLO mode
+- write the four required artifacts
+- validate and promote only after validation succeeds
 
-### Discover (`scripts/codex/src/discover.ts`)
+Reviewer, repairer, and story agents use the same contract from different
+angles:
 
-- Resolves slug from staged index.
-- Loads endpoint markdown + supporting docs.
-- Starts Codex thread and writes:
-  - `prompt.txt`
-  - `response.txt`
-  - `items.jsonl` and `usage.json` when present
-  - `events.jsonl` for thread events
-  - `summary.json` (required)
+- reviewer checks semantic richness, evidence, contradictions, and MCP value
+- repairer fixes selected findings without weakening gates
+- story agent uses the MCP like a downstream coding agent and reports whether it
+  can answer an interesting query
 
-### Validate (`scripts/codex/src/validate.ts`)
+## Validation Gates
 
-- Requires discover output at `runs/<version>/<slug>/discover/summary.json`.
-- Replays pass-1 context into pass-2 prompt.
-- Writes `runs/<version>/<slug>/validate/summary.json` and sibling artifacts.
+Run-root validation:
 
-### Final/Reconcile (`scripts/codex/src/reconcile.ts`)
+```bash
+npm --prefix scripts/codex run semantic:validate -- --root runs/agents-sdk
+```
 
-- Requires discover + validate summaries.
-- Merges evidence into canonical final outputs:
-  - `runs/<version>/<slug>/final/profile.json`
-  - `runs/<version>/<slug>/final/prompt.md`
-- Enforces strict presence of `prompt.md` (`PROMPT_MISSING` on failure).
+Promoted semantic bundle validation:
 
-## Promotion and Fixture Integrity
+```bash
+scripts/mcp/bin/validate-semantic-bundles
+```
 
-`promote-profile` (`scripts/mcp/src/promoteProfile.ts`):
+MCP smoke client:
 
-- Source: `runs/<version>/<slug>/final/{profile.json,prompt.md}`
-- Destination: `profiles/<slug>/...`
-- Updates `profiles/manifest.json` with:
-  - `slug`
-  - `lastVerified`
-  - `profilePath`
-  - `promptPath`
+```bash
+scripts/mcp/bin/smoke-client
+```
 
-`validate-profiles` (`scripts/mcp/src/validateProfiles.ts`) checks:
+These checks enforce generic contracts:
 
-- Manifest schema and canonical schema version.
-- Manifest/profile slug parity.
-- Existence of every declared profile + prompt path.
+- required files exist
+- JSON artifacts match schema
+- every evidence reference resolves
+- observed or contradicted facts cite evidence
+- available endpoints cite at least one live probe
+- important missing MCP fields are still represented as request facts
+- `usage.md` does not leak prompt/process narration or contradict availability
+- promoted bundles load through the MCP runtime
 
 ## MCP Runtime Model
 
@@ -124,73 +140,75 @@ Server entrypoint: `scripts/mcp/src/server.ts`
 
 Startup sequence:
 
-1. `loadProfiles()` parses all fixtures and enforces invariants.
-2. Fail-fast if load errors (`PROFILE_LOAD_FAILED`) or zero profiles.
-3. Register runtime surface:
-   - Utility tools:
-     - `usaspending.findEndpoints`
-     - `usaspending.getEndpoint`
-   - Endpoint tools:
-     - `usaspending.<slug>` for each loaded profile
-   - Resources:
-     - `usaspending://profiles/all`
-     - `usaspending://profiles/<slug>`
-     - `usaspending://prompts/<slug>`
-   - Prompt:
-     - `usaspending.endpointUsage`
-4. Emit structured startup/listening logs to stderr.
+1. Load raw profiles from `profiles/<slug>/profile.json`.
+2. Load semantic bundles from `profiles/<slug>/semantic/`.
+3. Fail fast if raw profile loading fails or no profiles are available.
+4. Register semantic discovery, understanding, request construction, and
+   execution tools.
+5. Register raw endpoint aliases for promoted raw profiles.
+6. Start stdio transport.
 
-## Call Safety and Guardrails
+Semantic tools include:
 
-Execution path: `scripts/mcp/src/call.ts`
+- `usaspending.findConcepts`
+- `usaspending.findEndpoints`
+- `usaspending.findWorkflows`
+- `usaspending.getEndpointSchema`
+- `usaspending.getEndpointSemantics`
+- `usaspending.getEvidence`
+- `usaspending.getUsageGuide`
+- `usaspending.getRequestTemplate`
+- `usaspending.validateRequest`
+- `usaspending.explainValidationError`
+- `usaspending.listRequestFields`
+- `usaspending.callEndpoint`
 
-Guardrails:
+Raw aliases like `usaspending.v2__search__spending_by_award` remain available
+for direct calls once a downstream agent understands the endpoint.
 
-- Input validation through AJV with `additionalProperties: false`.
-- Tool input schema generation from profile definitions via Zod.
-- Host allowlist (default `https://api.usaspending.gov`).
-- Timeout enforcement (`USASPENDING_REQUEST_TIMEOUT_MS`, default `15000`).
-- Deterministic User-Agent (`gov-gpt-mcp/1.0.0` default).
+## Raw-Profile Pipeline
 
-Tool failures are standardized in MCP responses:
+The raw pipeline still exists because it provides useful low-level coverage:
 
-- `isError: true`
-- `structuredContent.error.code` (for example: `INVALID_INPUT`, `REQUEST_TIMEOUT`, `NETWORK_ERROR`, `UNKNOWN_ENDPOINT`)
-- `structuredContent.error.retryable` for automatic agent retry policy
-- `structuredContent.error.category` for planner strategy (`validation`, `timeout`, `network`, etc.)
+```mermaid
+flowchart TD
+    A["staging/docs/v2"] --> B["discover pass"]
+    B --> C["validate pass"]
+    C --> D["reconcile pass"]
+    D --> E["runs/v2/<slug>/final\nprofile.json + prompt.md"]
+    E --> F["promote-profile"]
+    F --> G["profiles/<slug>\nprofile.json + prompt.md"]
+```
 
-## CI and Release
-
-- CI (`.github/workflows/ci.yml`)
-  - Runs `make verify`:
-    - Typecheck and tests in `scripts/codex` and `scripts/mcp`
-    - Fixture validation
-    - Startup smoke check
-- Release (`.github/workflows/release.yml`)
-  - Triggered by successful CI workflow run.
-  - Uploads `profiles-<sha>.tgz` artifact.
+It is intentionally separate from Semantic Profile V2. Raw profiles are execution
+fixtures and prior art for the agent. Semantic bundles are the higher-level MCP
+knowledge surface.
 
 ## Extension Points
 
-### Add or refresh a profile slug
+Add or refresh one semantic endpoint:
 
-1. `python scripts/stage_docs.py --version v2`
-2. `make codex-preflight`
-3. `make pipeline SLUG=<new_slug>`
-4. `make promote-profile SLUG=<new_slug>`
-5. `scripts/mcp/bin/validate-profiles`
-6. `scripts/mcp/bin/smoke-server`
+```bash
+make agents-semantic SLUG=<slug> AGENTS_OUT_ROOT=runs/agents-sdk
+make semantic-validate SEMANTIC_ROOT=runs/agents-sdk
+make agents-review SLUG=<slug> AGENTS_OUT_ROOT=runs/agents-sdk > runs/review.json
+make agents-story AGENTS_BUNDLE_GLOB="/abs/path/to/runs/agents-sdk/*/endpoint.json"
+```
 
-### Prove full-contract coverage in background
+Promote after validation and review:
 
-1. `make codex-preflight`
-2. `make pipeline-run-bg PARALLEL=4 PIPELINE_VERSION=v2`
-3. `make pipeline-status-watch JOB_DIR=/absolute/path/to/runs/_jobs/<job-id>`
-4. `make pipeline-coverage PIPELINE_VERSION=v2`
-5. `python scripts/full_pipeline.py promote-finals --version v2 --parallel 8 --json`
+```bash
+npm --prefix scripts/agents run semantic:agent -- \
+  --slug <slug> \
+  --out-root runs/agents-sdk \
+  --promote
+scripts/mcp/bin/validate-semantic-bundles
+scripts/mcp/bin/smoke-client
+```
 
-### Add stricter constraints
+Add stricter semantic constraints:
 
-- Update `src/agent/core/profileSchema.ts` (canonical schema).
-- Keep `scripts/mcp/src/types.ts` and loaders aligned.
-- Run `make verify` before publishing.
+- update `src/agent/core/semanticProfileSchema.ts`
+- update validators or MCP loaders that consume the affected fields
+- add targeted tests in `scripts/codex`, `scripts/agents`, or `scripts/mcp`
+- rerun package typechecks and tests before promotion

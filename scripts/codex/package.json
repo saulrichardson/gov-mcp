@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Codex SDK runner to probe USAspending contracts",
+  "description": "Codex SDK raw-profile pipeline plus shared semantic bundle validator",
   "engines": {
     "node": ">=18"
   },
@@ -12,6 +12,7 @@
     "validate": "tsx src/validate.ts",
     "reconcile": "tsx src/reconcile.ts",
     "profile": "tsx src/reconcile.ts",
+    "semantic:validate": "tsx src/semanticValidate.ts",
     "preflight": "tsx src/preflight.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"

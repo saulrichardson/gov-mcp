@@ -1,0 +1,151 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__search__spending_by_geography",
+  "generatedAt": "2026-05-09T12:00:00+00:00",
+  "endpointRef": "v2__search__spending_by_geography",
+  "summary": "Aggregates advanced-search spending into geography buckets such as states, counties, congressional districts, or countries, returning obligation totals and optional per-capita context.",
+  "businessPurpose": "Use this endpoint when you need the advanced-search filter stack reduced to geographic totals rather than award-level detail. It is designed for map views, geographic comparisons, and location-based summaries of federal spending.",
+  "analyticalGrain": "One row per requested geographic unit within the selected geo_layer and scope for the filtered spending population.",
+  "primaryEntities": [
+    {
+      "name": "Geographic area",
+      "description": "A state, county, congressional district, or country identified by shape_code and display_name in the results array.",
+      "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-response-surface"]
+    },
+    {
+      "name": "Filtered spending population",
+      "description": "The set of transactions, awards, or subawards selected by the AdvancedFilterObject and grouped into geography buckets.",
+      "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-filter-surface"]
+    }
+  ],
+  "measures": [
+    {
+      "name": "aggregated_amount",
+      "description": "Obligation amount aggregated for each geography row.",
+      "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-response-surface"]
+    },
+    {
+      "name": "per_capita",
+      "description": "Per-capita spending metric derived for the geography when population data is available.",
+      "evidenceRefs": ["ev-doc-response-surface"]
+    },
+    {
+      "name": "total_outlays",
+      "description": "Optional outlay measure documented only for award-level responses.",
+      "evidenceRefs": ["ev-doc-response-surface"]
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "scope",
+      "description": "Whether geography is based on place of performance or recipient location.",
+      "evidenceRefs": ["ev-doc-endpoint-surface"]
+    },
+    {
+      "name": "geo_layer",
+      "description": "The requested geography grain: state, county, district, or country.",
+      "evidenceRefs": ["ev-doc-endpoint-surface"]
+    },
+    {
+      "name": "spending_level",
+      "description": "Whether totals are grouped from transactions, awards, or subawards.",
+      "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-response-surface"]
+    },
+    {
+      "name": "Advanced search filters",
+      "description": "The shared AdvancedFilterObject lets callers restrict the underlying spending population by time, agencies, locations, recipients, award types, program activity, disaster code, and related dimensions before aggregation.",
+      "evidenceRefs": ["ev-doc-filter-surface"]
+    }
+  ],
+  "suitableQuestions": [
+    {
+      "name": "Where is filtered spending concentrated geographically?",
+      "description": "Good for state, county, district, or country rollups of a filtered spending population.",
+      "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-response-surface"]
+    },
+    {
+      "name": "How do recipient-location totals differ from place-of-performance totals?",
+      "description": "The scope parameter allows the same filter set to be summarized by either recipient location or place of performance.",
+      "evidenceRefs": ["ev-doc-endpoint-surface"]
+    },
+    {
+      "name": "Which geographies have the highest per-capita spending?",
+      "description": "Results can include population and per_capita, making geographic normalization possible when population data is available.",
+      "evidenceRefs": ["ev-doc-response-surface"]
+    }
+  ],
+  "notSuitableFor": [
+    {
+      "name": "Award-level or transaction-level drilldown",
+      "description": "This endpoint returns grouped geography rows, not detailed award or transaction records.",
+      "evidenceRefs": ["ev-doc-endpoint-surface", "ev-derived-coverage"]
+    },
+    {
+      "name": "Stable pagination workflows",
+      "description": "The docs do not describe page or sort controls, so this is not the right surface for scrolling through large detail sets.",
+      "evidenceRefs": ["ev-derived-coverage"]
+    },
+    {
+      "name": "Pre-2007-10-01 search coverage",
+      "description": "The documented warning says search time periods are currently limited to an earliest date of 2007-10-01.",
+      "evidenceRefs": ["ev-doc-response-surface"]
+    }
+  ],
+  "joins": [
+    {
+      "from": "results[].shape_code",
+      "to": "Geography reference data",
+      "on": ["shape_code", "geo_layer"],
+      "confidence": "medium",
+      "description": "shape_code is the machine-readable geography identifier for the requested layer and can be joined to external geography reference tables or map shapes that use the same coding system for states, counties, districts, or countries.",
+      "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-response-surface"]
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Build a geographic spending comparison",
+      "description": "Choose a filter set, select scope and geography grain, then rank or map the resulting geography rows by aggregated amount or per-capita values.",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Define the AdvancedFilterObject for the spending population of interest.",
+          "endpointSlug": "v2__search__spending_by_geography",
+          "evidenceRefs": ["ev-doc-filter-surface"]
+        },
+        {
+          "order": 2,
+          "action": "Pick scope=place_of_performance or scope=recipient_location and a geo_layer such as state or county.",
+          "endpointSlug": "v2__search__spending_by_geography",
+          "evidenceRefs": ["ev-doc-endpoint-surface"]
+        },
+        {
+          "order": 3,
+          "action": "Interpret each result row as one geography bucket with aggregated_amount and optional population/per_capita metrics.",
+          "endpointSlug": "v2__search__spending_by_geography",
+          "evidenceRefs": ["ev-doc-response-surface"]
+        }
+      ],
+      "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-response-surface", "ev-doc-filter-surface"]
+    }
+  ],
+  "caveats": [
+    {
+      "statement": "The subawards boolean is documented but the sample warning indicates it will be deprecated in favor of spending_level=subawards.",
+      "impact": "Prefer spending_level for new integrations.",
+      "status": "documented_unverified",
+      "evidenceRefs": ["ev-doc-response-surface"]
+    },
+    {
+      "statement": "Population and per_capita are documented as nullable, so geographic comparisons may have missing normalization values.",
+      "impact": "Handle nulls explicitly in ranking or choropleth workflows.",
+      "status": "documented_unverified",
+      "evidenceRefs": ["ev-doc-response-surface"]
+    },
+    {
+      "statement": "Some nested filter object details live in shared search_filters documentation instead of this endpoint page.",
+      "impact": "Shared filter shapes may need additional validation before building highly specific requests.",
+      "status": "documented_unverified",
+      "evidenceRefs": ["ev-doc-filter-surface"]
+    }
+  ]
+}

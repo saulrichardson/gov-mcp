@@ -1,0 +1,32 @@
+{
+  "name": "usaspending-semantic-agents",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Agents SDK producer for evidence-backed USAspending semantic MCP bundles",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "tsx src/runEndpointAgent.ts",
+    "semantic:agent": "tsx src/runEndpointAgent.ts",
+    "semantic:review": "tsx src/runReviewAgent.ts",
+    "semantic:repair": "tsx src/runRepairAgent.ts",
+    "semantic:story": "tsx src/runStoryAgent.ts",
+    "smoke": "tsx src/smoke.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.0",
+    "@openai/agents": "^0.5.0",
+    "dotenv": "^16.4.5",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.15.0",
+    "typescript": "^5.6.3",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,836 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__disaster__spending_by_geography",
+  "generatedAt": "2026-05-10T12:20:00+00:00",
+  "endpoint": {
+    "method": "POST",
+    "host": "https://api.usaspending.gov",
+    "path": "/api/v2/disaster/spending_by_geography/"
+  },
+  "availability": {
+    "status": "available",
+    "confidence": "high",
+    "lastVerified": "2026-05-10",
+    "summary": "Live probes on 2026-05-10 returned 200 responses for state-level obligation and outlay geography aggregations and returned documented validation errors for bad def_codes requests.",
+    "evidenceRefs": [
+      "geo-live-state-obligation",
+      "geo-live-filtered-state-outlay-pop",
+      "geo-live-empty-defc",
+      "geo-live-lowercase-defc"
+    ]
+  },
+  "provenance": {
+    "sources": [
+      {
+        "id": "src-doc-contract",
+        "kind": "documentation",
+        "title": "Staged USAspending disaster spending_by_geography contract",
+        "locator": "staging/docs/v2/disaster/spending_by_geography.md",
+        "retrievedAt": "2026-05-10T12:00:00+00:00"
+      },
+      {
+        "id": "src-current-profile",
+        "kind": "current_profile",
+        "title": "Current raw MCP profile for disaster spending_by_geography",
+        "locator": "profiles/v2__disaster__spending_by_geography/profile.json",
+        "retrievedAt": "2026-05-10T12:00:01+00:00"
+      },
+      {
+        "id": "src-derived-mcp-gaps",
+        "kind": "derived_check",
+        "title": "Derived MCP coverage check for disaster spending_by_geography",
+        "locator": "Derived from staging/docs/v2/disaster/spending_by_geography.md and profiles/v2__disaster__spending_by_geography/profile.json",
+        "retrievedAt": "2026-05-10T12:00:02+00:00"
+      },
+      {
+        "id": "src-live-probe-2026-05-10",
+        "kind": "live_probe",
+        "title": "Live USAspending probes for disaster spending_by_geography on 2026-05-10",
+        "locator": "https://api.usaspending.gov/api/v2/disaster/spending_by_geography/",
+        "retrievedAt": "2026-05-10T12:10:00+00:00"
+      }
+    ]
+  },
+  "request": {
+    "contentType": "application/json",
+    "parameters": [
+      {
+        "path": "filter",
+        "direction": "request",
+        "location": "body",
+        "type": "object",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Primary disaster filter object used before the geography aggregation is computed.",
+        "documented": {
+          "type": "Filter",
+          "required": true,
+          "notes": "The staged request schema block says string, but the attribute table and examples describe an object payload."
+        },
+        "constraints": [
+          "The object must contain filter.def_codes.",
+          "Additional shared search-filter keys may also be accepted by this endpoint."
+        ],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-current-profile"
+        ],
+        "observed": {
+          "examples": [
+            {
+              "def_codes": [
+                "L"
+              ]
+            },
+            {
+              "def_codes": [
+                "L"
+              ],
+              "award_type_codes": [
+                "A"
+              ]
+            }
+          ],
+          "notes": "Live probes confirmed the endpoint expects a JSON object body with nested filter content, not a raw string payload."
+        }
+      },
+      {
+        "path": "filter.def_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "One or more Disaster Emergency Fund Codes (DEFC) whose matching disaster spending should be aggregated.",
+        "documented": {
+          "type": "array[DEFC]",
+          "required": true,
+          "notes": "If the DEFC values are in the COVID-19 group, the docs say transactions are limited to action_date on or after 2020-04-01."
+        },
+        "constraints": [
+          "At least one DEFC is required.",
+          "Codes are case-sensitive uppercase values from the published DEFC set."
+        ],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-empty-defc",
+          "geo-live-lowercase-defc"
+        ],
+        "observed": {
+          "acceptedValues": [
+            "L"
+          ],
+          "rejectedValues": [
+            "l",
+            "[]"
+          ],
+          "examples": [
+            [
+              "L"
+            ]
+          ],
+          "notes": "Empty arrays returned HTTP 422 and lowercase l returned HTTP 400 with the valid uppercase DEFC enum list."
+        }
+      },
+      {
+        "path": "filter.award_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Optional award-type filter applied before geography aggregation.",
+        "documented": {
+          "type": "array[AwardTypeCodes]",
+          "required": false,
+          "allowedValues": [
+            "02",
+            "03",
+            "04",
+            "05",
+            "06",
+            "07",
+            "08",
+            "09",
+            "10",
+            "11",
+            "A",
+            "B",
+            "C",
+            "D",
+            "IDV_A",
+            "IDV_B_A",
+            "IDV_B_B",
+            "IDV_B_C",
+            "IDV_B",
+            "IDV_C",
+            "IDV_D",
+            "IDV_E"
+          ]
+        },
+        "constraints": [
+          "Use USAspending award type codes, not plain-language categories."
+        ],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-current-profile"
+        ]
+      },
+      {
+        "path": "filter.time_period",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "inferred",
+        "description": "Optional shared search-filter date ranges passed through the disaster filter object.",
+        "documented": {
+          "type": "array[{start_date,end_date,date_type?}]",
+          "required": false,
+          "notes": "This shape comes from the current raw profile's shared Search Filters handling rather than the staged endpoint markdown."
+        },
+        "constraints": [
+          "Each item should include start_date and end_date in YYYY-MM-DD format.",
+          "date_type may further specify which date dimension to filter."
+        ],
+        "evidenceRefs": [
+          "geo-current-profile"
+        ]
+      },
+      {
+        "path": "filter.recipient_scope",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "inferred",
+        "description": "Optional shared search-filter toggle used to constrain recipient geography scope before aggregation.",
+        "documented": {
+          "type": "string",
+          "required": false,
+          "notes": "The current raw profile lists observed values domestic and foreign."
+        },
+        "constraints": [
+          "Use only recognized recipient scope tokens such as domestic or foreign."
+        ],
+        "evidenceRefs": [
+          "geo-current-profile"
+        ]
+      },
+      {
+        "path": "filter.recipient_locations",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "inferred",
+        "description": "Optional list of recipient location objects used before the geography rollup is calculated.",
+        "documented": {
+          "type": "array[object]",
+          "required": false,
+          "notes": "The current raw profile gives examples like {\"country\":\"USA\",\"state\":\"CA\"}."
+        },
+        "constraints": [
+          "Location-object structure follows the shared USAspending search filters pattern."
+        ],
+        "evidenceRefs": [
+          "geo-current-profile"
+        ]
+      },
+      {
+        "path": "geo_layer",
+        "direction": "request",
+        "location": "body",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Requested geographic aggregation level for the response rows.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "allowedValues": [
+            "state",
+            "county",
+            "district"
+          ]
+        },
+        "constraints": [
+          "The selected layer determines the meaning of shape_code and geo_layer_filters values."
+        ],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "acceptedValues": [
+            "state"
+          ],
+          "examples": [
+            "state"
+          ],
+          "notes": "Only the state layer was live-probed in this run; county and district remain documented but unverified here."
+        }
+      },
+      {
+        "path": "geo_layer_filters",
+        "direction": "request",
+        "location": "body",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Optional allowlist of shape codes currently in view or otherwise selected for the chosen geography layer.",
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "constraints": [
+          "Shape-code format depends on geo_layer.",
+          "Use this to limit results to specific visible states, counties, or districts."
+        ],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "examples": [
+            [
+              "CA",
+              "TX"
+            ]
+          ],
+          "notes": "Filtering to CA and TX returned exactly those two state rows in the live outlay probe."
+        }
+      },
+      {
+        "path": "scope",
+        "direction": "request",
+        "location": "body",
+        "type": "string",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Chooses whether spending is grouped by recipient location or place of performance geography.",
+        "documented": {
+          "type": "enum[string]",
+          "required": false,
+          "default": "recipient_location",
+          "allowedValues": [
+            "place_of_performance",
+            "recipient_location"
+          ]
+        },
+        "constraints": [
+          "Omitting scope is documented to default to recipient_location."
+        ],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "acceptedValues": [
+            "recipient_location",
+            "place_of_performance"
+          ],
+          "defaultBehavior": "Omitting scope returned recipient_location.",
+          "examples": [
+            "recipient_location",
+            "place_of_performance"
+          ]
+        }
+      },
+      {
+        "path": "spending_type",
+        "direction": "request",
+        "location": "body",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Selects which financial measure is summed for each geography row.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "allowedValues": [
+            "obligation",
+            "outlay",
+            "face_value_of_loan"
+          ]
+        },
+        "constraints": [
+          "The chosen measure changes the meaning of the amount field in the results."
+        ],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "acceptedValues": [
+            "obligation",
+            "outlay"
+          ],
+          "examples": [
+            "obligation",
+            "outlay"
+          ],
+          "notes": "face_value_of_loan remains documented but was not re-probed in this run."
+        }
+      }
+    ],
+    "templates": [
+      {
+        "name": "state_obligation_default_scope",
+        "description": "Minimal live-validated state-level obligation request. Omitting scope defaults to recipient_location.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/spending_by_geography/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            },
+            "geo_layer": "state",
+            "spending_type": "obligation"
+          }
+        },
+        "evidenceRefs": [
+          "geo-live-state-obligation"
+        ]
+      },
+      {
+        "name": "filtered_state_outlay_place_of_performance",
+        "description": "Live-validated outlay request limited to selected states and grouped by place of performance.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/disaster/spending_by_geography/",
+          "query": {},
+          "body": {
+            "filter": {
+              "def_codes": [
+                "L"
+              ]
+            },
+            "geo_layer": "state",
+            "geo_layer_filters": [
+              "CA",
+              "TX"
+            ],
+            "scope": "place_of_performance",
+            "spending_type": "outlay"
+          }
+        },
+        "evidenceRefs": [
+          "geo-live-filtered-state-outlay-pop"
+        ]
+      }
+    ]
+  },
+  "response": {
+    "contentType": "application/json",
+    "shapeSummary": "Returns a single JSON object with echoed geo_layer, scope, and spending_type plus a results array. Each row is one geography aggregate for the selected layer; when geo_layer_filters are omitted, live probes showed an additional uncoded bucket with null shape_code and display_name.",
+    "fields": [
+      {
+        "path": "geo_layer",
+        "direction": "response",
+        "location": "response",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Echo of the requested aggregation layer.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "allowedValues": [
+            "state",
+            "county",
+            "district"
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "examples": [
+            "state"
+          ]
+        }
+      },
+      {
+        "path": "scope",
+        "direction": "response",
+        "location": "response",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Echo of the geographic scope used for aggregation.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "allowedValues": [
+            "place_of_performance",
+            "recipient_location"
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "examples": [
+            "recipient_location",
+            "place_of_performance"
+          ]
+        }
+      },
+      {
+        "path": "spending_type",
+        "direction": "response",
+        "location": "response",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Echo of the summed spending measure.",
+        "documented": {
+          "type": "enum[string]",
+          "required": true,
+          "allowedValues": [
+            "obligation",
+            "outlay",
+            "face_value_of_loan"
+          ]
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "examples": [
+            "obligation",
+            "outlay"
+          ]
+        }
+      },
+      {
+        "path": "results",
+        "direction": "response",
+        "location": "response.results",
+        "type": "array[object]",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Array of aggregated geography rows for the chosen layer.",
+        "documented": {
+          "type": "array[GeographyTypeResult]",
+          "required": true
+        },
+        "constraints": [
+          "No page_metadata or page controls are documented for this response."
+        ],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "notes": "The unfiltered state obligation probe returned a full nationwide results array including territories and an uncoded bucket; the filtered outlay probe returned exactly two rows for CA and TX.",
+          "examples": [
+            {
+              "shape_code": "CA",
+              "display_name": "California",
+              "amount": 279654358.56,
+              "population": 39538223,
+              "per_capita": 7.07,
+              "award_count": 673
+            }
+          ]
+        }
+      },
+      {
+        "path": "results.shape_code",
+        "direction": "response",
+        "location": "response.results",
+        "type": "string|null",
+        "required": true,
+        "status": "contradicted",
+        "description": "Geographic identifier for the row; current profile evidence suggests null can appear for an uncoded aggregate bucket when geography assignment is missing.",
+        "documented": {
+          "type": "string",
+          "required": true
+        },
+        "constraints": [
+          "Interpret the code using the selected geo_layer: state postal code, county FIPS-like code, or district code."
+        ],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "examples": [
+            "CA",
+            null
+          ],
+          "notes": "The live baseline response included a null shape_code row for an uncoded aggregate bucket."
+        }
+      },
+      {
+        "path": "results.amount",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Summed dollar amount for the requested spending_type.",
+        "documented": {
+          "type": "number",
+          "required": true
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "examples": [
+            279654358.56,
+            377475270.34,
+            -170044580.72
+          ],
+          "notes": "Negative amounts are possible; the live baseline included a negative obligation total for New Jersey."
+        }
+      },
+      {
+        "path": "results.display_name",
+        "direction": "response",
+        "location": "response.results",
+        "type": "string|null",
+        "required": true,
+        "status": "contradicted",
+        "description": "Human-readable geography label; current profile evidence suggests it can be null for an uncoded aggregate bucket.",
+        "documented": {
+          "type": "string",
+          "required": true
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "examples": [
+            "California",
+            null
+          ],
+          "notes": "The live baseline response included a null display_name row for the uncoded aggregate bucket."
+        }
+      },
+      {
+        "path": "results.population",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number|null",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Population associated with the returned geography, if available.",
+        "documented": {
+          "type": "number|null",
+          "required": true
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "examples": [
+            39538223,
+            null
+          ]
+        }
+      },
+      {
+        "path": "results.per_capita",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number|null",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Per-capita spending amount derived from amount and population when population is available.",
+        "documented": {
+          "type": "number|null",
+          "required": true
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "examples": [
+            7.07,
+            9.55,
+            null
+          ]
+        }
+      },
+      {
+        "path": "results.award_count",
+        "direction": "response",
+        "location": "response.results",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Count of awards contributing to the aggregated amount for the geography row.",
+        "documented": {
+          "type": "number",
+          "required": true
+        },
+        "constraints": [],
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation",
+          "geo-live-filtered-state-outlay-pop"
+        ],
+        "observed": {
+          "examples": [
+            673,
+            597,
+            335
+          ]
+        }
+      }
+    ],
+    "pagination": {
+      "strategy": "none",
+      "fields": [],
+      "notes": "The endpoint returns one full results array with no documented paging controls or page metadata.",
+      "evidenceRefs": [
+        "geo-doc-contract",
+        "geo-live-state-obligation",
+        "geo-live-filtered-state-outlay-pop"
+      ]
+    }
+  },
+  "mcpToolCoverage": {
+    "currentProfilePath": "profiles/v2__disaster__spending_by_geography/profile.json",
+    "exposedTopLevelRequestFields": [
+      "filter",
+      "geo_layer",
+      "geo_layer_filters",
+      "scope",
+      "spending_type"
+    ],
+    "missingImportantRequestFields": [
+      "filter.def_codes",
+      "filter.award_type_codes",
+      "filter.time_period",
+      "filter.recipient_scope",
+      "filter.recipient_locations"
+    ],
+    "notes": [
+      "Nested disaster filter fields are necessary for a coding agent to construct valid requests, but a top-level-only tool surface obscures them.",
+      "The endpoint has no pagination, so request-construction value comes mostly from nested filter guidance and enum semantics."
+    ],
+    "evidenceRefs": [
+      "geo-current-profile",
+      "geo-derived-mcp-gaps"
+    ]
+  },
+  "behavior": {
+    "contradictions": [
+      {
+        "statement": "The staged markdown's schema block says the POST body is a string, but live requests and the request example require a JSON object payload.",
+        "impact": "Agents should send an object body with filter, geo_layer, and spending_type rather than a raw string.",
+        "status": "contradicted",
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation"
+        ]
+      },
+      {
+        "statement": "The documentation marks results.shape_code and results.display_name as required strings, but the live baseline response included null values for an uncoded aggregate bucket.",
+        "impact": "Callers must handle null geography identifiers and labels in addition to named geography rows.",
+        "status": "contradicted",
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation"
+        ]
+      }
+    ],
+    "quirks": [
+      {
+        "statement": "Omitting scope returned recipient_location in the live baseline response.",
+        "impact": "Set scope explicitly when you need place_of_performance geography.",
+        "status": "documented_and_observed",
+        "evidenceRefs": [
+          "geo-doc-contract",
+          "geo-live-state-obligation"
+        ]
+      },
+      {
+        "statement": "Filtering to specific state shape codes returned only those rows and removed the uncoded null bucket in the sampled filtered request.",
+        "impact": "geo_layer_filters can be used to keep map-driven requests small and focused.",
+        "status": "observed",
+        "evidenceRefs": [
+          "geo-live-filtered-state-outlay-pop"
+        ]
+      },
+      {
+        "statement": "Negative geography totals are possible; the live baseline included a negative obligation amount for New Jersey.",
+        "impact": "Do not assume amount is non-negative when ranking or formatting results.",
+        "status": "observed",
+        "evidenceRefs": [
+          "geo-live-state-obligation"
+        ]
+      }
+    ],
+    "gaps": [
+      {
+        "statement": "This run reverified only the state layer; county and district behavior remain documented but not re-probed here.",
+        "status": "unknown",
+        "evidenceRefs": [
+          "geo-doc-contract"
+        ]
+      },
+      {
+        "statement": "The live pass did not re-test face_value_of_loan or the shared filter passthrough fields carried in the current raw profile.",
+        "status": "unknown",
+        "evidenceRefs": [
+          "geo-current-profile"
+        ]
+      }
+    ],
+    "risks": [
+      {
+        "statement": "Because geography rows are aggregates with no award identifiers, analysts can misread the endpoint as award-level data unless they explicitly plan a drill-down workflow.",
+        "impact": "Use a second endpoint for award-level detail after identifying relevant geographies here.",
+        "status": "inferred",
+        "evidenceRefs": [
+          "geo-derived-mcp-gaps"
+        ]
+      },
+      {
+        "statement": "Bad def_codes requests did not fail uniformly: an empty array returned 422 while lowercase input returned 400.",
+        "impact": "Clients should handle more than one validation status family.",
+        "status": "observed",
+        "evidenceRefs": [
+          "geo-live-empty-defc",
+          "geo-live-lowercase-defc"
+        ]
+      }
+    ]
+  }
+}
