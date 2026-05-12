@@ -1,10 +1,10 @@
 import { Agent, Runner } from "@openai/agents";
 import { execFile } from "child_process";
-import { existsSync, readdirSync } from "fs";
+import { existsSync } from "fs";
 import { isAbsolute, join, relative } from "path";
 import { promisify } from "util";
 import { z } from "zod";
-import { AgentRunSummarySchema, type AgentRunSummary } from "./artifactContract.js";
+import { AgentRunSummarySchema, ARTIFACT_FILE_NAMES, type AgentRunSummary } from "./artifactContract.js";
 import { DEFAULT_AUTONOMY_MODE, type AutonomyMode } from "./autonomy.js";
 import { requireOpenAIApiKey } from "./env.js";
 import { buildEndpointAgentInstructions, buildEndpointAgentTask } from "./instructions.js";
@@ -13,7 +13,6 @@ import { createEndpointAgentTools } from "./tools.js";
 import { createYoloTools } from "./yoloTools.js";
 
 const execFileAsync = promisify(execFile);
-const REQUIRED_ARTIFACT_FILES = ["endpoint.json", "evidence.jsonl", "semantics.json", "usage.md"];
 
 export const ReasoningEffortSchema = z.enum(["none", "low", "medium", "high", "xhigh"]);
 export type ReasoningEffort = z.infer<typeof ReasoningEffortSchema>;
@@ -65,7 +64,7 @@ export function createSemanticEndpointAgent(options: SemanticEndpointAgentOption
       truncation: "auto",
     },
     tools: [...createEndpointAgentTools(options.outRoot), ...(autonomy === "yolo" ? createYoloTools() : [])],
-    toolUseBehavior: stopAfterResolvedValidation(options),
+    toolUseBehavior: stopAfterFinalizedBundle(),
     outputType: AgentRunSummarySchema,
   });
 }
@@ -123,36 +122,9 @@ function normalizeToolOutput(output: unknown): Record<string, unknown> | null {
   return null;
 }
 
-function summaryFromValidationResult(
-  options: { slug: string; outRoot: string; promote: boolean },
-  validationResult: any,
-  reason: string
-) {
-  const outRoot = assertSafeOutputRoot(options.outRoot);
-  const dir = join(outRoot, options.slug);
-  return AgentRunSummarySchema.parse({
-    slug: options.slug,
-    status: "completed",
-    outputRoot: repoRelative(outRoot),
-    promoted: false,
-    validationPassed: true,
-    summary: reason,
-    keyFindings: [
-      `Validator accepted ${validationResult.requestFacts} request facts and ${validationResult.responseFacts} response facts.`,
-      `Availability is ${validationResult.availability}.`,
-      `Evidence records: ${validationResult.evidenceRecords}.`,
-      `Missing current MCP fields captured: ${(validationResult.missingMcpFields ?? []).join(", ") || "none"}.`,
-    ],
-    artifacts: REQUIRED_ARTIFACT_FILES.map((fileName) => repoRelative(join(dir, fileName))),
-    nextSteps: options.promote
-      ? ["Promotion was requested, so review the validated bundle and rerun with --promote after this stop policy is extended for promotion."]
-      : ["Review the generated semantic bundle, then rerun with --promote if it should become part of the MCP surface."],
-  });
-}
-
 export function missingAgentRunArtifacts(summary: AgentRunSummary, root = repoRoot): string[] {
   if (!(summary.status === "completed" && summary.validationPassed)) return [];
-  const expectedNames = new Set(REQUIRED_ARTIFACT_FILES);
+  const expectedNames = new Set(ARTIFACT_FILE_NAMES);
   const reportedNames = new Set(summary.artifacts.map((path) => path.split("/").pop()).filter(Boolean));
   const missingNames = [...expectedNames].filter((name) => !reportedNames.has(name));
   const missingPaths = summary.artifacts.filter((path) => {
@@ -172,47 +144,22 @@ function assertAgentRunArtifacts(summary: AgentRunSummary): AgentRunSummary {
   return summary;
 }
 
-function stopAfterResolvedValidation(options: SemanticEndpointAgentOptions) {
+function stopAfterFinalizedBundle() {
   const keepGoing = { isFinalOutput: false as const, isInterrupted: undefined };
   return (_context: any, toolResults: any[]) => {
-    const slug = options.slug;
-    if (!slug) return keepGoing;
-
-    const finalizeResult = toolResults.find(
+    const finalizeResult = [...toolResults].reverse().find(
       (result) => result?.type === "function_output" && result?.tool?.name === "finalize_validated_bundle"
     );
-    if (finalizeResult) {
-      return {
-        isFinalOutput: true as const,
-        isInterrupted: undefined,
-        finalOutput: typeof finalizeResult.output === "string" ? finalizeResult.output : JSON.stringify(finalizeResult.output),
-      };
-    }
+    if (!finalizeResult) return keepGoing;
 
-    if (options.promote) return keepGoing;
+    const output = normalizeToolOutput(finalizeResult.output);
+    const summary = AgentRunSummarySchema.safeParse(output);
+    if (!summary.success) return keepGoing;
 
-    const validationToolResult = [...toolResults]
-      .reverse()
-      .find((result) => result?.type === "function_output" && result?.tool?.name === "validate_semantic_bundle");
-    const output = normalizeToolOutput(validationToolResult?.output);
-    if (!output || output.ok !== true || typeof output.stdout !== "string") {
-      return keepGoing;
-    }
-
-    const validationResult = findValidationResult(output.stdout, slug);
-    if (!validationResult || validationResult.availability === "unknown") {
-      return keepGoing;
-    }
-
-    const summary = summaryFromValidationResult(
-      { slug, outRoot: options.outRoot, promote: options.promote },
-      validationResult,
-      "Runner stopped after validate_semantic_bundle returned a valid semantic bundle with resolved availability."
-    );
     return {
       isFinalOutput: true as const,
       isInterrupted: undefined,
-      finalOutput: JSON.stringify(summary),
+      finalOutput: JSON.stringify(summary.data),
     };
   };
 }
@@ -237,12 +184,12 @@ async function tryRecoverValidatedSummary(options: RunSemanticEndpointAgentOptio
   const result = findValidationResult(validation.stdout, options.slug);
   if (!result) return null;
 
-  const artifacts = readdirSync(dir)
-    .filter((name) => ["endpoint.json", "semantics.json", "evidence.jsonl", "usage.md"].includes(name))
-    .sort()
-    .map((name) => repoRelative(join(dir, name)));
+  const missingFiles = ARTIFACT_FILE_NAMES.filter((name) => !existsSync(join(dir, name)));
+  if (missingFiles.length > 0) return null;
 
-  return AgentRunSummarySchema.parse({
+  const artifacts = ARTIFACT_FILE_NAMES.map((name) => repoRelative(join(dir, name)));
+
+  const summary = AgentRunSummarySchema.parse({
     slug: options.slug,
     status: options.promote ? "blocked" : "completed",
     outputRoot: repoRelative(outRoot),
@@ -262,6 +209,7 @@ async function tryRecoverValidatedSummary(options: RunSemanticEndpointAgentOptio
       ? ["Run the same command with --promote again or promote the validated bundle after review."]
       : ["Review the generated semantic bundle, then rerun with --promote if it should become part of the MCP surface."],
   });
+  return summary.status === "completed" ? assertAgentRunArtifacts(summary) : summary;
 }
 
 export async function runSemanticEndpointAgent(options: RunSemanticEndpointAgentOptions): Promise<AgentRunSummary> {

@@ -23,6 +23,10 @@ The primary semantic workflow is the Agents SDK implementation in
   gates, and promotion checks.
 - Deterministic code is not appropriate when it hard-codes endpoint-specific
   semantic answers that a general agent should discover and justify.
+- Producer completion should happen inside the agent loop. Validation alone is
+  not completion; the producer must inspect the declared output directory and
+  call `finalize_validated_bundle`, which verifies validation plus canonical
+  artifact placement before returning a success summary.
 
 The durable output is a Semantic Profile V2 bundle:
 
@@ -87,6 +91,9 @@ surface options instead of silently choosing.
   and smoke clients.
 - Keep shared schemas in `src/agent/core`.
 - Prefer artifact contracts and tests over hidden runtime heuristics.
+- Put generic acceptance gates behind tools the agent can call and recover from
+  during the run; avoid parent-side repair that silently moves or patches
+  generated endpoint artifacts after the agent has stopped.
 - Preserve documented-but-unprobed fields with explicit statuses; do not drop
   them merely because the current MCP profile omitted them.
 - Record contradictions and MCP coverage gaps as first-class information.

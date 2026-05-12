@@ -81,10 +81,19 @@ The smoke command does not call the OpenAI API. A real endpoint run does.
 Real runs print event milestones for agent updates, tool calls, and tool outputs
 without printing tool payloads. Use `--quiet-events` to suppress those logs.
 
-If the model produces a validator-passing bundle but does not return a clean
-structured final output before timeout, the runner validates the agent-authored
-files on disk and returns a recovered run summary. This recovery path does not
-author or alter endpoint semantics.
+Producer completion is intentionally inside the agentic loop. A passing
+`validate_semantic_bundle` call does not stop the run. The producer must inspect
+the declared output directory with `list_output_files` and then call
+`finalize_validated_bundle`. Finalization reruns validation and refuses to
+return a success summary unless the exact four canonical files exist under
+`<out-root>/<slug>/`, so path mistakes are visible to the agent while it can
+still fix them.
+
+If the model produces a complete validator-passing bundle but the SDK does not
+return a clean structured final output before timeout, the runner can return a
+recovered run summary from the files already on disk. That recovery path does
+not author, move, or alter artifacts, and it is not used when any canonical file
+is missing.
 
 ## Artifact Contract
 
@@ -106,4 +115,5 @@ npm --prefix scripts/codex run semantic:validate -- --root <out-root>
 
 The agent must use validation before returning `status: "completed"`. The
 validator is retained in `scripts/codex` as generic artifact enforcement; it is
-not a semantic authoring path.
+not a semantic authoring path. Completion requires the stronger producer
+finalization gate, not validation alone.

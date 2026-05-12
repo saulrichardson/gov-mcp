@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-export const ArtifactFileNameSchema = z.enum(["endpoint.json", "semantics.json", "evidence.jsonl", "usage.md"]);
+export const ARTIFACT_FILE_NAMES = ["endpoint.json", "semantics.json", "evidence.jsonl", "usage.md"] as const;
+
+export const ArtifactFileNameSchema = z.enum(ARTIFACT_FILE_NAMES);
 
 export const AgentRunSummarySchema = z
   .object({

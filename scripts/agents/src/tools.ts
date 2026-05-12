@@ -4,7 +4,7 @@ import { join, relative } from "path";
 import { promisify } from "util";
 import { tool } from "@openai/agents";
 import { z } from "zod";
-import { AgentRunSummarySchema, ArtifactFileNameSchema } from "./artifactContract.js";
+import { AgentRunSummarySchema, ARTIFACT_FILE_NAMES, ArtifactFileNameSchema } from "./artifactContract.js";
 import { assertSafeOutputRoot, assertSafeReadablePath, repoRelative, repoRoot } from "./paths.js";
 
 const execFileAsync = promisify(execFile);
@@ -63,6 +63,26 @@ function promotedDir(slug: string): string {
   return join(repoRoot, "profiles", slug, "semantic");
 }
 
+function requiredArtifactInventory(slug: string, outRoot: string) {
+  const dir = outputDir(outRoot, slug);
+  const requiredFiles = ARTIFACT_FILE_NAMES.map((fileName) => {
+    const path = join(dir, fileName);
+    const exists = existsSync(path);
+    return {
+      fileName,
+      path: repoRelative(path),
+      exists,
+      bytes: exists ? statSync(path).size : 0,
+    };
+  });
+  return {
+    path: repoRelative(dir),
+    requiredFiles,
+    missingRequiredFiles: requiredFiles.filter((file) => !file.exists).map((file) => file.fileName),
+    complete: requiredFiles.every((file) => file.exists),
+  };
+}
+
 async function runCommand(command: string, args: string[], timeoutMs: number) {
   try {
     const result = await execFileAsync(command, args, {
@@ -109,14 +129,21 @@ async function validateAndSummarize(slug: string, outRoot: string, promoted: boo
   const result = parsed?.results?.find((item: any) => item?.slug === slug);
   if (!result) throw new Error(`validator output did not include slug '${slug}'`);
 
-  const dir = outputDir(outRoot, slug);
-  const artifacts = ["endpoint.json", "evidence.jsonl", "semantics.json", "usage.md"].map((fileName) =>
-    repoRelative(join(dir, fileName))
-  );
+  const inventory = requiredArtifactInventory(slug, outRoot);
+  if (!inventory.complete) {
+    throw new Error(
+      [
+        `semantic bundle finalization requires the four canonical artifacts under ${inventory.path}`,
+        `missing: ${inventory.missingRequiredFiles.join(", ")}`,
+        "Write or move the files into the declared output directory, then rerun validate_semantic_bundle and finalize_validated_bundle.",
+      ].join("\n")
+    );
+  }
+  const artifacts = inventory.requiredFiles.map((file) => file.path);
 
   return AgentRunSummarySchema.parse({
     slug,
-    status: promoted ? "completed" : "completed",
+    status: "completed",
     outputRoot: relOutRoot,
     promoted,
     validationPassed: true,
@@ -361,12 +388,12 @@ export function createEndpointAgentTools(defaultOutRoot: string) {
 
       const fromDir = outputDir(outRoot, slug);
       const toDir = promotedDir(slug);
-      for (const fileName of ["endpoint.json", "semantics.json", "evidence.jsonl", "usage.md"]) {
+      for (const fileName of ARTIFACT_FILE_NAMES) {
         const source = join(fromDir, fileName);
         if (!existsSync(source)) throw new Error(`missing source artifact: ${repoRelative(source)}`);
       }
       mkdirSync(toDir, { recursive: true });
-      for (const fileName of ["endpoint.json", "semantics.json", "evidence.jsonl", "usage.md"]) {
+      for (const fileName of ARTIFACT_FILE_NAMES) {
         cpSync(join(fromDir, fileName), join(toDir, fileName));
       }
       return {
@@ -402,10 +429,22 @@ export function createEndpointAgentTools(defaultOutRoot: string) {
     }),
     execute: async ({ slug, outRoot }) => {
       const dir = outputDir(outRoot, slug);
-      if (!existsSync(dir)) return { path: repoRelative(dir), files: [] };
+      const inventory = requiredArtifactInventory(slug, outRoot);
+      if (!existsSync(dir)) return { ...inventory, files: [] };
       return {
-        path: repoRelative(dir),
-        files: readdirSync(dir).sort(),
+        ...inventory,
+        files: readdirSync(dir)
+          .sort()
+          .map((fileName) => {
+            const path = join(dir, fileName);
+            const stat = statSync(path);
+            return {
+              fileName,
+              path: repoRelative(path),
+              type: stat.isDirectory() ? "directory" : "file",
+              bytes: stat.isFile() ? stat.size : 0,
+            };
+          }),
       };
     },
   });

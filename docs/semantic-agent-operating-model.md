@@ -165,6 +165,11 @@ Ask the coding agent to do this:
     templates, caveats, gaps, and live-probe claims must describe the same
     evidence state.
 11. Run final validation. Fix artifact failures. Do not weaken the validator.
+12. Inspect the declared output directory with `list_output_files`, then call
+    `finalize_validated_bundle`. Validation alone is not a completion signal:
+    finalization is the in-loop gate that verifies the four canonical files are
+    actually under `<out-root>/<slug>/`. If it reports missing files, correct
+    the artifact paths and rerun validation plus finalization before returning.
 
 ## Non-Negotiables
 
@@ -185,6 +190,9 @@ Ask the coding agent to do this:
 - The agent may inspect and probe freely in YOLO mode, but it must stop
   investigating once it can classify the major facts and satisfy the artifact
   contract.
+- A producer may not declare success immediately after validation. It must
+  finalize inside the agentic loop so path and artifact-inventory mistakes are
+  repaired by the same agent run, not by a parent process after the fact.
 
 ## Status Model
 

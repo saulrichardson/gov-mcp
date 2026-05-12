@@ -1,40 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { AgentRunSummarySchema } from "../src/artifactContract.js";
 import { createSemanticEndpointAgent, missingAgentRunArtifacts } from "../src/endpointAgent.js";
 import { DEFAULT_SEARCH_GLOBS, buildEndpointAgentInstructions, buildEndpointAgentTask } from "../src/instructions.js";
+import { repoRoot } from "../src/paths.js";
 import { SemanticRepairReportSchema } from "../src/repairContract.js";
 import { createSemanticRepairAgent, filterReviewReportToRepairTask } from "../src/repairAgent.js";
 import { SemanticReviewReportSchema } from "../src/reviewContract.js";
 import { createSemanticReviewAgent } from "../src/reviewAgent.js";
 import { SemanticStoryReportSchema } from "../src/storyContract.js";
 import { createSemanticStoryAgent } from "../src/storyAgent.js";
+import { createEndpointAgentTools } from "../src/tools.js";
 
 describe("Agents SDK semantic endpoint producer", () => {
-  function validatorStdout(slug = "v2__recipient") {
-    return [
-      "> codex-runner@0.1.0 semantic:validate",
-      "> tsx src/semanticValidate.ts --root runs/agents-sdk-test",
-      "",
-      JSON.stringify({
-        event: "semantic_artifacts_valid",
-        root: "/Users/saulrichardson/projects/gov-gpt/runs/agents-sdk-test",
-        endpointCount: 1,
-        results: [
-          {
-            slug,
-            evidenceRecords: 7,
-            requestFacts: 6,
-            responseFacts: 15,
-            availability: "available",
-            contradictions: 1,
-            missingMcpFields: [],
-          },
-        ],
-      }),
-    ].join("\n");
+  function completedSummary(slug = "v2__recipient") {
+    return {
+      slug,
+      status: "completed",
+      outputRoot: "runs/agents-sdk-test",
+      promoted: false,
+      validationPassed: true,
+      summary: "Finalized after validation and artifact inventory.",
+      keyFindings: ["Availability is available."],
+      artifacts: [
+        `runs/agents-sdk-test/${slug}/endpoint.json`,
+        `runs/agents-sdk-test/${slug}/semantics.json`,
+        `runs/agents-sdk-test/${slug}/evidence.jsonl`,
+        `runs/agents-sdk-test/${slug}/usage.md`,
+      ],
+      nextSteps: [],
+    };
   }
 
   it("creates a single autonomous agent with the required artifact tools", () => {
@@ -79,6 +76,8 @@ describe("Agents SDK semantic endpoint producer", () => {
     expect(instructions).toContain("perform one consistency audit");
     expect(instructions).toContain("Request fact paths must be relative");
     expect(instructions).toContain("Always call validate_semantic_bundle");
+    expect(instructions).toContain("A successful validate_semantic_bundle call is not completion");
+    expect(instructions).toContain("call list_output_files");
     expect(instructions).toContain("call finalize_validated_bundle");
     expect(instructions).toContain("call promote_semantic_bundle");
     expect(instructions).toContain("YOLO autonomy mode");
@@ -99,7 +98,7 @@ describe("Agents SDK semantic endpoint producer", () => {
     expect(task).toContain('queryJson: "{}"');
   });
 
-  it("stops after a validator tool result proves resolved availability", async () => {
+  it("keeps the agent running after validation so it can inspect and finalize artifacts", async () => {
     const agent = createSemanticEndpointAgent({
       slug: "v2__recipient",
       outRoot: "runs/agents-sdk-test",
@@ -115,20 +114,16 @@ describe("Agents SDK semantic endpoint producer", () => {
         tool: { name: "validate_semantic_bundle" },
         output: {
           ok: true,
-          stdout: validatorStdout(),
+          stdout: "semantic artifacts valid",
           stderr: "",
         },
       },
     ]);
 
-    expect(result.isFinalOutput).toBe(true);
-    const summary = AgentRunSummarySchema.parse(JSON.parse(result.finalOutput));
-    expect(summary.slug).toBe("v2__recipient");
-    expect(summary.validationPassed).toBe(true);
-    expect(summary.keyFindings).toContain("Availability is available.");
+    expect(result.isFinalOutput).toBe(false);
   });
 
-  it("handles SDK tool outputs that arrive as serialized JSON strings", async () => {
+  it("stops only when finalize_validated_bundle returns a structured summary", async () => {
     const agent = createSemanticEndpointAgent({
       slug: "v2__recipient",
       outRoot: "runs/agents-sdk-test",
@@ -141,16 +136,37 @@ describe("Agents SDK semantic endpoint producer", () => {
     const result = await (agent.toolUseBehavior as any)({}, [
       {
         type: "function_output",
-        tool: { name: "validate_semantic_bundle" },
-        output: JSON.stringify({
-          ok: true,
-          stdout: validatorStdout(),
-          stderr: "",
-        }),
+        tool: { name: "finalize_validated_bundle" },
+        output: JSON.stringify(completedSummary()),
       },
     ]);
 
     expect(result.isFinalOutput).toBe(true);
+    const summary = AgentRunSummarySchema.parse(JSON.parse(result.finalOutput));
+    expect(summary.slug).toBe("v2__recipient");
+    expect(summary.validationPassed).toBe(true);
+    expect(summary.keyFindings).toContain("Availability is available.");
+  });
+
+  it("reports canonical artifact inventory before finalization", async () => {
+    const outRoot = `runs/agents-contract-${Date.now()}`;
+    const slug = "v2__recipient";
+    const dir = join(repoRoot, outRoot, slug);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "endpoint.json"), "{}\n", "utf-8");
+    writeFileSync(join(dir, "usage.md"), "# Usage\n", "utf-8");
+
+    try {
+      const listTool = createEndpointAgentTools(outRoot).find((tool) => tool.name === "list_output_files") as any;
+      const result = await listTool.invoke({}, JSON.stringify({ slug, outRoot }), {});
+
+      expect(result.complete).toBe(false);
+      expect(result.missingRequiredFiles).toEqual(["semantics.json", "evidence.jsonl"]);
+      expect(result.requiredFiles).toHaveLength(4);
+      expect(result.files.map((file: any) => file.fileName)).toEqual(["endpoint.json", "usage.md"]);
+    } finally {
+      rmSync(join(repoRoot, outRoot), { recursive: true, force: true });
+    }
   });
 
   it("detects completed producer summaries whose artifact files are not on disk", () => {
