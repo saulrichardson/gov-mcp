@@ -1,0 +1,1079 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__download__count",
+  "generatedAt": "2026-05-12T09:35:00Z",
+  "endpoint": {
+    "method": "POST",
+    "host": "https://api.usaspending.gov",
+    "path": "/api/v2/download/count/"
+  },
+  "availability": {
+    "status": "available",
+    "confidence": "high",
+    "lastVerified": "2026-05-12",
+    "summary": "Live POST probes on 2026-05-12 returned HTTP 200 for default transactions, awards, explicit time_period.date_type=date_signed, and unused-filter warning cases, plus a clear HTTP 400 validation error for an invalid spending_level.",
+    "evidenceRefs": [
+      "ev-live-baseline-default",
+      "ev-live-awards-same-filter",
+      "ev-live-time-period-date-signed",
+      "ev-live-unused-filter-warning",
+      "ev-live-invalid-spending-level"
+    ]
+  },
+  "provenance": {
+    "sources": [
+      {
+        "id": "src-doc-contract",
+        "kind": "documentation",
+        "title": "Staged Download Count contract",
+        "locator": "staging/docs/v2/download/count.md",
+        "retrievedAt": "2026-05-12T09:00:00Z"
+      },
+      {
+        "id": "src-doc-search-filters",
+        "kind": "documentation",
+        "title": "Shared search filter documentation for advanced filters",
+        "locator": "usaspending-api/usaspending_api/api_contracts/search_filters.md",
+        "retrievedAt": "2026-05-12T09:00:00Z"
+      },
+      {
+        "id": "src-current-profile",
+        "kind": "current_profile",
+        "title": "Current raw MCP profile for Download Count",
+        "locator": "profiles/v2__download__count/profile.json",
+        "retrievedAt": "2026-05-12T09:00:00Z"
+      },
+      {
+        "id": "src-source-download-count",
+        "kind": "source_code",
+        "title": "USAspending download count view implementation",
+        "locator": "usaspending-api/usaspending_api/download/v2/download_count.py",
+        "retrievedAt": "2026-05-12T09:00:00Z"
+      },
+      {
+        "id": "src-source-helper-tests",
+        "kind": "source_code",
+        "title": "USAspending helper and integration tests for download count",
+        "locator": "usaspending-api/usaspending_api/common/helpers/generic_helper.py; usaspending-api/usaspending_api/download/tests/integration/test_download_count.py",
+        "retrievedAt": "2026-05-12T09:00:00Z"
+      },
+      {
+        "id": "src-derived-mcp-gaps",
+        "kind": "derived_check",
+        "title": "Derived MCP coverage gap assessment for Download Count",
+        "locator": "Derived from staged docs, current raw profile, and source implementation",
+        "retrievedAt": "2026-05-12T09:00:00Z"
+      },
+      {
+        "id": "src-live-download-count",
+        "kind": "live_probe",
+        "title": "Live Download Count probes on 2026-05-12",
+        "locator": "POST https://api.usaspending.gov/api/v2/download/count/",
+        "retrievedAt": "2026-05-12T09:20:00Z"
+      },
+      {
+        "id": "src-derived-live-comparison",
+        "kind": "derived_check",
+        "title": "Derived same-filter comparison of transactions versus awards responses",
+        "locator": "Derived from live probes ev-live-baseline-default and ev-live-awards-same-filter",
+        "retrievedAt": "2026-05-12T09:25:00Z"
+      }
+    ]
+  },
+  "request": {
+    "contentType": "application/json",
+    "parameters": [
+      {
+        "path": "filters",
+        "direction": "request",
+        "location": "body",
+        "type": "object",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Advanced search and download filter container used to scope the population that would be counted for a future download.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile",
+          "ev-live-baseline-default",
+          "ev-live-unused-filter-warning"
+        ],
+        "documented": {
+          "type": "AdvancedFilterObject",
+          "required": true
+        },
+        "observed": {
+          "examples": [
+            {
+              "time_period": [
+                {
+                  "start_date": "2022-10-01",
+                  "end_date": "2023-09-30"
+                }
+              ]
+            },
+            {
+              "time_period": [
+                {
+                  "start_date": "2022-10-01",
+                  "end_date": "2022-10-31"
+                }
+              ],
+              "not_a_real_filter": "abc"
+            }
+          ],
+          "notes": "A normal filters object and a filters object containing an unused nested key both returned HTTP 200; unknown nested keys are ignored for counting but can surface as warnings in messages."
+        }
+      },
+      {
+        "path": "spending_level",
+        "direction": "request",
+        "location": "body",
+        "type": "string",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Selects whether calculated_count reflects transactions (default), awards, or subawards.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-source-download-count",
+          "ev-live-baseline-default",
+          "ev-live-awards-same-filter",
+          "ev-live-invalid-spending-level"
+        ],
+        "documented": {
+          "type": "enum[string]",
+          "required": false,
+          "default": "transactions",
+          "allowedValues": [
+            "awards",
+            "transactions",
+            "subawards"
+          ]
+        },
+        "observed": {
+          "acceptedValues": [
+            "awards",
+            "transactions"
+          ],
+          "rejectedValues": [
+            "invalid"
+          ],
+          "defaultBehavior": "When omitted, the live service resolved spending_level to transactions.",
+          "examples": [
+            "awards",
+            "transactions"
+          ]
+        }
+      },
+      {
+        "path": "subawards",
+        "direction": "request",
+        "location": "body",
+        "type": "boolean",
+        "required": false,
+        "status": "inferred",
+        "description": "Legacy boolean switch still handled by source code for subaward counting; prefer spending_level=subawards for new callers.",
+        "constraints": [
+          "Deprecated compatibility parameter; prefer spending_level=subawards."
+        ],
+        "evidenceRefs": [
+          "ev-source-download-count",
+          "ev-derived-mcp-gaps"
+        ],
+        "documented": {
+          "notes": "Not documented in the staged contract; source still defines it with default false."
+        },
+        "observed": {
+          "notes": "Not live-probed in this bundle; retained because the source implementation still accepts it."
+        }
+      },
+      {
+        "path": "filters.keywords",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Keyword list applied across the endpoint's searchable text fields.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract"
+        ],
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.time_period",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "One or more date ranges used to constrain the population before counting.",
+        "constraints": [
+          "Each object requires start_date and end_date in YYYY-MM-DD.",
+          "Search dates are documented as limited to an earliest date of 2007-10-01."
+        ],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-doc-search-filters",
+          "ev-live-baseline-default",
+          "ev-live-awards-same-filter",
+          "ev-live-time-period-date-signed"
+        ],
+        "documented": {
+          "type": "array[TransactionSearchTimePeriodObject]",
+          "required": false
+        },
+        "observed": {
+          "examples": [
+            [
+              {
+                "start_date": "2022-10-01",
+                "end_date": "2023-09-30"
+              }
+            ],
+            [
+              {
+                "date_type": "date_signed",
+                "start_date": "2020-01-01",
+                "end_date": "2020-01-03"
+              }
+            ]
+          ],
+          "notes": "Baseline transaction, award-level, and explicit date_type=date_signed probes all accepted time_period arrays."
+        }
+      },
+      {
+        "path": "filters.time_period.date_type",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Optional date selector within each time_period object; shared transaction-search docs define action_date, date_signed, last_modified_date, and new_awards_only.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-search-filters",
+          "ev-source-helper-tests",
+          "ev-live-time-period-date-signed",
+          "ev-derived-mcp-gaps"
+        ],
+        "documented": {
+          "type": "enum[string]",
+          "required": false,
+          "allowedValues": [
+            "action_date",
+            "date_signed",
+            "last_modified_date",
+            "new_awards_only"
+          ]
+        },
+        "observed": {
+          "acceptedValues": [
+            "date_signed"
+          ],
+          "examples": [
+            "date_signed"
+          ],
+          "notes": "A live request with time_period.date_type=date_signed returned HTTP 200 and a bounded count."
+        }
+      },
+      {
+        "path": "filters.place_of_performance_scope",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Optional domestic versus foreign place-of-performance scope.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-derived-mcp-gaps"
+        ],
+        "documented": {
+          "type": "enum[string]",
+          "required": false,
+          "allowedValues": [
+            "domestic",
+            "foreign"
+          ]
+        }
+      },
+      {
+        "path": "filters.place_of_performance_locations",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Structured place-of-performance locations using the shared StandardLocationObject shape.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-doc-search-filters",
+          "ev-derived-mcp-gaps"
+        ],
+        "documented": {
+          "type": "array[LocationObject]",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.agencies",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Awarding or funding agency filters with toptier/subtier scoping.",
+        "constraints": [
+          "Each agency object requires type, tier, and name.",
+          "toptier_name only applies when tier=subtier."
+        ],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-derived-mcp-gaps"
+        ],
+        "documented": {
+          "type": "array[AgencyObject]",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.recipient_search_text",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Recipient text terms such as names, DUNS, or UEI fragments.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ],
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.recipient_id",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Recipient profile hash identifier used by USAspending recipient profile URLs.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-derived-mcp-gaps"
+        ],
+        "documented": {
+          "type": "string",
+          "required": false,
+          "notes": "Docs say this filter is not supported by subawards."
+        }
+      },
+      {
+        "path": "filters.recipient_scope",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Optional domestic versus foreign recipient scope.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-derived-mcp-gaps"
+        ],
+        "documented": {
+          "type": "enum[string]",
+          "required": false,
+          "allowedValues": [
+            "domestic",
+            "foreign"
+          ]
+        }
+      },
+      {
+        "path": "filters.recipient_locations",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Structured recipient locations using the shared StandardLocationObject shape.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ],
+        "documented": {
+          "type": "array[LocationObject]",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.recipient_type_names",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Recipient/business type category filters.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ],
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.award_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Award type code filter applied before counts are produced.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ],
+        "documented": {
+          "type": "FilterObjectAwardTypes",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.award_ids",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Award identifiers to match; quoted values perform exact matching according to docs.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-derived-mcp-gaps"
+        ],
+        "documented": {
+          "type": "array[string]",
+          "required": false,
+          "notes": "Quoted award IDs perform exact matches instead of fuzzy matching."
+        }
+      },
+      {
+        "path": "filters.award_amounts",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "One or more lower_bound/upper_bound award amount ranges.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ],
+        "documented": {
+          "type": "array[AwardAmounts]",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.program_numbers",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Assistance program number filters such as CFDA or Assistance Listing codes.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-derived-mcp-gaps"
+        ],
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.naics_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "object",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "NAICS include/exclude prefix filter object.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ],
+        "documented": {
+          "type": "NAICSCodeObject",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.psc_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "object|array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Product and Service Code filter supporting either the newer require/exclude object or a legacy array of PSC codes.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ],
+        "documented": {
+          "type": "PSCCodeObject|array[string]",
+          "required": false,
+          "notes": "Docs say the endpoint supports a new PSCCodeObject or a legacy array of codes."
+        }
+      },
+      {
+        "path": "filters.contract_pricing_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Contract pricing type code filters.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ],
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.set_aside_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Set-aside type code filters.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ],
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.extent_competed_type_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[string]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Extent-competed code filters.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ],
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.tas_codes",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "object",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Treasury Account Symbol include/exclude hierarchy filter.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ],
+        "documented": {
+          "type": "array[TASCodeObject]",
+          "required": false
+        }
+      },
+      {
+        "path": "filters.treasury_account_components",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "array[object]",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Treasury account component objects using ATA/AID/BPOA/EPOA/availability/main/sub-account parts.",
+        "constraints": [
+          "Each object requires aid and main."
+        ],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ],
+        "documented": {
+          "type": "array[TreasuryAccountComponentsObject]",
+          "required": false
+        }
+      }
+    ],
+    "templates": [
+      {
+        "name": "baseline_transactions_count",
+        "description": "Count the transaction-level download population for one fiscal-year date range using the endpoint default spending_level.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/count/",
+          "query": {},
+          "body": {
+            "filters": {
+              "time_period": [
+                {
+                  "start_date": "2022-10-01",
+                  "end_date": "2023-09-30"
+                }
+              ]
+            }
+          }
+        },
+        "evidenceRefs": [
+          "ev-live-baseline-default"
+        ]
+      },
+      {
+        "name": "award_level_preflight_count",
+        "description": "Count award-level rows for the same filters before attempting an award-level row-limited download.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/count/",
+          "query": {},
+          "body": {
+            "filters": {
+              "time_period": [
+                {
+                  "start_date": "2022-10-01",
+                  "end_date": "2023-09-30"
+                }
+              ]
+            },
+            "spending_level": "awards"
+          }
+        },
+        "evidenceRefs": [
+          "ev-live-awards-same-filter"
+        ]
+      },
+      {
+        "name": "date_signed_transaction_count",
+        "description": "Count transaction-level results using the date_signed interpretation inside time_period.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/download/count/",
+          "query": {},
+          "body": {
+            "filters": {
+              "time_period": [
+                {
+                  "date_type": "date_signed",
+                  "start_date": "2020-01-01",
+                  "end_date": "2020-01-03"
+                }
+              ]
+            }
+          }
+        },
+        "evidenceRefs": [
+          "ev-live-time-period-date-signed"
+        ]
+      }
+    ]
+  },
+  "response": {
+    "contentType": "application/json",
+    "shapeSummary": "Single aggregate object with one primary count for the resolved spending_level, legacy transaction_* alias fields, row-limit flags, and advisory messages.",
+    "fields": [
+      {
+        "path": "calculated_transaction_count",
+        "direction": "response",
+        "location": "response",
+        "type": "number",
+        "required": true,
+        "status": "contradicted",
+        "description": "Legacy transaction_* count field that currently mirrors calculated_count at the resolved spending_level rather than an independent transaction-total measure.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-source-download-count",
+          "ev-live-baseline-default",
+          "ev-live-awards-same-filter",
+          "ev-derived-legacy-transaction-alias"
+        ],
+        "documented": {
+          "type": "number",
+          "required": true,
+          "notes": "Docs describe this as the count of all transactions included in the download files."
+        },
+        "observed": {
+          "examples": [
+            12868988,
+            11507418
+          ],
+          "notes": "Using the same filter, the transactions-default probe returned 12868988 while the awards probe returned 11507418, and in each response calculated_transaction_count equaled calculated_count."
+        }
+      },
+      {
+        "path": "maximum_transaction_limit",
+        "direction": "response",
+        "location": "response",
+        "type": "number",
+        "required": true,
+        "status": "contradicted",
+        "description": "Legacy transaction_* limit field that currently matches maximum_limit rather than a distinct transaction-only cap.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-source-download-count",
+          "ev-live-baseline-default",
+          "ev-live-awards-same-filter",
+          "ev-derived-legacy-transaction-alias"
+        ],
+        "documented": {
+          "type": "number",
+          "required": true
+        },
+        "observed": {
+          "examples": [
+            500000
+          ],
+          "notes": "The same 500000 cap appeared in both maximum_transaction_limit and maximum_limit for transaction and award probes."
+        }
+      },
+      {
+        "path": "transaction_rows_gt_limit",
+        "direction": "response",
+        "location": "response",
+        "type": "boolean",
+        "required": true,
+        "status": "contradicted",
+        "description": "Legacy transaction_* limit flag that currently matches rows_gt_limit at the resolved spending_level rather than a distinct transaction-only comparison.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-source-download-count",
+          "ev-live-baseline-default",
+          "ev-live-awards-same-filter",
+          "ev-derived-legacy-transaction-alias"
+        ],
+        "documented": {
+          "type": "boolean",
+          "required": true
+        },
+        "observed": {
+          "examples": [
+            true,
+            false
+          ],
+          "notes": "For award and transaction probes transaction_rows_gt_limit matched rows_gt_limit exactly."
+        }
+      },
+      {
+        "path": "calculated_count",
+        "direction": "response",
+        "location": "response",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Primary count aligned with the requested or default spending_level.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-source-download-count",
+          "ev-live-baseline-default",
+          "ev-live-awards-same-filter",
+          "ev-live-time-period-date-signed"
+        ],
+        "documented": {
+          "type": "number",
+          "required": true
+        },
+        "observed": {
+          "examples": [
+            12868988,
+            11507418,
+            259770
+          ]
+        }
+      },
+      {
+        "path": "spending_level",
+        "direction": "response",
+        "location": "response",
+        "type": "string",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Echo of the resolved spending_level used to produce calculated_count.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-source-download-count",
+          "ev-live-baseline-default",
+          "ev-live-awards-same-filter"
+        ],
+        "documented": {
+          "type": "string",
+          "required": true
+        },
+        "observed": {
+          "examples": [
+            "transactions",
+            "awards"
+          ],
+          "notes": "The omitted spending_level request resolved to transactions."
+        }
+      },
+      {
+        "path": "maximum_limit",
+        "direction": "response",
+        "location": "response",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Maximum row limit associated with calculated_count.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-live-baseline-default",
+          "ev-live-awards-same-filter",
+          "ev-live-time-period-date-signed"
+        ],
+        "documented": {
+          "type": "number",
+          "required": true
+        },
+        "observed": {
+          "examples": [
+            500000
+          ]
+        }
+      },
+      {
+        "path": "rows_gt_limit",
+        "direction": "response",
+        "location": "response",
+        "type": "boolean",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Whether calculated_count exceeds maximum_limit.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-live-baseline-default",
+          "ev-live-awards-same-filter",
+          "ev-live-time-period-date-signed"
+        ],
+        "documented": {
+          "type": "boolean",
+          "required": true
+        },
+        "observed": {
+          "examples": [
+            true,
+            false
+          ]
+        }
+      },
+      {
+        "path": "messages",
+        "direction": "response",
+        "location": "response",
+        "type": "array[string]",
+        "required": true,
+        "status": "contradicted",
+        "description": "Warning and instruction array that has appeared on every successful probe and can include time-period limits, deprecation notices, and unused-filter warnings.",
+        "constraints": [],
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-source-download-count",
+          "ev-source-helper-tests",
+          "ev-live-baseline-default",
+          "ev-live-unused-filter-warning"
+        ],
+        "documented": {
+          "type": "array[string]",
+          "required": false
+        },
+        "observed": {
+          "examples": [
+            [
+              "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+              "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+              "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+            ],
+            [
+              "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. ",
+              "The following filters from the request were not used: {'not_a_real_filter'}. See https://api.usaspending.gov/docs/endpoints for a list of appropriate filters",
+              "'subawards' will be deprecated in the future. Set \u2018spending_level\u2019 to \u2018subawards\u2019 instead. See documentation for more information. ",
+              "The above fields containing the transaction_* naming convention will be deprecated and replaced with fields without the transaction_*. "
+            ]
+          ],
+          "notes": "The unused-filter probe returned four messages, including a warning that the unknown nested key was ignored."
+        }
+      }
+    ]
+  },
+  "mcpToolCoverage": {
+    "currentProfilePath": "profiles/v2__download__count/profile.json",
+    "exposedTopLevelRequestFields": [
+      "filters",
+      "spending_level"
+    ],
+    "missingImportantRequestFields": [
+      "subawards",
+      "filters.time_period.date_type",
+      "filters.place_of_performance_scope",
+      "filters.place_of_performance_locations",
+      "filters.agencies",
+      "filters.recipient_id",
+      "filters.recipient_scope",
+      "filters.award_ids",
+      "filters.program_numbers"
+    ],
+    "notes": [
+      "The current raw profile exposes filters and spending_level, and it enumerates some nested filter keys, but it omits several documented advanced-filter branches plus the hidden legacy subawards switch.",
+      "time_period.date_type is live and important for callers, but it is not represented as a discrete current-profile request fact."
+    ],
+    "evidenceRefs": [
+      "ev-current-profile",
+      "ev-derived-mcp-gaps",
+      "ev-live-time-period-date-signed"
+    ]
+  },
+  "behavior": {
+    "contradictions": [
+      {
+        "statement": "The documented transaction_* response fields behave as legacy aliases of the primary calculated_count and limit fields rather than as independent transaction-only measures.",
+        "impact": "When spending_level=awards, calculated_transaction_count currently equals the award count for that response, not the transaction count for the same filters. Treat the transaction_* fields as deprecated aliases and use calculated_count plus spending_level for business interpretation.",
+        "status": "contradicted",
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-source-download-count",
+          "ev-live-baseline-default",
+          "ev-live-awards-same-filter",
+          "ev-derived-legacy-transaction-alias"
+        ]
+      },
+      {
+        "statement": "messages is documented as optional, but source code and every successful live probe returned a populated array.",
+        "impact": "Client code can usually expect messages on success and should inspect them for unused-filter warnings and deprecation notices.",
+        "status": "contradicted",
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-source-download-count",
+          "ev-live-baseline-default",
+          "ev-live-unused-filter-warning"
+        ]
+      }
+    ],
+    "quirks": [
+      {
+        "statement": "Unknown nested filter keys do not necessarily fail the request; they can be ignored for counting and surfaced back in messages as unused filters.",
+        "impact": "A 200 response does not guarantee every supplied filter key affected the count. Inspect messages when debugging unexpectedly broad results.",
+        "status": "observed",
+        "evidenceRefs": [
+          "ev-source-helper-tests",
+          "ev-live-unused-filter-warning"
+        ]
+      },
+      {
+        "statement": "Source code and prior raw-profile probes indicate that an empty filters object is accepted and counts the full searchable population, even though broad calls often exceed the row-limited cap.",
+        "impact": "Avoid casual empty-filter calls because they count the full dataset and usually imply a bulk workflow instead of a row-limited custom download.",
+        "status": "inferred",
+        "evidenceRefs": [
+          "ev-current-profile",
+          "ev-source-download-count"
+        ]
+      },
+      {
+        "statement": "The service still contains a deprecated top-level subawards boolean in addition to spending_level=subawards.",
+        "impact": "Prefer spending_level for new callers, but preserve compatibility when interpreting older request shapes.",
+        "status": "inferred",
+        "evidenceRefs": [
+          "ev-source-download-count"
+        ]
+      }
+    ],
+    "gaps": [
+      {
+        "statement": "Most documented filter branches beyond time_period and spending_level were not re-tested live in this bundle.",
+        "impact": "Less-common filters remain preserved as documented_unverified facts so the MCP does not hide them, but callers should treat their precise validation behavior as not yet re-confirmed on 2026-05-12.",
+        "status": "unknown",
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-current-profile"
+        ]
+      },
+      {
+        "statement": "This bundle did not re-probe the malformed-request cases previously recorded in the raw profile, such as missing filters producing a generic HTML 500.",
+        "impact": "The safer assumption is still to validate request structure client-side before calling the API.",
+        "status": "unknown",
+        "evidenceRefs": [
+          "ev-current-profile"
+        ]
+      }
+    ],
+    "risks": [
+      {
+        "statement": "Broad requests can legitimately return counts above the 500000 row cap while still returning HTTP 200.",
+        "impact": "Always inspect rows_gt_limit and maximum_limit before proceeding to a row-limited download endpoint.",
+        "status": "documented_and_observed",
+        "evidenceRefs": [
+          "ev-doc-contract",
+          "ev-live-baseline-default",
+          "ev-live-awards-same-filter"
+        ]
+      },
+      {
+        "statement": "The response itself warns that transaction_* fields are slated for deprecation and replacement by fields without the transaction_ prefix.",
+        "impact": "Downstream code should key business logic off calculated_count, maximum_limit, rows_gt_limit, and spending_level rather than assuming the legacy aliases are durable.",
+        "status": "observed",
+        "evidenceRefs": [
+          "ev-live-baseline-default",
+          "ev-live-unused-filter-warning"
+        ]
+      },
+      {
+        "statement": "Current raw-profile evidence indicates malformed or missing filters payloads may yield a generic HTML 500 instead of structured JSON validation.",
+        "impact": "Validate body shape before calling the live API.",
+        "status": "inferred",
+        "evidenceRefs": [
+          "ev-current-profile"
+        ]
+      }
+    ]
+  }
+}

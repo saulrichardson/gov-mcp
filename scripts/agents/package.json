@@ -13,6 +13,7 @@
     "semantic:review": "tsx src/runReviewAgent.ts",
     "semantic:repair": "tsx src/runRepairAgent.ts",
     "semantic:story": "tsx src/runStoryAgent.ts",
+    "semantic:frontier": "tsx src/runFrontierSuite.ts",
     "smoke": "tsx src/smoke.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"

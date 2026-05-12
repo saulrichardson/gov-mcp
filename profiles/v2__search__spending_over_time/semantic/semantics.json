@@ -1,94 +1,175 @@
 {
   "schemaVersion": "2.0.0",
   "slug": "v2__search__spending_over_time",
-  "generatedAt": "2026-05-09T22:45:00.000Z",
+  "generatedAt": "2026-05-12T00:00:00.000Z",
   "endpointRef": "POST https://api.usaspending.gov/api/v2/search/spending_over_time/",
   "summary": "Aggregates a filtered USAspending search population into time buckets such as fiscal years, calendar years, quarters, or months.",
-  "businessPurpose": "Use this endpoint when the analytical question is about how spending changes over time for a filtered set of awards, transactions, or subawards, not when the question needs individual award records.",
+  "businessPurpose": "Use this endpoint when the analytical question is about how spending changes over time for a filtered set of awards, transactions, or subawards, not when the question needs individual award records. It is also the trend side of same-filter dashboards when you align any location-scope filters explicitly.",
   "analyticalGrain": "One row is one time bucket for the filtered population and selected spending_level. It is an aggregate time series, not an award, recipient, agency, or transaction row.",
   "primaryEntities": [
     {
       "name": "Filtered spending population",
       "description": "The awards, transactions, or subawards selected by the AdvancedFilterObject before aggregation.",
-      "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy", "sot-probe-subawards"]
+      "evidenceRefs": [
+        "sot-doc-contract",
+        "sot-probe-baseline-fy",
+        "sot-probe-subawards"
+      ]
     },
     {
       "name": "Time bucket",
       "description": "The fiscal year, calendar year, quarter, or month returned in each result row.",
-      "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy", "sot-probe-subawards"]
+      "evidenceRefs": [
+        "sot-doc-contract",
+        "sot-probe-baseline-fy",
+        "sot-probe-subawards"
+      ]
     }
   ],
   "measures": [
     {
       "name": "aggregated_amount",
       "description": "Total obligation-like amount for the bucket and selected spending level.",
-      "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy"]
+      "evidenceRefs": [
+        "sot-doc-contract",
+        "sot-probe-baseline-fy"
+      ]
     },
     {
       "name": "Award category obligations",
       "description": "Category-specific obligation columns such as Contract_Obligations, Grant_Obligations, Direct_Obligations, Idv_Obligations, Loan_Obligations, and Other_Obligations.",
-      "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy", "sot-probe-subawards"]
+      "evidenceRefs": [
+        "sot-doc-contract",
+        "sot-probe-baseline-fy",
+        "sot-probe-subawards"
+      ]
     },
     {
       "name": "Outlays",
       "description": "Nullable total and category outlay columns returned alongside obligations.",
-      "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy"]
+      "evidenceRefs": [
+        "sot-doc-contract",
+        "sot-probe-baseline-fy"
+      ]
     }
   ],
   "dimensions": [
     {
       "name": "group",
       "description": "The time grouping: fiscal_year, calendar_year, quarter, or month. Live validation also accepts aliases.",
-      "evidenceRefs": ["sot-doc-contract", "sot-probe-alias-fy", "sot-probe-bad-group"]
+      "evidenceRefs": [
+        "sot-doc-contract",
+        "sot-probe-alias-fy",
+        "sot-probe-bad-group"
+      ]
+    },
+    {
+      "name": "Returned time_period encoding",
+      "description": "Month and quarter buckets are encoded as fiscal periods within fiscal_year: month values 1-12 map Oct-Sep and quarter values 1-4 map fiscal Q1-Q4.",
+      "evidenceRefs": [
+        "sot-review-rt1-month-bucket-encoding",
+        "sot-probe-subawards"
+      ]
     },
     {
       "name": "spending_level",
       "description": "The data source level for the aggregate: transactions, awards, or subawards.",
-      "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy", "sot-probe-subawards"]
+      "evidenceRefs": [
+        "sot-doc-contract",
+        "sot-probe-baseline-fy",
+        "sot-probe-subawards"
+      ]
     },
     {
       "name": "Advanced filters",
       "description": "Search filters such as time period, award type codes, keywords, agencies, recipients, TAS, PSC, NAICS, program activities, and disaster codes.",
-      "evidenceRefs": ["sot-doc-contract", "sot-source-view"]
+      "evidenceRefs": [
+        "sot-doc-contract",
+        "sot-source-view"
+      ]
+    },
+    {
+      "name": "Location scope filters",
+      "description": "filters.place_of_performance_scope and filters.recipient_scope let you force domestic or foreign location scope so this trend matches geography endpoints summarized by place of performance or recipient location.",
+      "evidenceRefs": [
+        "sot-doc-scope-filters",
+        "sot-review-rt1-location-scope"
+      ]
     }
   ],
   "suitableQuestions": [
     {
       "name": "How did contract obligations trend by fiscal year?",
       "description": "Use group=fiscal_year and award_type_codes for procurement awards.",
-      "evidenceRefs": ["sot-probe-baseline-fy"]
+      "evidenceRefs": [
+        "sot-probe-baseline-fy"
+      ]
     },
     {
       "name": "What is the quarterly subaward trend for a bounded period?",
       "description": "Use group=quarter and spending_level=subawards.",
-      "evidenceRefs": ["sot-probe-subawards"]
+      "evidenceRefs": [
+        "sot-probe-subawards"
+      ]
     },
     {
       "name": "Does a keyword search show a broad spending trend?",
       "description": "Keyword-only requests work but should be bounded for repeatable analysis.",
-      "evidenceRefs": ["sot-probe-alias-fy"]
+      "evidenceRefs": [
+        "sot-probe-alias-fy"
+      ]
+    },
+    {
+      "name": "How do I build a monthly trend that matches a state geography map?",
+      "description": "Use group=month with a bounded time_period and set filters.place_of_performance_scope=domestic when comparing to a state/county/district place-of-performance map.",
+      "evidenceRefs": [
+        "sot-review-rt1-location-scope"
+      ]
     }
   ],
   "notSuitableFor": [
     {
       "name": "Listing individual awards",
       "description": "This endpoint returns aggregate time buckets. Use spending_by_award for award-level rows.",
-      "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy"]
+      "evidenceRefs": [
+        "sot-doc-contract",
+        "sot-probe-baseline-fy"
+      ]
     },
     {
       "name": "Historical pre-2007 search analysis",
       "description": "Live responses warn that search time periods are limited to an earliest date of 2007-10-01.",
-      "evidenceRefs": ["sot-probe-baseline-fy"]
+      "evidenceRefs": [
+        "sot-probe-baseline-fy"
+      ]
     }
   ],
   "joins": [
     {
       "from": "v2__search__spending_over_time",
       "to": "v2__search__spending_by_award",
-      "on": ["filters"],
+      "on": [
+        "filters"
+      ],
       "confidence": "medium",
       "description": "Reuse a compatible filters object to move from aggregate trend to representative award-level records.",
-      "evidenceRefs": ["sot-doc-contract", "sot-current-profile"]
+      "evidenceRefs": [
+        "sot-doc-contract",
+        "sot-current-profile"
+      ]
+    },
+    {
+      "from": "v2__search__spending_over_time",
+      "to": "v2__search__spending_by_geography",
+      "on": [
+        "filters"
+      ],
+      "confidence": "high",
+      "description": "Reuse the same bounded filters and set the matching location-scope filter explicitly before comparing a time trend to a geography map. Pair filters.place_of_performance_scope with scope=place_of_performance and filters.recipient_scope with scope=recipient_location.",
+      "evidenceRefs": [
+        "sot-doc-scope-filters",
+        "sot-review-rt1-location-scope"
+      ]
     }
   ],
   "workflows": [
@@ -100,35 +181,118 @@
           "order": 1,
           "action": "Call spending_over_time with a bounded filters.time_period and the desired group.",
           "endpointSlug": "v2__search__spending_over_time",
-          "evidenceRefs": ["sot-probe-baseline-fy"]
+          "evidenceRefs": [
+            "sot-probe-baseline-fy"
+          ]
         },
         {
           "order": 2,
           "action": "Identify periods with unusually high or low aggregated_amount.",
-          "evidenceRefs": ["sot-probe-baseline-fy"]
+          "evidenceRefs": [
+            "sot-probe-baseline-fy"
+          ]
         },
         {
           "order": 3,
           "action": "Reuse the filters on spending_by_award and add fields/sort/page controls to retrieve award-level rows.",
           "endpointSlug": "v2__search__spending_by_award",
-          "evidenceRefs": ["sot-current-profile"]
+          "evidenceRefs": [
+            "sot-current-profile"
+          ]
         }
       ],
-      "evidenceRefs": ["sot-probe-baseline-fy", "sot-current-profile"]
+      "evidenceRefs": [
+        "sot-probe-baseline-fy",
+        "sot-current-profile"
+      ]
+    },
+    {
+      "name": "Same-scope trend plus geography dashboard",
+      "description": "Build a time trend and a geography map from the same filter core, with explicit location-scope alignment.",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Choose whether the geography side will summarize by place of performance or recipient location.",
+          "endpointSlug": "v2__search__spending_by_geography",
+          "evidenceRefs": [
+            "sot-review-rt1-location-scope"
+          ]
+        },
+        {
+          "order": 2,
+          "action": "On spending_over_time, set filters.place_of_performance_scope for place-of-performance dashboards or filters.recipient_scope for recipient-location dashboards. For state/county/district maps, set the value explicitly instead of relying on geography defaults.",
+          "endpointSlug": "v2__search__spending_over_time",
+          "evidenceRefs": [
+            "sot-doc-scope-filters",
+            "sot-review-rt1-location-scope"
+          ]
+        },
+        {
+          "order": 3,
+          "action": "Call spending_over_time with a bounded filters.time_period and the desired group such as month or quarter.",
+          "endpointSlug": "v2__search__spending_over_time",
+          "evidenceRefs": [
+            "sot-review-rt1-location-scope"
+          ]
+        },
+        {
+          "order": 4,
+          "action": "Call spending_by_geography with the same core filters, the matching scope value, and the desired geo_layer such as state.",
+          "endpointSlug": "v2__search__spending_by_geography",
+          "evidenceRefs": [
+            "sot-review-rt1-location-scope"
+          ]
+        },
+        {
+          "order": 5,
+          "action": "Compare the trend and geography outputs only after confirming both requests used the same domestic-or-foreign location scope.",
+          "evidenceRefs": [
+            "sot-review-rt1-location-scope"
+          ]
+        }
+      ],
+      "evidenceRefs": [
+        "sot-doc-scope-filters",
+        "sot-review-rt1-location-scope"
+      ]
     }
   ],
   "caveats": [
     {
+      "statement": "For group=month and group=quarter, label response buckets from fiscal_year plus fiscal month/quarter numbers rather than assuming calendar numbering.",
+      "impact": "Example: a Jan-Jun 2024 monthly request returned fiscal_year 2024 with month 4 through 9, which should render as Jan-Jun 2024 on a calendar-month chart.",
+      "status": "observed",
+      "evidenceRefs": [
+        "sot-review-rt1-month-bucket-encoding",
+        "sot-probe-subawards"
+      ]
+    },
+    {
       "statement": "Use canonical group names in generated requests even though live validation accepts aliases.",
       "impact": "This avoids encoding undocumented UI aliases as the preferred public MCP surface.",
       "status": "contradicted",
-      "evidenceRefs": ["sot-doc-contract", "sot-probe-alias-fy"]
+      "evidenceRefs": [
+        "sot-doc-contract",
+        "sot-probe-alias-fy"
+      ]
     },
     {
       "statement": "Prefer spending_level='subawards' over the legacy subawards boolean.",
       "impact": "The live API returns a deprecation warning for the subawards field.",
       "status": "observed",
-      "evidenceRefs": ["sot-probe-baseline-fy", "sot-probe-subawards"]
+      "evidenceRefs": [
+        "sot-probe-baseline-fy",
+        "sot-probe-subawards"
+      ]
+    },
+    {
+      "statement": "When pairing this endpoint with state/county/district geography maps, set the matching location-scope filter explicitly on the trend request. Review-reported live calls showed that place_of_performance_scope materially changes the returned monthly amounts.",
+      "impact": "Explicit scope alignment prevents comparing a domestic map to a mixed-scope trend.",
+      "status": "documented_and_observed",
+      "evidenceRefs": [
+        "sot-doc-scope-filters",
+        "sot-review-rt1-location-scope"
+      ]
     }
   ]
 }

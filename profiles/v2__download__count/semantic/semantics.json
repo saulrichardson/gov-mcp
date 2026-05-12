@@ -1,0 +1,237 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__download__count",
+  "generatedAt": "2026-05-12T09:35:00Z",
+  "endpointRef": "v2__download__count",
+  "summary": "Preflight endpoint for estimating how many award, transaction, or subaward rows a prospective advanced-search download would contain and whether that result exceeds current row-limited download caps.",
+  "businessPurpose": "Use this endpoint before starting a row-limited download to estimate result size, choose the correct spending grain, and decide whether you must tighten filters or switch to larger-volume download workflows.",
+  "analyticalGrain": "One aggregate preflight result per request body, representing the count of records at the resolved spending_level plus legacy alias fields, limit flags, and advisory messages.",
+  "primaryEntities": [
+    {
+      "name": "Filtered download population",
+      "description": "The set of award, transaction, or subaward rows that would qualify for a related custom download under the supplied advanced filters.",
+      "evidenceRefs": [
+        "ev-doc-contract",
+        "ev-source-download-count",
+        "ev-live-baseline-default",
+        "ev-live-awards-same-filter"
+      ]
+    },
+    {
+      "name": "Spending level",
+      "description": "The business grain requested by the caller: transactions by default, or awards or subawards when specified.",
+      "evidenceRefs": [
+        "ev-doc-contract",
+        "ev-source-download-count",
+        "ev-live-baseline-default",
+        "ev-live-awards-same-filter"
+      ]
+    }
+  ],
+  "measures": [
+    {
+      "name": "calculated_count",
+      "description": "Primary count for the resolved spending_level. This is the main measure to use when deciding whether a row-limited download is feasible.",
+      "evidenceRefs": [
+        "ev-doc-contract",
+        "ev-live-baseline-default",
+        "ev-live-awards-same-filter",
+        "ev-live-time-period-date-signed"
+      ]
+    },
+    {
+      "name": "maximum_limit and rows_gt_limit",
+      "description": "Together these tell you whether the requested count fits inside the current row-limited custom download cap.",
+      "evidenceRefs": [
+        "ev-doc-contract",
+        "ev-live-baseline-default",
+        "ev-live-awards-same-filter",
+        "ev-live-time-period-date-signed"
+      ]
+    },
+    {
+      "name": "Legacy transaction_* aliases",
+      "description": "calculated_transaction_count and its companion limit fields currently mirror the primary measure instead of providing a distinct second measure.",
+      "evidenceRefs": [
+        "ev-derived-legacy-transaction-alias",
+        "ev-live-baseline-default",
+        "ev-live-awards-same-filter"
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "Advanced filters",
+      "description": "The filters object supports keyword, time, agency, recipient, geography, award-type, account, and industry constraints shared with USAspending advanced search and download experiences.",
+      "evidenceRefs": [
+        "ev-doc-contract",
+        "ev-doc-search-filters"
+      ]
+    },
+    {
+      "name": "Requested grain",
+      "description": "spending_level changes the meaning of calculated_count from transactions to awards or subawards.",
+      "evidenceRefs": [
+        "ev-doc-contract",
+        "ev-live-baseline-default",
+        "ev-live-awards-same-filter"
+      ]
+    },
+    {
+      "name": "Time-period interpretation",
+      "description": "time_period.date_type can change which date dimension is used for filtering, and date_signed is live for this endpoint.",
+      "evidenceRefs": [
+        "ev-doc-search-filters",
+        "ev-live-time-period-date-signed"
+      ]
+    }
+  ],
+  "suitableQuestions": [
+    {
+      "name": "Will this filtered download exceed the custom download row cap?",
+      "description": "Use rows_gt_limit and maximum_limit before launching a row-limited download job.",
+      "evidenceRefs": [
+        "ev-doc-contract",
+        "ev-live-baseline-default",
+        "ev-live-awards-same-filter"
+      ]
+    },
+    {
+      "name": "How many award-level versus transaction-level rows match the same filter set?",
+      "description": "Call the endpoint with the same filters and compare calculated_count across spending_level values before choosing a downstream export workflow.",
+      "evidenceRefs": [
+        "ev-live-baseline-default",
+        "ev-live-awards-same-filter",
+        "ev-derived-legacy-transaction-alias"
+      ]
+    },
+    {
+      "name": "How many transaction rows match a specific date interpretation such as date_signed?",
+      "description": "Use time_period.date_type when the date basis of the filter matters for the preflight estimate.",
+      "evidenceRefs": [
+        "ev-doc-search-filters",
+        "ev-live-time-period-date-signed"
+      ]
+    }
+  ],
+  "notSuitableFor": [
+    {
+      "name": "Returning record details",
+      "description": "This endpoint never returns award, transaction, or subaward rows; it only returns aggregate counts and messages.",
+      "evidenceRefs": [
+        "ev-doc-contract",
+        "ev-live-baseline-default"
+      ]
+    },
+    {
+      "name": "Producing grouped analytics",
+      "description": "It does not break counts out by agency, geography, recipient, or time bucket. Use search aggregation endpoints for grouped analysis.",
+      "evidenceRefs": [
+        "ev-doc-contract"
+      ]
+    },
+    {
+      "name": "Actually starting the download job",
+      "description": "Count responses are preflight metadata only. Separate download endpoints create files or jobs.",
+      "evidenceRefs": [
+        "ev-doc-contract"
+      ]
+    },
+    {
+      "name": "Searching pre-FY2008 time slices through search-style time_period filters",
+      "description": "The search filter docs and live messages warn that search start and end dates are limited to an earliest date of 2007-10-01 for this workflow.",
+      "evidenceRefs": [
+        "ev-doc-search-filters",
+        "ev-live-baseline-default"
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "from": "v2__download__count",
+      "to": "v2__download__awards",
+      "on": [
+        "Reuse the same filters when rows_gt_limit is false and you need an award-oriented custom download job."
+      ],
+      "confidence": "medium",
+      "description": "Use Download Count to preflight a custom award download before calling the asynchronous award download endpoint.",
+      "evidenceRefs": [
+        "ev-doc-contract"
+      ]
+    },
+    {
+      "from": "v2__download__count",
+      "to": "v2__bulk_download__awards",
+      "on": [
+        "Switch workflows when the estimated count exceeds maximum_limit or when you need older data outside the search time-period window."
+      ],
+      "confidence": "medium",
+      "description": "Counts that exceed the row-limited cap, or time ranges earlier than 2007-10-01, point toward bulk or website-based larger-volume workflows instead of row-limited custom downloads.",
+      "evidenceRefs": [
+        "ev-doc-search-filters",
+        "ev-live-baseline-default"
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Preflight a custom download",
+      "description": "Estimate size and cap risk before creating a row-limited download job.",
+      "steps": [
+        {
+          "order": 1,
+          "action": "POST filters and optional spending_level to v2__download__count to retrieve calculated_count, maximum_limit, rows_gt_limit, and advisory messages.",
+          "endpointSlug": "v2__download__count",
+          "evidenceRefs": [
+            "ev-live-baseline-default",
+            "ev-live-awards-same-filter"
+          ]
+        },
+        {
+          "order": 2,
+          "action": "If rows_gt_limit is false, reuse the filters in the appropriate download endpoint; otherwise narrow filters or switch to a bulk workflow.",
+          "evidenceRefs": [
+            "ev-doc-contract",
+            "ev-live-baseline-default",
+            "ev-live-awards-same-filter"
+          ]
+        }
+      ],
+      "evidenceRefs": [
+        "ev-doc-contract",
+        "ev-live-baseline-default",
+        "ev-live-awards-same-filter"
+      ]
+    }
+  ],
+  "caveats": [
+    {
+      "statement": "Treat calculated_count plus spending_level as the authoritative business measure. The legacy transaction_* fields currently behave as aliases and are explicitly marked for future deprecation in live messages.",
+      "impact": "Do not interpret calculated_transaction_count as a second independent metric when spending_level is awards or subawards.",
+      "status": "contradicted",
+      "evidenceRefs": [
+        "ev-derived-legacy-transaction-alias",
+        "ev-live-baseline-default",
+        "ev-live-awards-same-filter"
+      ]
+    },
+    {
+      "statement": "A 200 response can still mean some supplied filter keys were ignored.",
+      "impact": "Inspect messages for unused-filter warnings when debugging unexpectedly broad counts.",
+      "status": "observed",
+      "evidenceRefs": [
+        "ev-live-unused-filter-warning",
+        "ev-source-helper-tests"
+      ]
+    },
+    {
+      "statement": "Many less-common filter branches are preserved from documentation and source but were not re-verified live in this bundle.",
+      "impact": "Use them as supported request shapes with some residual uncertainty, rather than assuming the MCP surface is limited to the probed filters.",
+      "status": "unknown",
+      "evidenceRefs": [
+        "ev-doc-contract",
+        "ev-current-profile"
+      ]
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseCliArgs } from "../src/runEndpointAgent.js";
 import { parseRepairCliArgs } from "../src/runRepairAgent.js";
 import { parseReviewCliArgs } from "../src/runReviewAgent.js";
+import { parseFrontierSuiteCliArgs } from "../src/runFrontierSuite.js";
 import { parseStoryCliArgs } from "../src/runStoryAgent.js";
 
 describe("runEndpointAgent CLI", () => {
@@ -141,6 +142,40 @@ describe("runEndpointAgent CLI", () => {
       outputPath: "runs/story.json",
       streamEvents: false,
       autonomy: "yolo",
+    });
+  });
+
+  it("parses the frontier suite options", () => {
+    expect(
+      parseFrontierSuiteCliArgs([
+        "--output-dir",
+        "runs/frontier-demo",
+        "--bundle-glob",
+        "/repo/profiles/*/semantic/endpoint.json",
+        "--model",
+        "gpt-5.4",
+        "--reasoning-effort",
+        "xhigh",
+        "--max-turns",
+        "32",
+        "--timeout-ms",
+        "480000",
+        "--request-timeout-ms",
+        "20000",
+        "--autonomy",
+        "bounded",
+        "--quiet-events",
+      ])
+    ).toMatchObject({
+      outputDir: expect.stringContaining("runs/frontier-demo"),
+      bundleGlob: "/repo/profiles/*/semantic/endpoint.json",
+      model: "gpt-5.4",
+      reasoningEffort: "xhigh",
+      maxTurns: 32,
+      timeoutMs: 480000,
+      requestTimeoutMs: 20000,
+      streamEvents: false,
+      autonomy: "bounded",
     });
   });
 });

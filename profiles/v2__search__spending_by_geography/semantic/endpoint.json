@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0.0",
   "slug": "v2__search__spending_by_geography",
-  "generatedAt": "2026-05-09T12:00:00+00:00",
+  "generatedAt": "2026-05-12T00:00:00.000Z",
   "endpoint": {
     "method": "POST",
     "host": "https://api.usaspending.gov",
@@ -12,7 +12,11 @@
     "confidence": "high",
     "lastVerified": "2026-05-09",
     "summary": "Live POST probes returned HTTP 200 for both transaction-default and awards-level requests, confirming the endpoint is available.",
-    "evidenceRefs": ["ev-doc-endpoint-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+    "evidenceRefs": [
+      "ev-doc-endpoint-surface",
+      "ev-probe-baseline-state-ca-transactions",
+      "ev-probe-awards-state-ca"
+    ]
   },
   "provenance": {
     "sources": [
@@ -43,6 +47,12 @@
         "title": "Live probe for spending by geography requests",
         "locator": "POST /api/v2/search/spending_by_geography/",
         "retrievedAt": "2026-05-09T12:00:00+00:00"
+      },
+      {
+        "id": "src-review-repair-2",
+        "kind": "review_report",
+        "title": "Structured reviewer report for repair-2 state-layer geography caveats",
+        "locator": "repair_task:repair-2"
       }
     ]
   },
@@ -74,7 +84,12 @@
           ]
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-filter-surface", "ev-derived-coverage", "ev-probe-baseline-state-ca-transactions"]
+        "evidenceRefs": [
+          "ev-doc-endpoint-surface",
+          "ev-doc-filter-surface",
+          "ev-derived-coverage",
+          "ev-probe-baseline-state-ca-transactions"
+        ]
       },
       {
         "path": "subawards",
@@ -95,7 +110,13 @@
           "notes": "The probes did not send subawards=true, so acceptance of true remains unverified."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-response-surface", "ev-derived-coverage", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-endpoint-surface",
+          "ev-doc-response-surface",
+          "ev-derived-coverage",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "spending_level",
@@ -109,15 +130,30 @@
           "type": "enum[string]",
           "required": false,
           "default": "transactions",
-          "allowedValues": ["transactions", "awards", "subawards"]
+          "allowedValues": [
+            "transactions",
+            "awards",
+            "subawards"
+          ]
         },
         "observed": {
-          "acceptedValues": ["transactions", "awards"],
+          "acceptedValues": [
+            "transactions",
+            "awards"
+          ],
           "defaultBehavior": "When omitted in the baseline probe, the response reported spending_level=transactions.",
-          "examples": ["awards"]
+          "examples": [
+            "awards"
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-response-surface", "ev-derived-coverage", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-endpoint-surface",
+          "ev-doc-response-surface",
+          "ev-derived-coverage",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "scope",
@@ -130,14 +166,26 @@
         "documented": {
           "type": "enum[string]",
           "required": true,
-          "allowedValues": ["place_of_performance", "recipient_location"]
+          "allowedValues": [
+            "place_of_performance",
+            "recipient_location"
+          ]
         },
         "observed": {
-          "acceptedValues": ["place_of_performance"],
-          "examples": ["place_of_performance"]
+          "acceptedValues": [
+            "place_of_performance"
+          ],
+          "examples": [
+            "place_of_performance"
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-derived-coverage", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-endpoint-surface",
+          "ev-derived-coverage",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "geo_layer",
@@ -150,14 +198,28 @@
         "documented": {
           "type": "enum[string]",
           "required": true,
-          "allowedValues": ["state", "county", "district", "country"]
+          "allowedValues": [
+            "state",
+            "county",
+            "district",
+            "country"
+          ]
         },
         "observed": {
-          "acceptedValues": ["state"],
-          "examples": ["state"]
+          "acceptedValues": [
+            "state"
+          ],
+          "examples": [
+            "state"
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-derived-coverage", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-endpoint-surface",
+          "ev-derived-coverage",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "geo_layer_filters",
@@ -174,12 +236,19 @@
         },
         "observed": {
           "examples": [
-            ["CA"]
+            [
+              "CA"
+            ]
           ],
           "notes": "State-level probes filtered to CA returned one geography row."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-derived-coverage", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-endpoint-surface",
+          "ev-derived-coverage",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "filters.keywords",
@@ -194,7 +263,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.description",
@@ -209,7 +280,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.time_period",
@@ -238,7 +311,11 @@
         "constraints": [
           "Shape is shared from search_filters documentation and is polymorphic based on spending_level/subawards."
         ],
-        "evidenceRefs": ["ev-doc-filter-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "filters.place_of_performance_scope",
@@ -252,11 +329,16 @@
           "type": "enum[string]",
           "required": false,
           "default": "domestic",
-          "allowedValues": ["domestic", "foreign"],
+          "allowedValues": [
+            "domestic",
+            "foreign"
+          ],
           "notes": "The documented default applies only when geo_layer is county, district, or state."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.place_of_performance_locations",
@@ -272,7 +354,9 @@
           "notes": "Detailed member fields live in shared search_filters documentation."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.agencies",
@@ -287,7 +371,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.agencies[].type",
@@ -300,10 +386,15 @@
         "documented": {
           "type": "enum[string]",
           "required": true,
-          "allowedValues": ["awarding", "funding"]
+          "allowedValues": [
+            "awarding",
+            "funding"
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.agencies[].tier",
@@ -316,10 +407,15 @@
         "documented": {
           "type": "enum[string]",
           "required": true,
-          "allowedValues": ["toptier", "subtier"]
+          "allowedValues": [
+            "toptier",
+            "subtier"
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.agencies[].name",
@@ -334,7 +430,9 @@
           "required": true
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.agencies[].toptier_name",
@@ -350,7 +448,9 @@
           "notes": "Ignored when tier=toptier and only applicable when tier=subtier."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.recipient_search_text",
@@ -366,7 +466,9 @@
           "notes": "Text searched across a recipient's name, UEI, and DUNS."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.recipient_scope",
@@ -380,11 +482,16 @@
           "type": "enum[string]",
           "required": false,
           "default": "domestic",
-          "allowedValues": ["domestic", "foreign"],
+          "allowedValues": [
+            "domestic",
+            "foreign"
+          ],
           "notes": "The documented default applies only when geo_layer is county, district, or state."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.recipient_locations",
@@ -400,7 +507,9 @@
           "notes": "Detailed member fields live in shared search_filters documentation."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.recipient_type_names",
@@ -415,7 +524,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.award_type_codes",
@@ -431,7 +542,9 @@
           "default": "02,03,04,05,06,07,08,09,10,11,A,B,C,D,IDV_A,IDV_B,IDV_B_A,IDV_B_B,IDV_B_C,IDV_C,IDV_D,IDV_E"
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.award_ids",
@@ -447,7 +560,9 @@
           "notes": "Wrapping an award id in double quotes is documented to force exact matching."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.award_amounts",
@@ -462,7 +577,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.award_amounts[].lower_bound",
@@ -477,7 +594,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.award_amounts[].upper_bound",
@@ -492,7 +611,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.program_numbers",
@@ -507,7 +628,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.naics_codes",
@@ -522,7 +645,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.naics_codes.require",
@@ -537,7 +662,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.naics_codes.exclude",
@@ -552,7 +679,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.tas_codes",
@@ -567,7 +696,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.psc_codes",
@@ -583,7 +714,9 @@
           "notes": "Supports new PSCCodeObject or legacy array of codes."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.contract_pricing_type_codes",
@@ -598,7 +731,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.set_aside_type_codes",
@@ -613,7 +748,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.extent_competed_type_codes",
@@ -628,7 +765,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.treasury_account_components",
@@ -643,7 +782,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.treasury_account_components[].ata",
@@ -658,7 +799,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.treasury_account_components[].aid",
@@ -673,7 +816,9 @@
           "required": true
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.treasury_account_components[].bpoa",
@@ -688,7 +833,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.treasury_account_components[].epoa",
@@ -703,7 +850,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.treasury_account_components[].a",
@@ -718,7 +867,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.treasury_account_components[].main",
@@ -733,7 +884,9 @@
           "required": true
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.treasury_account_components[].sub",
@@ -748,7 +901,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.object_class",
@@ -763,7 +918,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.program_activity",
@@ -778,7 +935,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.program_activities",
@@ -796,7 +955,9 @@
         "constraints": [
           "At least one of program_activities[].name or program_activities[].code must be provided when this filter is used."
         ],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.program_activities[].name",
@@ -811,7 +972,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.program_activities[].code",
@@ -826,7 +989,9 @@
           "required": false
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "path": "filters.def_codes",
@@ -842,7 +1007,9 @@
           "notes": "COVID-19 and IIJA code groups impose an action_date floor based on the associated public law enactment date."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       }
     ],
     "templates": [
@@ -864,10 +1031,14 @@
             },
             "scope": "place_of_performance",
             "geo_layer": "state",
-            "geo_layer_filters": ["CA"]
+            "geo_layer_filters": [
+              "CA"
+            ]
           }
         },
-        "evidenceRefs": ["ev-probe-baseline-state-ca-transactions"]
+        "evidenceRefs": [
+          "ev-probe-baseline-state-ca-transactions"
+        ]
       },
       {
         "name": "recipient_county_awards",
@@ -879,14 +1050,19 @@
           "body": {
             "filters": {
               "recipient_scope": "domestic",
-              "recipient_search_text": ["school district"]
+              "recipient_search_text": [
+                "school district"
+              ]
             },
             "scope": "recipient_location",
             "geo_layer": "county",
             "spending_level": "awards"
           }
         },
-        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-endpoint-surface",
+          "ev-doc-filter-surface"
+        ]
       }
     ]
   },
@@ -907,10 +1083,16 @@
           "required": false
         },
         "observed": {
-          "examples": ["place_of_performance"]
+          "examples": [
+            "place_of_performance"
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "geo_layer",
@@ -925,10 +1107,16 @@
           "required": false
         },
         "observed": {
-          "examples": ["state"]
+          "examples": [
+            "state"
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "spending_level",
@@ -941,14 +1129,28 @@
         "documented": {
           "type": "enum[string]",
           "required": true,
-          "allowedValues": ["transactions", "awards", "subawards"]
+          "allowedValues": [
+            "transactions",
+            "awards",
+            "subawards"
+          ]
         },
         "observed": {
-          "acceptedValues": ["transactions", "awards"],
-          "examples": ["transactions", "awards"]
+          "acceptedValues": [
+            "transactions",
+            "awards"
+          ],
+          "examples": [
+            "transactions",
+            "awards"
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "results",
@@ -957,16 +1159,24 @@
         "type": "array[GeographyTypeResult]",
         "required": true,
         "status": "documented_and_observed",
-        "description": "Grouped geography result rows.",
+        "description": "Grouped geography result rows. For geo_layer=state, reviewer-observed live output can include territory rows and an uncoded blank bucket in addition to state and DC rows.",
         "documented": {
           "type": "array[GeographyTypeResult]",
           "required": true
         },
         "observed": {
-          "notes": "Both live probes returned one row when geo_layer_filters was limited to CA."
+          "notes": "Baseline live probes limited to CA returned one row; reviewer-reported broader state aggregation also returned territorial rows (GU, PR, VI, MP, AS) plus one uncoded row with blank shape_code and null display_name."
         },
-        "constraints": [],
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "constraints": [
+          "For geo_layer=state, do not assume the result set is limited to the 50 states plus DC.",
+          "Filter, label, or separately handle uncoded blank buckets before joining state rows to map shapes or ranking lists."
+        ],
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca",
+          "ev-review-repair-2-state-layer-caveat"
+        ]
       },
       {
         "path": "messages",
@@ -984,7 +1194,11 @@
           "notes": "Observed warnings matched the documented 2007-10-01 floor and subawards deprecation guidance in both probes."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "results[].shape_code",
@@ -993,16 +1207,33 @@
         "type": "string",
         "required": true,
         "status": "documented_and_observed",
-        "description": "Geography identifier for the selected layer.",
+        "description": "Geography identifier for the selected layer. In reviewer-observed geo_layer=state output, territory codes appeared alongside a blank string used for an uncoded bucket.",
         "documented": {
           "type": "string",
           "required": true
         },
         "observed": {
-          "examples": ["CA"]
+          "examples": [
+            "CA",
+            "GU",
+            "PR",
+            "VI",
+            "MP",
+            "AS",
+            ""
+          ],
+          "notes": "A reviewer-reported bounded state response included territory codes and one row with shape_code=\"\"."
         },
-        "constraints": [],
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "constraints": [
+          "For geo_layer=state, territory codes may appear under the same layer as states and DC.",
+          "Treat shape_code=\"\" as an uncoded geography bucket, not as a joinable state identifier."
+        ],
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca",
+          "ev-review-repair-2-state-layer-caveat"
+        ]
       },
       {
         "path": "results[].aggregated_amount",
@@ -1017,28 +1248,48 @@
           "required": true
         },
         "observed": {
-          "examples": [427176736718.63, 1579090012877.23]
+          "examples": [
+            427176736718.63,
+            1579090012877.23
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-endpoint-surface", "ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-endpoint-surface",
+          "ev-doc-response-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "results[].display_name",
         "direction": "response",
         "location": "response.results",
-        "type": "string",
+        "type": "string | null",
         "required": true,
-        "status": "documented_and_observed",
-        "description": "Human-readable geography label.",
+        "status": "contradicted",
+        "description": "Human-readable geography label. Reviewer-observed geo_layer=state output included null for an uncoded blank bucket.",
         "documented": {
           "type": "string",
           "required": true
         },
         "observed": {
-          "examples": ["California"]
+          "examples": [
+            "California",
+            "Guam",
+            null
+          ],
+          "notes": "A reviewer-reported bounded state response included one row with shape_code=\"\" and display_name=null."
         },
-        "constraints": [],
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "constraints": [
+          "Handle null display_name as an uncoded bucket rather than a normal named geography."
+        ],
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca",
+          "ev-review-repair-2-state-layer-caveat"
+        ]
       },
       {
         "path": "results[].population",
@@ -1053,10 +1304,16 @@
           "required": true
         },
         "observed": {
-          "examples": [39538223]
+          "examples": [
+            39538223
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "results[].per_capita",
@@ -1071,10 +1328,17 @@
           "required": true
         },
         "observed": {
-          "examples": [10804.15, 39938.32]
+          "examples": [
+            10804.15,
+            39938.32
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "path": "results[].total_outlays",
@@ -1090,18 +1354,27 @@
           "notes": "Only included when response spending_level is awards."
         },
         "observed": {
-          "examples": [790463952358.41],
+          "examples": [
+            790463952358.41
+          ],
           "notes": "Observed in the awards-level CA response."
         },
         "constraints": [],
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-awards-state-ca"
+        ]
       }
     ],
     "pagination": {
       "strategy": "none",
       "fields": [],
       "notes": "The docs do not describe page, limit, or sort controls; both observed responses returned direct result sets without page metadata.",
-      "evidenceRefs": ["ev-derived-coverage", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+      "evidenceRefs": [
+        "ev-derived-coverage",
+        "ev-probe-baseline-state-ca-transactions",
+        "ev-probe-awards-state-ca"
+      ]
     }
   },
   "mcpToolCoverage": {
@@ -1123,7 +1396,10 @@
       "Loaded endpoint context did not include a current raw profile for this slug, so there is no legacy confirmed request schema to expose these fields.",
       "The semantic bundle preserves documented top-level controls and major nested filter families even though only part of the filter surface has been live-probed."
     ],
-    "evidenceRefs": ["ev-current-profile-missing", "ev-derived-coverage"]
+    "evidenceRefs": [
+      "ev-current-profile-missing",
+      "ev-derived-coverage"
+    ]
   },
   "behavior": {
     "contradictions": [],
@@ -1132,13 +1408,19 @@
         "statement": "The top-level subawards flag is still documented, but live response messages instruct callers to use spending_level=subawards instead.",
         "impact": "Prefer spending_level for forward-compatible request construction.",
         "status": "documented_and_observed",
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "statement": "place_of_performance_scope and recipient_scope document a default of domestic only for county, district, and state geo layers.",
         "impact": "Do not assume the same default semantics for country-level requests.",
         "status": "documented_unverified",
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       }
     ],
     "gaps": [
@@ -1146,13 +1428,17 @@
         "statement": "The detailed member fields for shared LocationObject and TimePeriodObject shapes are referenced from search_filters documentation rather than restated on this endpoint page.",
         "impact": "Request builders may need shared filter documentation or endpoint-specific live probes to validate the exact nested shapes.",
         "status": "documented_unverified",
-        "evidenceRefs": ["ev-doc-filter-surface"]
+        "evidenceRefs": [
+          "ev-doc-filter-surface"
+        ]
       },
       {
         "statement": "No current raw MCP profile exists in the loaded context for this slug.",
         "impact": "Without the semantic bundle, MCP callers would lack a maintained request surface for this endpoint.",
         "status": "observed",
-        "evidenceRefs": ["ev-current-profile-missing"]
+        "evidenceRefs": [
+          "ev-current-profile-missing"
+        ]
       }
     ],
     "risks": [
@@ -1160,13 +1446,28 @@
         "statement": "The response warns that search time periods are currently limited to an earliest start date of 2007-10-01 for searches.",
         "impact": "Analyses requiring earlier data should switch to download or bulk-download workflows rather than relying on this endpoint.",
         "status": "documented_and_observed",
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-baseline-state-ca-transactions", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-baseline-state-ca-transactions",
+          "ev-probe-awards-state-ca"
+        ]
       },
       {
         "statement": "total_outlays is not part of every geography row and appears when spending_level is awards.",
         "impact": "Consumers should not assume the outlay measure is present when spending_level is transactions or subawards.",
         "status": "documented_and_observed",
-        "evidenceRefs": ["ev-doc-response-surface", "ev-probe-awards-state-ca"]
+        "evidenceRefs": [
+          "ev-doc-response-surface",
+          "ev-probe-awards-state-ca"
+        ]
+      },
+      {
+        "statement": "For geo_layer=state, reviewer-reported live output included territorial codes (GU, PR, VI, MP, AS) and one uncoded row with shape_code=\"\" and display_name=null.",
+        "impact": "State dashboards should not assume only the 50 states plus DC; decide whether to map territories separately and filter or relabel the uncoded bucket before joins or rankings.",
+        "status": "observed",
+        "evidenceRefs": [
+          "ev-review-repair-2-state-layer-caveat"
+        ]
       }
     ]
   }

@@ -78,6 +78,9 @@ surface options instead of silently choosing.
 
 - Use `scripts/agents` for semantic producer, reviewer, repairer, and story-gate
   work.
+- Use `npm --prefix scripts/agents run semantic:frontier` for high-ceiling
+  multi-story MCP stress tests. Treat its summary as a source of repair tasks,
+  not as a replacement for endpoint bundles.
 - Use `scripts/codex` for the legacy raw-profile pipeline and the shared
   `semantic:validate` command only.
 - Use `scripts/mcp` for runtime MCP tools, semantic bundle loading, validation,

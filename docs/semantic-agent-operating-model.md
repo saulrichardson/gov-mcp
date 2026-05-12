@@ -80,12 +80,27 @@ make agents-repair \
 make agents-story \
   AGENTS_BUNDLE_GLOB='/abs/{profiles/*/semantic,runs/*}/endpoint.json' \
   AGENTS_STORY_OUTPUT=runs/story.json
+
+# Run a suite of high-ceiling story gates and aggregate gaps.
+npm --prefix scripts/agents run semantic:frontier -- \
+  --output-dir runs/agents-sdk-frontier/<name> \
+  --bundle-glob '/abs/profiles/*/semantic/endpoint.json' \
+  --reasoning-effort high \
+  --autonomy yolo
 ```
 
 The story agent is the current promotion-grade acceptance test: it does not edit
 files. It discovers endpoints through the MCP, reads endpoint semantics, validates
 requests, calls bounded endpoints, tells a short evidence-backed story, and
 reports any MCP usability gaps as repair tasks.
+
+The frontier suite is the current high-ceiling stress harness. It runs multiple
+story gates in sequence and writes each report plus
+`frontier-suite-summary.json`. The suite wrapper is deterministic orchestration;
+the actual judgments remain model-owned story runs. Use it when asking whether
+the semantic MCP can support dashboard-shaped analysis, cross-endpoint handoffs,
+async download workflows, or other higher-order tasks rather than one endpoint
+in isolation.
 
 The repair agent is allowed to edit artifacts, but it should stay focused on the
 selected finding rather than becoming a second producer. It should load the
@@ -234,3 +249,11 @@ Later story-gate runs found additional failure modes:
 - async endpoints can require a prerequisite workflow to create a fresh
   `file_name` or similar identifier before the target endpoint can be probed
   honestly
+- concurrent producer runs can report success after agents move or stash output
+  directories; the endpoint runner now checks that a completed validated summary
+  points to real `endpoint.json`, `semantics.json`, `evidence.jsonl`, and
+  `usage.md` files on disk
+- frontier story suites are effective at finding business-semantics gaps that
+  endpoint validators cannot see, such as fiscal month bucket labeling,
+  geography rows for territories/uncoded buckets, and preview-vs-download
+  continuity limits

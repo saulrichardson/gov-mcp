@@ -1,0 +1,168 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__awards__funding_rollup",
+  "generatedAt": "2026-05-12T09:20:00-04:00",
+  "endpointRef": "v2__awards__funding_rollup",
+  "summary": "Live-verified aggregate endpoint for a single award that returns one total obligation measure plus distinct counts of awarding agencies, funding agencies, and federal accounts derived from revealed File C funding records. The staged docs show page, sort, order, and limit in the request body, but source and current-profile evidence indicate those are legacy no-op fields and the current raw MCP profile exposes only award_id.",
+  "businessPurpose": "Use this endpoint when you already know a specific award and want a quick funding footprint summary rather than detailed funding rows: total transaction obligations plus how many distinct awarding agencies, funding agencies, and federal accounts appear in the revealed File C funding data for that award.",
+  "analyticalGrain": "One aggregate object per requested award_id.",
+  "primaryEntities": [
+    {
+      "name": "Award",
+      "description": "The request is scoped to exactly one award identifier, accepted as a generated award id string or an internal integer award id.",
+      "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+    },
+    {
+      "name": "Award funding rollup",
+      "description": "The response is a single funding-summary object derived from revealed financial_accounts_by_awards records linked to the requested award.",
+      "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+    }
+  ],
+  "measures": [
+    {
+      "name": "Total transaction obligated amount",
+      "description": "Aggregate sum of transaction_obligated_amount across revealed File C funding records for the award.",
+      "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+    },
+    {
+      "name": "Awarding agency count",
+      "description": "Distinct count of awarding top-tier agencies represented in the funding records for the award.",
+      "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+    },
+    {
+      "name": "Funding agency count",
+      "description": "Distinct count of funding top-tier agencies represented in the funding records for the award.",
+      "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+    },
+    {
+      "name": "Federal account count",
+      "description": "Distinct count of federal accounts represented in the funding records for the award.",
+      "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "Award identifier",
+      "description": "The rollup is keyed by one award_id, which source code accepts as either a generated award id string or an internal integer award id.",
+      "evidenceRefs": ["ev-doc-001", "ev-src-001"]
+    },
+    {
+      "name": "Revealed File C funding universe",
+      "description": "Source SQL limits the aggregation to financial_accounts_by_awards rows whose submission window reveal date has passed.",
+      "evidenceRefs": ["ev-src-001"]
+    }
+  ],
+  "suitableQuestions": [
+    {
+      "name": "What is the total transaction obligated amount for this award?",
+      "description": "The endpoint returns one aggregate monetary total for the requested award.",
+      "evidenceRefs": ["ev-doc-001", "ev-live-001"]
+    },
+    {
+      "name": "How many distinct awarding agencies, funding agencies, and federal accounts are tied to this award's revealed funding data?",
+      "description": "The endpoint is designed to answer these footprint questions with three top-level count fields.",
+      "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+    },
+    {
+      "name": "Should I expect this award to have a simple or broad funding footprint before deeper drilldown?",
+      "description": "The three count fields provide a quick complexity check before moving to more detailed award/accounting analysis.",
+      "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+    }
+  ],
+  "notSuitableFor": [
+    {
+      "name": "Detailed funding rows by period, agency, account, object class, or program activity",
+      "description": "This endpoint returns only one aggregate object and does not expose row-level funding detail.",
+      "evidenceRefs": ["ev-doc-001", "ev-live-001"]
+    },
+    {
+      "name": "Searching across many awards",
+      "description": "The request accepts one required award_id and produces one award-specific rollup.",
+      "evidenceRefs": ["ev-doc-001", "ev-live-001"]
+    },
+    {
+      "name": "Pagination or sorting workflows",
+      "description": "Despite the docs sample body, source and profile evidence indicate page, sort, order, and limit do not affect the rollup behavior.",
+      "evidenceRefs": ["ev-doc-001", "ev-prof-001", "ev-src-001", "ev-der-001"]
+    },
+    {
+      "name": "Validating whether an award identifier is real",
+      "description": "Current-profile evidence indicates unknown award ids can return HTTP 200 with zero totals instead of an error.",
+      "evidenceRefs": ["ev-prof-001"]
+    }
+  ],
+  "joins": [
+    {
+      "from": "Award selection workflow",
+      "to": "Award funding rollup endpoint",
+      "on": ["award_id"],
+      "confidence": "medium",
+      "description": "Once an upstream step has identified a valid award identifier, use that same award_id here to retrieve a quick funding footprint summary for the single award.",
+      "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Quick award funding footprint check",
+      "description": "Use the rollup to sanity-check one award's funding breadth before deeper analysis.",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Obtain a valid award identifier for the award of interest. Source code supports either a generated award id string or an internal integer award id.",
+          "evidenceRefs": ["ev-doc-001", "ev-src-001"]
+        },
+        {
+          "order": 2,
+          "action": "POST that award_id to /api/v2/awards/funding_rollup/ using application/json. The primary safe template sends only award_id.",
+          "endpointSlug": "v2__awards__funding_rollup",
+          "evidenceRefs": ["ev-live-001", "ev-doc-001"]
+        },
+        {
+          "order": 3,
+          "action": "Interpret the response as one aggregate summary object: total_transaction_obligated_amount plus distinct counts of awarding agencies, funding agencies, and federal accounts.",
+          "endpointSlug": "v2__awards__funding_rollup",
+          "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+        },
+        {
+          "order": 4,
+          "action": "Ignore the legacy page, sort, order, and limit fields shown in the docs sample body unless you are intentionally reproducing the contradiction; source and profile evidence indicate they do not drive pagination or sorting behavior for this route.",
+          "endpointSlug": "v2__awards__funding_rollup",
+          "evidenceRefs": ["ev-doc-001", "ev-prof-001", "ev-src-001", "ev-der-001"]
+        },
+        {
+          "order": 5,
+          "action": "Treat all-zero responses carefully because current-profile evidence indicates an unknown award_id can still return HTTP 200 with zero totals.",
+          "endpointSlug": "v2__awards__funding_rollup",
+          "evidenceRefs": ["ev-prof-001"]
+        }
+      ],
+      "evidenceRefs": ["ev-doc-001", "ev-prof-001", "ev-src-001", "ev-live-001", "ev-der-001"]
+    }
+  ],
+  "caveats": [
+    {
+      "statement": "The docs sample body shows page, sort, order, and limit, but source and current-profile evidence indicate the implementation ignores those fields and always returns one aggregate object.",
+      "impact": "Do not design pagination or sorting workflows around this endpoint.",
+      "status": "contradicted",
+      "evidenceRefs": ["ev-doc-001", "ev-prof-001", "ev-src-001", "ev-der-001"]
+    },
+    {
+      "statement": "Unknown award ids can return HTTP 200 with zero totals according to the current raw profile.",
+      "impact": "A zeroed rollup is not by itself proof that the request used a valid award identifier.",
+      "status": "inferred",
+      "evidenceRefs": ["ev-prof-001"]
+    },
+    {
+      "statement": "The monetary total is derived from revealed financial_accounts_by_awards records and may be negative for some awards.",
+      "impact": "Do not assume the rollup total is always positive or that it covers unrevealed submission windows.",
+      "status": "inferred",
+      "evidenceRefs": ["ev-prof-001", "ev-src-001"]
+    },
+    {
+      "statement": "The count fields are distinct counts of top-tier agencies and federal-account combinations, not counts of rows or transactions.",
+      "impact": "Interpret the counts as breadth indicators rather than record totals.",
+      "status": "inferred",
+      "evidenceRefs": ["ev-src-001"]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0.0",
   "slug": "v2__download__awards",
-  "generatedAt": "2026-05-09T22:45:00.000Z",
+  "generatedAt": "2026-05-12T05:25:47Z",
   "endpoint": {
     "method": "POST",
     "host": "https://api.usaspending.gov",
@@ -12,7 +12,11 @@
     "confidence": "high",
     "lastVerified": "2026-05-09",
     "summary": "Live probes returned a 200 download job response for a bounded request and clear 400 validation errors for empty filters and unsupported file_format.",
-    "evidenceRefs": ["daw-probe-baseline", "daw-probe-empty-filters", "daw-probe-bad-format"]
+    "evidenceRefs": [
+      "daw-probe-baseline",
+      "daw-probe-empty-filters",
+      "daw-probe-bad-format"
+    ]
   },
   "provenance": {
     "sources": [
@@ -40,6 +44,24 @@
         "title": "Live API probes run on 2026-05-09",
         "locator": "https://api.usaspending.gov/api/v2/download/awards/",
         "retrievedAt": "2026-05-09T22:45:00.000Z"
+      },
+      {
+        "id": "daw-source-columns-src",
+        "kind": "source_code",
+        "title": "USAspending award download column mappings",
+        "locator": "usaspending-api/usaspending_api/download/v2/download_column_historical_lookups.py:18-32,136-156,1047-1048"
+      },
+      {
+        "id": "daw-search-doc-src",
+        "kind": "documentation",
+        "title": "Spending by award field labels",
+        "locator": "staging/docs/v2/search/spending_by_award.md:59-60,98-99,219,266"
+      },
+      {
+        "id": "daw-rt1-review-src",
+        "kind": "review_report",
+        "title": "RT1 reviewer evidence for award download columns",
+        "locator": "Structured reviewer report for v2__download__awards (RT1)"
       }
     ]
   },
@@ -62,13 +84,22 @@
         "observed": {
           "examples": [
             {
-              "keywords": ["forest"]
+              "keywords": [
+                "forest"
+              ]
             }
           ],
           "notes": "An empty object returned HTTP 400 with 'At least one filter is required.'"
         },
-        "constraints": ["Must include at least one filter key."],
-        "evidenceRefs": ["daw-doc-contract", "daw-source-validation", "daw-probe-baseline", "daw-probe-empty-filters"]
+        "constraints": [
+          "Must include at least one filter key."
+        ],
+        "evidenceRefs": [
+          "daw-doc-contract",
+          "daw-source-validation",
+          "daw-probe-baseline",
+          "daw-probe-empty-filters"
+        ]
       },
       {
         "path": "filters.keywords",
@@ -83,10 +114,19 @@
           "required": false
         },
         "observed": {
-          "examples": [["forest"]]
+          "examples": [
+            [
+              "forest"
+            ]
+          ]
         },
-        "constraints": ["Keyword-only downloads can be large unless combined with limit or other filters."],
-        "evidenceRefs": ["daw-doc-contract", "daw-probe-baseline"]
+        "constraints": [
+          "Keyword-only downloads can be large unless combined with limit or other filters."
+        ],
+        "evidenceRefs": [
+          "daw-doc-contract",
+          "daw-probe-baseline"
+        ]
       },
       {
         "path": "filters.time_period",
@@ -103,8 +143,13 @@
         "observed": {
           "notes": "Not live-probed on 2026-05-09 in this bundle; current raw profile has prior observations."
         },
-        "constraints": ["Each object should include start_date and end_date."],
-        "evidenceRefs": ["daw-doc-contract", "daw-current-profile"]
+        "constraints": [
+          "Each object should include start_date and end_date."
+        ],
+        "evidenceRefs": [
+          "daw-doc-contract",
+          "daw-current-profile"
+        ]
       },
       {
         "path": "filters.award_type_codes",
@@ -120,10 +165,25 @@
         },
         "observed": {
           "defaultBehavior": "Omitted award_type_codes were injected in the response, including procurement, assistance, IDV, '-1', and F001-F010 values.",
-          "examples": [["-1", "02", "03", "A", "B", "F001", "IDV_A"]]
+          "examples": [
+            [
+              "-1",
+              "02",
+              "03",
+              "A",
+              "B",
+              "F001",
+              "IDV_A"
+            ]
+          ]
         },
-        "constraints": ["Do not assume the default award type code list is static."],
-        "evidenceRefs": ["daw-probe-baseline", "daw-source-validation"]
+        "constraints": [
+          "Do not assume the default award type code list is static."
+        ],
+        "evidenceRefs": [
+          "daw-probe-baseline",
+          "daw-source-validation"
+        ]
       },
       {
         "path": "columns",
@@ -132,17 +192,34 @@
         "type": "array[string]",
         "required": false,
         "status": "documented_and_observed",
-        "description": "Optional list of export column identifiers.",
+        "description": "Optional list of export column identifiers. Curated starter crosswalk: award_id_piid emits CSV header award_id_piid and represents the PIID-style contract award identifier (closest search label Award ID); recipient_name emits recipient_name and represents the recipient legal/business name (closest search label Recipient Name).",
         "documented": {
           "type": "array[string]",
           "required": false
         },
         "observed": {
-          "examples": [["award_id_piid", "recipient_name"]],
-          "notes": "The live response echoed requested columns in download_request."
+          "examples": [
+            [
+              "award_id_piid",
+              "recipient_name"
+            ]
+          ],
+          "notes": "The live response echoed requested columns in download_request, and reviewer ZIP inspection reported a header row matching award_id_piid and recipient_name exactly."
         },
-        "constraints": ["Column validation is weaker for this endpoint than for account downloads; prefer known USAspending column IDs."],
-        "evidenceRefs": ["daw-doc-contract", "daw-current-profile", "daw-probe-baseline"]
+        "constraints": [
+          "For the reviewed starter pair, generated CSV headers matched the requested column IDs exactly: award_id_piid and recipient_name.",
+          "Curated starter meanings: award_id_piid is the PIID-style contract award identifier; recipient_name is the recipient legal/business name.",
+          "Do not assume award_id_piid is the only award identifier across award types; source-defined mappings also expose award_id_fain and award_id_uri.",
+          "Column validation is weaker for this endpoint than for account downloads; prefer known USAspending column IDs."
+        ],
+        "evidenceRefs": [
+          "daw-doc-contract",
+          "daw-current-profile",
+          "daw-probe-baseline",
+          "daw-source-column-crosswalk",
+          "daw-doc-search-field-labels",
+          "daw-review-rt1-columns"
+        ]
       },
       {
         "path": "file_format",
@@ -156,15 +233,30 @@
           "type": "enum[string]",
           "required": false,
           "default": "csv",
-          "allowedValues": ["csv", "tsv", "pstxt"]
+          "allowedValues": [
+            "csv",
+            "tsv",
+            "pstxt"
+          ]
         },
         "observed": {
-          "rejectedValues": ["xlsx"],
+          "rejectedValues": [
+            "xlsx"
+          ],
           "defaultBehavior": "Omitted file_format defaults to csv; explicit csv was echoed in the live response.",
-          "examples": ["csv"]
+          "examples": [
+            "csv"
+          ]
         },
-        "constraints": ["Only csv, tsv, and pstxt are valid."],
-        "evidenceRefs": ["daw-doc-contract", "daw-source-validation", "daw-probe-baseline", "daw-probe-bad-format"]
+        "constraints": [
+          "Only csv, tsv, and pstxt are valid."
+        ],
+        "evidenceRefs": [
+          "daw-doc-contract",
+          "daw-source-validation",
+          "daw-probe-baseline",
+          "daw-probe-bad-format"
+        ]
       },
       {
         "path": "limit",
@@ -180,30 +272,46 @@
         },
         "observed": {
           "defaultBehavior": "Current profile and source indicate a default maximum download limit; a live request with limit 1 was accepted and echoed.",
-          "examples": [1]
+          "examples": [
+            1
+          ]
         },
-        "constraints": ["Use small limits for probes; large limits create larger asynchronous jobs."],
-        "evidenceRefs": ["daw-doc-contract", "daw-current-profile", "daw-source-validation", "daw-probe-baseline"]
+        "constraints": [
+          "Use small limits for probes; large limits create larger asynchronous jobs."
+        ],
+        "evidenceRefs": [
+          "daw-doc-contract",
+          "daw-current-profile",
+          "daw-source-validation",
+          "daw-probe-baseline"
+        ]
       }
     ],
     "templates": [
       {
         "name": "small_keyword_award_download",
-        "description": "Start a small CSV award download job for a keyword search and two explicit columns.",
+        "description": "Start a small CSV award download job for a keyword search and two explicit starter columns that can be parsed by header name.",
         "request": {
           "method": "POST",
           "path": "/api/v2/download/awards/",
           "query": {},
           "body": {
             "filters": {
-              "keywords": ["forest"]
+              "keywords": [
+                "forest"
+              ]
             },
             "limit": 1,
             "file_format": "csv",
-            "columns": ["award_id_piid", "recipient_name"]
+            "columns": [
+              "award_id_piid",
+              "recipient_name"
+            ]
           }
         },
-        "evidenceRefs": ["daw-probe-baseline"]
+        "evidenceRefs": [
+          "daw-probe-baseline"
+        ]
       },
       {
         "name": "poll_download_status",
@@ -214,12 +322,17 @@
           "query": {},
           "body": {
             "filters": {
-              "keywords": ["forest"]
+              "keywords": [
+                "forest"
+              ]
             },
             "limit": 1
           }
         },
-        "evidenceRefs": ["daw-probe-baseline", "daw-source-base"]
+        "evidenceRefs": [
+          "daw-probe-baseline",
+          "daw-source-base"
+        ]
       }
     ]
   },
@@ -240,10 +353,17 @@
           "required": true
         },
         "observed": {
-          "examples": ["https://api.usaspending.gov/api/v2/download/status?file_name=PrimeAwardSummariesAndSubawards_2026-05-09_H18M41S14735944.zip"]
+          "examples": [
+            "https://api.usaspending.gov/api/v2/download/status?file_name=PrimeAwardSummariesAndSubawards_2026-05-09_H18M41S14735944.zip"
+          ]
         },
-        "constraints": ["Use the file_name query value to call the status endpoint through MCP when possible."],
-        "evidenceRefs": ["daw-doc-contract", "daw-probe-baseline"]
+        "constraints": [
+          "Use the file_name query value to call the status endpoint through MCP when possible."
+        ],
+        "evidenceRefs": [
+          "daw-doc-contract",
+          "daw-probe-baseline"
+        ]
       },
       {
         "path": "file_name",
@@ -258,10 +378,15 @@
           "required": true
         },
         "observed": {
-          "examples": ["PrimeAwardSummariesAndSubawards_2026-05-09_H18M41S14735944.zip"]
+          "examples": [
+            "PrimeAwardSummariesAndSubawards_2026-05-09_H18M41S14735944.zip"
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["daw-doc-contract", "daw-probe-baseline"]
+        "evidenceRefs": [
+          "daw-doc-contract",
+          "daw-probe-baseline"
+        ]
       },
       {
         "path": "file_url",
@@ -276,10 +401,15 @@
           "required": true
         },
         "observed": {
-          "examples": ["https://files.usaspending.gov/generated_downloads/PrimeAwardSummariesAndSubawards_2026-05-09_H18M41S14735944.zip"]
+          "examples": [
+            "https://files.usaspending.gov/generated_downloads/PrimeAwardSummariesAndSubawards_2026-05-09_H18M41S14735944.zip"
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["daw-doc-contract", "daw-probe-baseline"]
+        "evidenceRefs": [
+          "daw-doc-contract",
+          "daw-probe-baseline"
+        ]
       },
       {
         "path": "download_request",
@@ -296,7 +426,10 @@
         "observed": {
           "examples": [
             {
-              "download_types": ["elasticsearch_awards", "elasticsearch_sub_awards"],
+              "download_types": [
+                "elasticsearch_awards",
+                "elasticsearch_sub_awards"
+              ],
               "file_format": "csv",
               "limit": 1,
               "request_type": "award"
@@ -304,20 +437,43 @@
           ],
           "notes": "Live response included columns, download_types, file_format, filters, limit, and request_type keys."
         },
-        "constraints": ["This object is more reliable for effective defaults than the original request body."],
-        "evidenceRefs": ["daw-doc-contract", "daw-source-view", "daw-source-base", "daw-probe-baseline"]
+        "constraints": [
+          "This object is more reliable for effective defaults than the original request body."
+        ],
+        "evidenceRefs": [
+          "daw-doc-contract",
+          "daw-source-view",
+          "daw-source-base",
+          "daw-probe-baseline"
+        ]
       }
     ]
   },
   "mcpToolCoverage": {
     "currentProfilePath": "profiles/v2__download__awards/profile.json",
-    "exposedTopLevelRequestFields": ["columns", "file_format", "filters", "limit"],
-    "missingImportantRequestFields": ["filters.keywords", "filters.time_period", "filters.award_type_codes"],
+    "exposedTopLevelRequestFields": [
+      "columns",
+      "file_format",
+      "filters",
+      "limit"
+    ],
+    "missingImportantRequestFields": [
+      "filters.keywords",
+      "filters.time_period",
+      "filters.award_type_codes"
+    ],
     "notes": [
       "The raw profile exposes filters as an opaque object; the semantic bundle records important nested filter behavior and defaults.",
-      "The semantic bundle marks this endpoint as asynchronous and externally side-effecting because it creates a download job."
+      "The semantic bundle marks this endpoint as asynchronous and externally side-effecting because it creates a download job.",
+      "This repair adds an evidence-backed starter crosswalk for award_id_piid and recipient_name, but the full award download column catalog is still not enumerated."
     ],
-    "evidenceRefs": ["daw-current-profile", "daw-doc-contract", "daw-probe-baseline"]
+    "evidenceRefs": [
+      "daw-current-profile",
+      "daw-doc-contract",
+      "daw-probe-baseline",
+      "daw-review-rt1-columns",
+      "daw-source-column-crosswalk"
+    ]
   },
   "behavior": {
     "contradictions": [],
@@ -326,21 +482,42 @@
         "statement": "A successful call starts or retrieves a download job; it does not return award rows.",
         "impact": "Agents must poll status_url or use the download status endpoint before assuming the file is ready.",
         "status": "documented_and_observed",
-        "evidenceRefs": ["daw-doc-contract", "daw-source-base", "daw-probe-baseline"]
+        "evidenceRefs": [
+          "daw-doc-contract",
+          "daw-source-base",
+          "daw-probe-baseline"
+        ]
       },
       {
         "statement": "The live service injects default award_type_codes when omitted, including F001-F010 values observed on 2026-05-09.",
         "impact": "Consumers should use download_request.filters as the effective request and should not freeze an older default code list.",
         "status": "observed",
-        "evidenceRefs": ["daw-probe-baseline", "daw-source-validation"]
+        "evidenceRefs": [
+          "daw-probe-baseline",
+          "daw-source-validation"
+        ]
+      },
+      {
+        "statement": "For the reviewed starter pair, generated CSV headers matched the raw requested column IDs award_id_piid and recipient_name.",
+        "impact": "Parser generation can bind directly to those header names without a second rename step.",
+        "status": "observed",
+        "evidenceRefs": [
+          "daw-review-rt1-columns"
+        ]
       }
     ],
     "gaps": [
       {
-        "statement": "This bundle does not enumerate every valid export column.",
-        "impact": "Agents should use known column IDs from documentation or current profile examples and treat obscure columns as unverified.",
+        "statement": "This bundle still does not enumerate every valid export column, but it now catalogs a small evidence-backed starter crosswalk for award_id_piid and recipient_name.",
+        "impact": "Use the starter crosswalk for safe parser bootstrapping; verify additional or obscure column IDs before treating them as stable schema.",
         "status": "unknown",
-        "evidenceRefs": ["daw-doc-contract", "daw-current-profile"]
+        "evidenceRefs": [
+          "daw-doc-contract",
+          "daw-current-profile",
+          "daw-review-rt1-columns",
+          "daw-source-column-crosswalk",
+          "daw-doc-search-field-labels"
+        ]
       }
     ],
     "risks": [
@@ -348,7 +525,10 @@
         "statement": "Large or broad downloads create backend jobs and may be expensive or slow.",
         "impact": "Probe with small limit values and narrow filters; do not run broad downloads as casual validation.",
         "status": "inferred",
-        "evidenceRefs": ["daw-source-base", "daw-probe-baseline"]
+        "evidenceRefs": [
+          "daw-source-base",
+          "daw-probe-baseline"
+        ]
       }
     ]
   }

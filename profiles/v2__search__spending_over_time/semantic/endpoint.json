@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0.0",
   "slug": "v2__search__spending_over_time",
-  "generatedAt": "2026-05-09T22:45:00.000Z",
+  "generatedAt": "2026-05-12T00:00:00.000Z",
   "endpoint": {
     "method": "POST",
     "host": "https://api.usaspending.gov",
@@ -12,7 +12,12 @@
     "confidence": "high",
     "lastVerified": "2026-05-09",
     "summary": "Live probes returned 200 for fiscal-year trend, undocumented group alias, and subaward spending-level requests; invalid group values returned 400 with the live accepted value set.",
-    "evidenceRefs": ["sot-probe-baseline-fy", "sot-probe-alias-fy", "sot-probe-subawards", "sot-probe-bad-group"]
+    "evidenceRefs": [
+      "sot-probe-baseline-fy",
+      "sot-probe-alias-fy",
+      "sot-probe-subawards",
+      "sot-probe-bad-group"
+    ]
   },
   "provenance": {
     "sources": [
@@ -40,6 +45,12 @@
         "title": "Live API probes run on 2026-05-09",
         "locator": "https://api.usaspending.gov/api/v2/search/spending_over_time/",
         "retrievedAt": "2026-05-09T22:45:00.000Z"
+      },
+      {
+        "id": "sot-rt1-review-src",
+        "kind": "review_report",
+        "title": "Structured reviewer report for RT1 map-plus-trend scope alignment",
+        "locator": "repair_task:RT1"
       }
     ]
   },
@@ -58,18 +69,45 @@
           "type": "enum[string]",
           "required": true,
           "default": "fiscal_year",
-          "allowedValues": ["calendar_year", "fiscal_year", "quarter", "month"],
+          "allowedValues": [
+            "calendar_year",
+            "fiscal_year",
+            "quarter",
+            "month"
+          ],
           "notes": "The staged contract omits short aliases."
         },
         "observed": {
-          "acceptedValues": ["calendar_year", "cy", "fiscal_year", "fy", "quarter", "q", "month", "m"],
-          "rejectedValues": ["bad"],
+          "acceptedValues": [
+            "calendar_year",
+            "cy",
+            "fiscal_year",
+            "fy",
+            "quarter",
+            "q",
+            "month",
+            "m"
+          ],
+          "rejectedValues": [
+            "bad"
+          ],
           "defaultBehavior": "Alias 'fy' is accepted and response group is canonicalized to 'fiscal_year'.",
-          "examples": ["fiscal_year", "fy", "quarter"],
+          "examples": [
+            "fiscal_year",
+            "fy",
+            "quarter"
+          ],
           "notes": "Invalid values return HTTP 400 with the live enum set."
         },
-        "constraints": ["Use canonical names in generated requests unless reproducing live UI behavior that emits aliases."],
-        "evidenceRefs": ["sot-doc-contract", "sot-source-view", "sot-probe-alias-fy", "sot-probe-bad-group"]
+        "constraints": [
+          "Use canonical names in generated requests unless reproducing live UI behavior that emits aliases."
+        ],
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-source-view",
+          "sot-probe-alias-fy",
+          "sot-probe-bad-group"
+        ]
       },
       {
         "path": "filters",
@@ -87,7 +125,11 @@
         "observed": {
           "examples": [
             {
-              "award_type_codes": ["A", "B", "C"],
+              "award_type_codes": [
+                "A",
+                "B",
+                "C"
+              ],
               "time_period": [
                 {
                   "start_date": "2023-10-01",
@@ -96,12 +138,22 @@
               ]
             },
             {
-              "keywords": ["infrastructure"]
+              "keywords": [
+                "infrastructure"
+              ]
             }
           ]
         },
-        "constraints": ["Must be a JSON object.", "Live service returns an error when filters is absent."],
-        "evidenceRefs": ["sot-doc-contract", "sot-source-view", "sot-probe-baseline-fy", "sot-probe-alias-fy"]
+        "constraints": [
+          "Must be a JSON object.",
+          "Live service returns an error when filters is absent."
+        ],
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-source-view",
+          "sot-probe-baseline-fy",
+          "sot-probe-alias-fy"
+        ]
       },
       {
         "path": "filters.time_period",
@@ -127,8 +179,78 @@
           ],
           "notes": "The live response includes a message that search dates are limited to an earliest date of 2007-10-01."
         },
-        "constraints": ["Dates are strings in YYYY-MM-DD form.", "Use download endpoints for pre-2007 history."],
-        "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy"]
+        "constraints": [
+          "Dates are strings in YYYY-MM-DD form.",
+          "Use download endpoints for pre-2007 history."
+        ],
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-probe-baseline-fy"
+        ]
+      },
+      {
+        "path": "filters.place_of_performance_scope",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "documented_and_observed",
+        "description": "Optional domestic-or-foreign place-of-performance scope filter. Set it explicitly when aligning a trend with place-of-performance geography outputs, especially state/county/district maps whose geography route documents a domestic default.",
+        "documented": {
+          "type": "enum[string]",
+          "required": false,
+          "allowedValues": [
+            "domestic",
+            "foreign"
+          ],
+          "notes": "The staged spending_over_time contract lists this as an AdvancedFilterObject member."
+        },
+        "observed": {
+          "acceptedValues": [
+            "domestic"
+          ],
+          "examples": [
+            "domestic"
+          ],
+          "notes": "Reviewer-reported validation and live execution accepted domestic and materially changed the monthly series relative to omitting the field."
+        },
+        "constraints": [
+          "Use this when the analytical scope is place of performance or when matching v2__search__spending_by_geography with scope=place_of_performance.",
+          "For same-scope state/county/district geography comparisons, set it explicitly instead of relying on the geography endpoint's domestic default."
+        ],
+        "evidenceRefs": [
+          "sot-doc-scope-filters",
+          "sot-review-rt1-location-scope"
+        ]
+      },
+      {
+        "path": "filters.recipient_scope",
+        "direction": "request",
+        "location": "body.filters",
+        "type": "string",
+        "required": false,
+        "status": "documented_unverified",
+        "description": "Optional domestic-or-foreign recipient-location scope filter. Use it to align this trend with recipient-location geography summaries.",
+        "documented": {
+          "type": "enum[string]",
+          "required": false,
+          "allowedValues": [
+            "domestic",
+            "foreign"
+          ],
+          "notes": "The staged spending_over_time contract lists this as an AdvancedFilterObject member."
+        },
+        "observed": {
+          "notes": "Not separately live-probed in this bundle; exposed because the shared AdvancedFilterObject documents it and geography comparisons depend on deliberate scope alignment."
+        },
+        "constraints": [
+          "Use this when matching v2__search__spending_by_geography with scope=recipient_location.",
+          "For same-scope state/county/district recipient geography comparisons, set it explicitly instead of relying on the geography endpoint's domestic default."
+        ],
+        "evidenceRefs": [
+          "sot-doc-scope-filters",
+          "sot-review-rt1-location-scope"
+        ]
       },
       {
         "path": "filters.award_type_codes",
@@ -143,10 +265,28 @@
           "required": false
         },
         "observed": {
-          "examples": [["A", "B", "C"], ["A", "B", "C", "D"]]
+          "examples": [
+            [
+              "A",
+              "B",
+              "C"
+            ],
+            [
+              "A",
+              "B",
+              "C",
+              "D"
+            ]
+          ]
         },
-        "constraints": ["Use USAspending award type codes, not business labels."],
-        "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy", "sot-probe-subawards"]
+        "constraints": [
+          "Use USAspending award type codes, not business labels."
+        ],
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-probe-baseline-fy",
+          "sot-probe-subawards"
+        ]
       },
       {
         "path": "filters.keywords",
@@ -161,10 +301,19 @@
           "required": false
         },
         "observed": {
-          "examples": [["infrastructure"]]
+          "examples": [
+            [
+              "infrastructure"
+            ]
+          ]
         },
-        "constraints": ["Keyword searches can produce broad time series and should usually be combined with date or award-type filters."],
-        "evidenceRefs": ["sot-doc-contract", "sot-probe-alias-fy"]
+        "constraints": [
+          "Keyword searches can produce broad time series and should usually be combined with date or award-type filters."
+        ],
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-probe-alias-fy"
+        ]
       },
       {
         "path": "filters.program_activities",
@@ -182,8 +331,13 @@
         "observed": {
           "notes": "Not live-probed in this bundle."
         },
-        "constraints": ["Each object should include name or code."],
-        "evidenceRefs": ["sot-doc-contract", "sot-source-view"]
+        "constraints": [
+          "Each object should include name or code."
+        ],
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-source-view"
+        ]
       },
       {
         "path": "subawards",
@@ -201,8 +355,14 @@
         "observed": {
           "defaultBehavior": "Live responses now warn that the subawards field will be deprecated; set spending_level='subawards' instead."
         },
-        "constraints": ["Prefer spending_level='subawards' for new callers."],
-        "evidenceRefs": ["sot-doc-contract", "sot-source-view", "sot-probe-baseline-fy"]
+        "constraints": [
+          "Prefer spending_level='subawards' for new callers."
+        ],
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-source-view",
+          "sot-probe-baseline-fy"
+        ]
       },
       {
         "path": "spending_level",
@@ -216,15 +376,32 @@
           "type": "enum[string]",
           "required": false,
           "default": "transactions",
-          "allowedValues": ["transactions", "awards", "subawards"]
+          "allowedValues": [
+            "transactions",
+            "awards",
+            "subawards"
+          ]
         },
         "observed": {
-          "acceptedValues": ["transactions", "awards", "subawards"],
+          "acceptedValues": [
+            "transactions",
+            "awards",
+            "subawards"
+          ],
           "defaultBehavior": "Omitted spending_level returns spending_level='transactions'.",
-          "examples": ["subawards"]
+          "examples": [
+            "subawards"
+          ]
         },
-        "constraints": ["Subaward responses contain fewer award-category columns than transaction/award responses."],
-        "evidenceRefs": ["sot-doc-contract", "sot-source-view", "sot-probe-baseline-fy", "sot-probe-subawards"]
+        "constraints": [
+          "Subaward responses contain fewer award-category columns than transaction/award responses."
+        ],
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-source-view",
+          "sot-probe-baseline-fy",
+          "sot-probe-subawards"
+        ]
       }
     ],
     "templates": [
@@ -238,7 +415,11 @@
           "body": {
             "group": "fiscal_year",
             "filters": {
-              "award_type_codes": ["A", "B", "C"],
+              "award_type_codes": [
+                "A",
+                "B",
+                "C"
+              ],
               "time_period": [
                 {
                   "start_date": "2023-10-01",
@@ -248,7 +429,38 @@
             }
           }
         },
-        "evidenceRefs": ["sot-probe-baseline-fy"]
+        "evidenceRefs": [
+          "sot-probe-baseline-fy"
+        ]
+      },
+      {
+        "name": "monthly_domestic_place_of_performance_trend_for_state_map_alignment",
+        "description": "Monthly contract trend explicitly scoped to domestic place of performance so it can be compared to a state/county/district place-of-performance map.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/search/spending_over_time/",
+          "query": {},
+          "body": {
+            "group": "month",
+            "filters": {
+              "award_type_codes": [
+                "A",
+                "B",
+                "C"
+              ],
+              "time_period": [
+                {
+                  "start_date": "2024-01-01",
+                  "end_date": "2024-06-30"
+                }
+              ],
+              "place_of_performance_scope": "domestic"
+            }
+          }
+        },
+        "evidenceRefs": [
+          "sot-review-rt1-location-scope"
+        ]
       },
       {
         "name": "subaward_quarter_series",
@@ -267,17 +479,24 @@
                   "end_date": "2024-09-30"
                 }
               ],
-              "award_type_codes": ["A", "B", "C", "D"]
+              "award_type_codes": [
+                "A",
+                "B",
+                "C",
+                "D"
+              ]
             }
           }
         },
-        "evidenceRefs": ["sot-probe-subawards"]
+        "evidenceRefs": [
+          "sot-probe-subawards"
+        ]
       }
     ]
   },
   "response": {
     "contentType": "application/json",
-    "shapeSummary": "A time-series object with canonical group, resolved spending_level, ascending results rows, and warning messages. Each result row is one time bucket with aggregate amount plus category obligation/outlay columns.",
+    "shapeSummary": "A time-series object with canonical group, resolved spending_level, ascending results rows, and warning messages. Each result row is one time bucket with aggregate amount plus category obligation/outlay columns; month and quarter buckets are encoded as fiscal periods inside time_period.",
     "fields": [
       {
         "path": "group",
@@ -290,14 +509,27 @@
         "documented": {
           "type": "enum[string]",
           "required": true,
-          "allowedValues": ["calendar_year", "fiscal_year", "quarter", "month"]
+          "allowedValues": [
+            "calendar_year",
+            "fiscal_year",
+            "quarter",
+            "month"
+          ]
         },
         "observed": {
-          "examples": ["fiscal_year", "quarter"],
+          "examples": [
+            "fiscal_year",
+            "quarter"
+          ],
           "notes": "Alias request group 'fy' is returned as 'fiscal_year'."
         },
         "constraints": [],
-        "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy", "sot-probe-alias-fy", "sot-probe-subawards"]
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-probe-baseline-fy",
+          "sot-probe-alias-fy",
+          "sot-probe-subawards"
+        ]
       },
       {
         "path": "spending_level",
@@ -310,13 +542,24 @@
         "documented": {
           "type": "enum[string]",
           "required": true,
-          "allowedValues": ["transactions", "awards", "subawards"]
+          "allowedValues": [
+            "transactions",
+            "awards",
+            "subawards"
+          ]
         },
         "observed": {
-          "examples": ["transactions", "subawards"]
+          "examples": [
+            "transactions",
+            "subawards"
+          ]
         },
         "constraints": [],
-        "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy", "sot-probe-subawards"]
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-probe-baseline-fy",
+          "sot-probe-subawards"
+        ]
       },
       {
         "path": "results",
@@ -325,7 +568,7 @@
         "type": "array[TimeResult]",
         "required": true,
         "status": "documented_and_observed",
-        "description": "Ascending time buckets; each bucket contains time_period, aggregated_amount, category obligations, and nullable outlay columns.",
+        "description": "Ascending time buckets; each bucket contains time_period, aggregated_amount, and category obligation/outlay columns. For month and quarter groupings, time_period is encoded in fiscal terms rather than calendar month or quarter numbers.",
         "documented": {
           "type": "array[TimeResult]",
           "required": true
@@ -344,12 +587,30 @@
                 "quarter": "1"
               },
               "aggregated_amount": 39626176461490.99
+            },
+            {
+              "time_period": {
+                "fiscal_year": "2024",
+                "month": "4"
+              },
+              "aggregated_amount": 22614104423.11
             }
           ],
-          "notes": "Transaction/award rows include Direct/Idv/Loan/Other columns; subaward rows observed only Contract and Grant columns."
+          "notes": "Transaction/award rows include Direct/Idv/Loan/Other columns; subaward rows observed only Contract and Grant columns. Reviewer-reported live monthly results for a Jan-Jun 2024 request returned fiscal_year='2024' with month values '4' through '9', so month grouping uses fiscal-month numbering within the fiscal year. Quarter results likewise use fiscal-quarter numbering within fiscal_year."
         },
-        "constraints": ["Do not treat results as award-level rows; the grain is one time bucket."],
-        "evidenceRefs": ["sot-doc-contract", "sot-source-view", "sot-probe-baseline-fy", "sot-probe-subawards"]
+        "constraints": [
+          "Do not treat results as award-level rows; the grain is one time bucket.",
+          "For group=month, interpret time_period.month as a fiscal month number within time_period.fiscal_year: 1=Oct, 2=Nov, 3=Dec, 4=Jan, 5=Feb, 6=Mar, 7=Apr, 8=May, 9=Jun, 10=Jul, 11=Aug, 12=Sep.",
+          "For group=quarter, interpret time_period.quarter as a fiscal quarter within time_period.fiscal_year: Q1=Oct-Dec, Q2=Jan-Mar, Q3=Apr-Jun, Q4=Jul-Sep.",
+          "When charting calendar month names, keep the API result order or sort by (fiscal_year, month) rather than month alone."
+        ],
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-source-view",
+          "sot-probe-baseline-fy",
+          "sot-probe-subawards",
+          "sot-review-rt1-month-bucket-encoding"
+        ]
       },
       {
         "path": "messages",
@@ -370,19 +631,40 @@
           ]
         },
         "constraints": [],
-        "evidenceRefs": ["sot-doc-contract", "sot-probe-baseline-fy", "sot-probe-subawards"]
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-probe-baseline-fy",
+          "sot-probe-subawards"
+        ]
       }
     ]
   },
   "mcpToolCoverage": {
     "currentProfilePath": "profiles/v2__search__spending_over_time/profile.json",
-    "exposedTopLevelRequestFields": ["filters", "group", "spending_level", "subawards"],
-    "missingImportantRequestFields": ["filters.time_period", "filters.award_type_codes", "filters.program_activities", "filters.keywords"],
+    "exposedTopLevelRequestFields": [
+      "filters",
+      "group",
+      "spending_level",
+      "subawards"
+    ],
+    "missingImportantRequestFields": [
+      "filters.time_period",
+      "filters.award_type_codes",
+      "filters.place_of_performance_scope",
+      "filters.recipient_scope",
+      "filters.program_activities",
+      "filters.keywords"
+    ],
     "notes": [
       "The raw MCP exposes filters as an object but does not make the nested filter semantics searchable or status-classified.",
-      "The raw profile describes aliases in prose; the semantic bundle exposes them as machine-readable acceptedValues."
+      "The raw profile describes aliases in prose; the semantic bundle exposes them as machine-readable acceptedValues.",
+      "This repaired semantic bundle surfaces the shared location-scope filters that the raw MCP profile still hides inside the generic filters object."
     ],
-    "evidenceRefs": ["sot-current-profile", "sot-doc-contract", "sot-probe-alias-fy"]
+    "evidenceRefs": [
+      "sot-current-profile",
+      "sot-doc-contract",
+      "sot-probe-alias-fy"
+    ]
   },
   "behavior": {
     "contradictions": [
@@ -390,7 +672,12 @@
         "statement": "The staged contract lists only canonical group values, but source and live validation also accept cy, fy, q, and m.",
         "impact": "Agents reading only the docs may reject valid UI-style requests; agents writing new requests should still prefer canonical group names.",
         "status": "contradicted",
-        "evidenceRefs": ["sot-doc-contract", "sot-source-view", "sot-probe-alias-fy", "sot-probe-bad-group"]
+        "evidenceRefs": [
+          "sot-doc-contract",
+          "sot-source-view",
+          "sot-probe-alias-fy",
+          "sot-probe-bad-group"
+        ]
       }
     ],
     "quirks": [
@@ -398,13 +685,26 @@
         "statement": "The live API returns a deprecation warning for the legacy subawards field and directs callers to spending_level='subawards'.",
         "impact": "New generated requests should use spending_level rather than subawards.",
         "status": "observed",
-        "evidenceRefs": ["sot-probe-baseline-fy", "sot-probe-subawards"]
+        "evidenceRefs": [
+          "sot-probe-baseline-fy",
+          "sot-probe-subawards"
+        ]
       },
       {
         "statement": "Subaward result rows observed fewer category columns than transaction result rows.",
         "impact": "Consumers should not assume every TimeResult has Direct, Idv, Loan, or Other columns when spending_level is subawards.",
         "status": "observed",
-        "evidenceRefs": ["sot-probe-subawards"]
+        "evidenceRefs": [
+          "sot-probe-subawards"
+        ]
+      },
+      {
+        "statement": "Month-grouped results encode time_period.month as a fiscal month number inside time_period.fiscal_year, not as a calendar month number; reviewer-reported Jan-Jun 2024 results came back as fiscal_year 2024 with month values 4 through 9.",
+        "impact": "Chart builders must translate month numbers to intended fiscal or calendar labels before rendering the axis.",
+        "status": "observed",
+        "evidenceRefs": [
+          "sot-review-rt1-month-bucket-encoding"
+        ]
       }
     ],
     "gaps": [
@@ -412,7 +712,9 @@
         "statement": "The full AdvancedFilterObject is large; this bundle records the major filters needed for MCP discovery and request construction, not every nested search filter.",
         "impact": "Agents should use getEvidence/getDoc when constructing obscure filters not listed by listRequestFields.",
         "status": "unknown",
-        "evidenceRefs": ["sot-doc-contract"]
+        "evidenceRefs": [
+          "sot-doc-contract"
+        ]
       }
     ],
     "risks": [
@@ -420,7 +722,19 @@
         "statement": "Very broad keyword-only trend requests can scan the full indexed date range and produce long series.",
         "impact": "Prefer explicit time_period and award_type_codes for repeatable analytical calls.",
         "status": "inferred",
-        "evidenceRefs": ["sot-probe-alias-fy", "sot-doc-contract"]
+        "evidenceRefs": [
+          "sot-probe-alias-fy",
+          "sot-doc-contract"
+        ]
+      },
+      {
+        "statement": "When pairing this trend with a state/county/district geography map, omitting the matching location-scope filter can produce a false same-scope comparison because the geography endpoint documents domestic defaults for those map layers.",
+        "impact": "Set filters.place_of_performance_scope or filters.recipient_scope explicitly so the trend and map use the same domestic-or-foreign scope.",
+        "status": "documented_and_observed",
+        "evidenceRefs": [
+          "sot-doc-scope-filters",
+          "sot-review-rt1-location-scope"
+        ]
       }
     ]
   }

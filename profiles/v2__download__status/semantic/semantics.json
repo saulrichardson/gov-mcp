@@ -1,0 +1,153 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__download__status",
+  "generatedAt": "2026-05-12T14:10:00+00:00",
+  "endpointRef": "GET https://api.usaspending.gov/api/v2/download/status",
+  "summary": "Polls one USAspending asynchronous download job and reports whether the export archive is ready, still processing, or failed.",
+  "businessPurpose": "Use this endpoint after starting a USAspending download job when the caller needs readiness, failure, elapsed time, row and column counts, and the final archive URL before attempting to fetch the file.",
+  "analyticalGrain": "One response per download job status check, keyed by file_name. This is operational workflow metadata, not award-, transaction-, or account-level spending data.",
+  "primaryEntities": [
+    {
+      "name": "Download job",
+      "description": "An asynchronous backend export job identified by file_name and represented by a backend status string plus optional failure message.",
+      "evidenceRefs": ["dst-doc-contract", "dst-source-view", "dst-source-lookups", "dst-probe-create-award-job", "dst-probe-valid-status"]
+    },
+    {
+      "name": "Generated archive",
+      "description": "The ZIP artifact referenced by file_url whose size, row count, and column count become available as the job progresses or finishes.",
+      "evidenceRefs": ["dst-doc-contract", "dst-current-profile", "dst-source-view", "dst-probe-create-award-job", "dst-probe-valid-status"]
+    }
+  ],
+  "measures": [
+    {
+      "name": "Elapsed processing time",
+      "description": "seconds_elapsed indicates how long the job has been running or how long it took before finishing or failing.",
+      "evidenceRefs": ["dst-doc-contract", "dst-current-profile", "dst-source-lookups", "dst-probe-valid-status"]
+    },
+    {
+      "name": "Archive size",
+      "description": "total_size reports the generated file size in kilobytes when known.",
+      "evidenceRefs": ["dst-doc-contract", "dst-current-profile", "dst-source-view", "dst-probe-valid-status"]
+    },
+    {
+      "name": "Export row and column counts",
+      "description": "total_rows and total_columns summarize the generated CSV content, but they can appear before the job is fully finished.",
+      "evidenceRefs": ["dst-current-profile", "dst-source-lookups", "dst-probe-valid-status"]
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "file_name",
+      "description": "The job identifier carried forward from the initiating download endpoint response.",
+      "evidenceRefs": ["dst-doc-contract", "dst-source-view", "dst-probe-create-award-job", "dst-probe-valid-status"]
+    },
+    {
+      "name": "Backend job status",
+      "description": "status is a backend state label; docs list ready, running, finished, and failed, while source code shows additional possible labels such as queued, resumed, created, and uploading.",
+      "evidenceRefs": ["dst-doc-contract", "dst-source-lookups", "dst-probe-valid-status"]
+    },
+    {
+      "name": "Failure message",
+      "description": "message provides human-readable failure context when a job fails; it is otherwise null in observed running and finished responses.",
+      "evidenceRefs": ["dst-doc-contract", "dst-current-profile", "dst-source-view", "dst-probe-valid-status"]
+    }
+  ],
+  "suitableQuestions": [
+    {
+      "name": "Has my export finished yet?",
+      "description": "Use this endpoint to poll a known file_name until the download reaches a terminal state.",
+      "evidenceRefs": ["dst-doc-contract", "dst-source-view", "dst-probe-create-award-job", "dst-probe-valid-status"]
+    },
+    {
+      "name": "What URL should I download once the archive is ready?",
+      "description": "The response provides file_url for the generated ZIP archive.",
+      "evidenceRefs": ["dst-doc-contract", "dst-current-profile", "dst-source-view", "dst-probe-create-award-job", "dst-probe-valid-status"]
+    },
+    {
+      "name": "How big was the export and how many rows or columns did it contain?",
+      "description": "Use total_size, total_rows, and total_columns after the job reaches a stable or terminal state.",
+      "evidenceRefs": ["dst-doc-contract", "dst-current-profile", "dst-probe-valid-status"]
+    }
+  ],
+  "notSuitableFor": [
+    {
+      "name": "Exploring spending records directly",
+      "description": "This endpoint does not return award, transaction, or account rows; it only returns job metadata.",
+      "evidenceRefs": ["dst-doc-contract", "dst-source-view", "dst-probe-valid-status"]
+    },
+    {
+      "name": "Starting a new download job",
+      "description": "You must call an initiating endpoint such as a download awards, transactions, or accounts route first to obtain file_name.",
+      "evidenceRefs": ["dst-doc-contract", "dst-source-view", "dst-probe-create-award-job"]
+    },
+    {
+      "name": "Cataloging all available downloads",
+      "description": "The endpoint looks up one exact file_name and returns 404 for unknown values rather than listing jobs.",
+      "evidenceRefs": ["dst-current-profile", "dst-source-view"]
+    }
+  ],
+  "joins": [
+    {
+      "from": "v2__download__awards",
+      "to": "v2__download__status",
+      "on": ["file_name"],
+      "confidence": "high",
+      "description": "Award download responses return file_name and status_url that feed directly into this polling endpoint.",
+      "evidenceRefs": ["dst-source-view", "dst-probe-create-award-job", "dst-probe-valid-status"]
+    },
+    {
+      "from": "v2__bulk_download__awards",
+      "to": "v2__download__status",
+      "on": ["file_name"],
+      "confidence": "medium",
+      "description": "The same backend view is also mounted at /api/v2/bulk_download/status, so bulk download workflows share the same status semantics.",
+      "evidenceRefs": ["dst-source-view"]
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Start then poll a download job",
+      "description": "Initiate a bounded download, capture its file_name, then poll this endpoint until the archive is ready or failed.",
+      "steps": [
+        {
+          "order": 1,
+          "action": "Call a download initiation endpoint and retain the returned file_name or status_url.",
+          "endpointSlug": "v2__download__awards",
+          "evidenceRefs": ["dst-source-view", "dst-probe-create-award-job"]
+        },
+        {
+          "order": 2,
+          "action": "Call v2__download__status with that exact file_name.",
+          "endpointSlug": "v2__download__status",
+          "evidenceRefs": ["dst-doc-contract", "dst-source-view", "dst-probe-valid-status"]
+        },
+        {
+          "order": 3,
+          "action": "If status is terminal and successful, use file_url to fetch the archive; if failed, inspect message or retry the initiating endpoint.",
+          "evidenceRefs": ["dst-doc-contract", "dst-current-profile", "dst-source-view", "dst-probe-valid-status"]
+        }
+      ],
+      "evidenceRefs": ["dst-doc-contract", "dst-source-view", "dst-probe-create-award-job", "dst-probe-valid-status"]
+    }
+  ],
+  "caveats": [
+    {
+      "statement": "status should be treated as an open-ended backend state string, not a guaranteed four-value enum.",
+      "impact": "Do not hard-fail if queued, resumed, created, or uploading appears.",
+      "status": "contradicted",
+      "evidenceRefs": ["dst-doc-contract", "dst-source-lookups", "dst-probe-valid-status"]
+    },
+    {
+      "statement": "Error responses can contain only detail and omit the normal status payload.",
+      "impact": "Branch response handling by HTTP status or by the presence of detail.",
+      "status": "observed",
+      "evidenceRefs": ["dst-current-profile", "dst-source-view"]
+    },
+    {
+      "statement": "Row and column counts can be provisional before the job reaches a terminal state.",
+      "impact": "Do not treat nonterminal total_rows or total_columns as final analytic counts.",
+      "status": "contradicted",
+      "evidenceRefs": ["dst-current-profile", "dst-source-lookups", "dst-probe-valid-status"]
+    }
+  ]
+}

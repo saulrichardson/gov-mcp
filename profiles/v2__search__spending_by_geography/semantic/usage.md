@@ -110,8 +110,8 @@ The response echoes:
 
 The main payload is `results`, where each row represents one geography bucket with fields such as:
 
-- `shape_code` — geography identifier
-- `display_name` — geography label
+- `shape_code` — geography identifier; when `geo_layer = state`, reviewer-observed output can include territorial codes and an empty string for an uncoded bucket
+- `display_name` — geography label; may be `null` for an uncoded bucket in state results
 - `aggregated_amount` — aggregated obligation amount
 - `population` — nullable
 - `per_capita` — nullable
@@ -123,6 +123,8 @@ A `messages` array may also appear with warnings or guidance.
 
 - Treat each row as one geography unit at the selected `geo_layer`.
 - Use `shape_code` together with `geo_layer` when joining to reference geography tables or map shapes.
+- For `geo_layer = state`, do not assume only the 50 states plus DC; reviewer-observed output also included `GU`, `PR`, `VI`, `MP`, and `AS`.
+- Treat `shape_code = ""` with `display_name = null` as an uncoded bucket and filter or label it explicitly before joining to state map shapes.
 - Handle `population` and `per_capita` as nullable.
 - Do not assume `total_outlays` exists unless you requested award-level spending.
 
@@ -131,4 +133,5 @@ A `messages` array may also appear with warnings or guidance.
 - The documented sample warns that `subawards` will be deprecated; use `spending_level = subawards` for new work.
 - The documented sample also warns that search time periods are currently limited to an earliest date of `2007-10-01`.
 - Some nested filter object details are defined in shared `search_filters` documentation rather than on this page.
+- Reviewer-observed live state results included `GU`, `PR`, `VI`, `MP`, and `AS` plus one blank uncoded bucket; do not assume only the 50 states plus DC.
 - The docs do not describe pagination fields for this endpoint.

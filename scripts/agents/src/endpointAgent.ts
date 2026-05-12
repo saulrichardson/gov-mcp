@@ -1,7 +1,7 @@
 import { Agent, Runner } from "@openai/agents";
 import { execFile } from "child_process";
 import { existsSync, readdirSync } from "fs";
-import { join, relative } from "path";
+import { isAbsolute, join, relative } from "path";
 import { promisify } from "util";
 import { z } from "zod";
 import { AgentRunSummarySchema, type AgentRunSummary } from "./artifactContract.js";
@@ -13,6 +13,7 @@ import { createEndpointAgentTools } from "./tools.js";
 import { createYoloTools } from "./yoloTools.js";
 
 const execFileAsync = promisify(execFile);
+const REQUIRED_ARTIFACT_FILES = ["endpoint.json", "evidence.jsonl", "semantics.json", "usage.md"];
 
 export const ReasoningEffortSchema = z.enum(["none", "low", "medium", "high", "xhigh"]);
 export type ReasoningEffort = z.infer<typeof ReasoningEffortSchema>;
@@ -142,13 +143,33 @@ function summaryFromValidationResult(
       `Evidence records: ${validationResult.evidenceRecords}.`,
       `Missing current MCP fields captured: ${(validationResult.missingMcpFields ?? []).join(", ") || "none"}.`,
     ],
-    artifacts: ["endpoint.json", "evidence.jsonl", "semantics.json", "usage.md"].map((fileName) =>
-      repoRelative(join(dir, fileName))
-    ),
+    artifacts: REQUIRED_ARTIFACT_FILES.map((fileName) => repoRelative(join(dir, fileName))),
     nextSteps: options.promote
       ? ["Promotion was requested, so review the validated bundle and rerun with --promote after this stop policy is extended for promotion."]
       : ["Review the generated semantic bundle, then rerun with --promote if it should become part of the MCP surface."],
   });
+}
+
+export function missingAgentRunArtifacts(summary: AgentRunSummary, root = repoRoot): string[] {
+  if (!(summary.status === "completed" && summary.validationPassed)) return [];
+  const expectedNames = new Set(REQUIRED_ARTIFACT_FILES);
+  const reportedNames = new Set(summary.artifacts.map((path) => path.split("/").pop()).filter(Boolean));
+  const missingNames = [...expectedNames].filter((name) => !reportedNames.has(name));
+  const missingPaths = summary.artifacts.filter((path) => {
+    const resolved = isAbsolute(path) ? path : join(root, path);
+    return !existsSync(resolved);
+  });
+  return [...missingNames.map((name) => `<missing artifact entry:${name}>`), ...missingPaths];
+}
+
+function assertAgentRunArtifacts(summary: AgentRunSummary): AgentRunSummary {
+  const missing = missingAgentRunArtifacts(summary);
+  if (missing.length > 0) {
+    throw new Error(
+      `Agent reported a completed validated bundle, but expected artifact files are missing: ${missing.join(", ")}`
+    );
+  }
+  return summary;
 }
 
 function stopAfterResolvedValidation(options: SemanticEndpointAgentOptions) {
@@ -325,5 +346,5 @@ export async function runSemanticEndpointAgent(options: RunSemanticEndpointAgent
     throw new Error("Agent run ended without a structured final output.");
   }
 
-  return AgentRunSummarySchema.parse(finalOutput);
+  return assertAgentRunArtifacts(AgentRunSummarySchema.parse(finalOutput));
 }

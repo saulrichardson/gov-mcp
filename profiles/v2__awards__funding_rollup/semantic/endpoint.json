@@ -1,0 +1,350 @@
+{
+  "schemaVersion": "2.0.0",
+  "slug": "v2__awards__funding_rollup",
+  "generatedAt": "2026-05-12T09:20:00-04:00",
+  "endpoint": {
+    "method": "POST",
+    "host": "https://api.usaspending.gov",
+    "path": "/api/v2/awards/funding_rollup/"
+  },
+  "availability": {
+    "status": "available",
+    "confidence": "high",
+    "lastVerified": "2026-05-12",
+    "summary": "A live POST probe on 2026-05-12 returned HTTP 200 JSON with the documented aggregate rollup fields, confirming the endpoint is currently callable.",
+    "evidenceRefs": ["ev-live-001", "ev-doc-001"]
+  },
+  "provenance": {
+    "sources": [
+      {
+        "id": "src-doc-funding-rollup",
+        "kind": "documentation",
+        "title": "Staged docs for Award Funding Rollup",
+        "locator": "staging/docs/v2/awards/funding_rollup.md",
+        "retrievedAt": "2026-05-12T09:00:00-04:00"
+      },
+      {
+        "id": "src-profile-funding-rollup",
+        "kind": "current_profile",
+        "title": "Current raw profile for v2__awards__funding_rollup",
+        "locator": "profiles/v2__awards__funding_rollup/profile.json",
+        "retrievedAt": "2026-05-12T09:02:00-04:00"
+      },
+      {
+        "id": "src-code-funding-rollup-view",
+        "kind": "source_code",
+        "title": "Award funding rollup view and validator",
+        "locator": "usaspending-api/usaspending_api/awards/v2/views/funding_rollup.py + usaspending-api/usaspending_api/common/validator/award.py",
+        "retrievedAt": "2026-05-12T09:05:00-04:00"
+      },
+      {
+        "id": "src-derived-funding-rollup-coverage",
+        "kind": "derived_check",
+        "title": "Derived MCP request coverage check for funding rollup",
+        "locator": "staging/docs/v2/awards/funding_rollup.md + profiles/v2__awards__funding_rollup/profile.json",
+        "retrievedAt": "2026-05-12T09:08:00-04:00"
+      },
+      {
+        "id": "src-live-funding-rollup-baseline",
+        "kind": "live_probe",
+        "title": "Live baseline probe for award funding rollup",
+        "locator": "POST https://api.usaspending.gov/api/v2/awards/funding_rollup/",
+        "retrievedAt": "2026-05-12T09:15:00-04:00"
+      }
+    ]
+  },
+  "request": {
+    "contentType": "application/json",
+    "parameters": [
+      {
+        "path": "award_id",
+        "direction": "request",
+        "location": "body",
+        "type": "string | integer",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Award identifier for the rollup lookup. Source code accepts either a generated award id string such as CONT_AWD_... or an integer internal award id.",
+        "documented": {
+          "type": "string",
+          "required": true,
+          "notes": "Docs explicitly list award_id as the required request attribute."
+        },
+        "observed": {
+          "examples": ["CONT_AWD_DEAC5206NA25396_8900_-NONE-_-NONE-"],
+          "notes": "A generated award id string succeeded in a live POST. Current-profile and source evidence indicate integer internal award ids are also accepted."
+        },
+        "constraints": [
+          "Required JSON body field.",
+          "Source code validates either an integer internal award id or a text generated award id.",
+          "If award_id is an integer the lookup uses the internal award_id column; otherwise it uses generated_unique_award_id."
+        ],
+        "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-prof-001", "ev-live-001"]
+      },
+      {
+        "path": "page",
+        "direction": "request",
+        "location": "body",
+        "type": "integer",
+        "required": false,
+        "status": "contradicted",
+        "description": "Legacy pagination field shown in the docs sample body, but the live implementation ignores it and still returns one aggregate object.",
+        "documented": {
+          "type": "number",
+          "required": false,
+          "notes": "Shown only in the sample request body, not in the formal request attributes."
+        },
+        "observed": {
+          "notes": "Current-profile and source evidence indicate the view reads only award_id."
+        },
+        "constraints": [
+          "Documented example field only.",
+          "Ignored by the implementation.",
+          "The current raw MCP profile does not expose this field."
+        ],
+        "evidenceRefs": ["ev-doc-001", "ev-prof-001", "ev-src-001", "ev-der-001"]
+      },
+      {
+        "path": "sort",
+        "direction": "request",
+        "location": "body",
+        "type": "string",
+        "required": false,
+        "status": "contradicted",
+        "description": "Legacy sort field shown in the docs sample body, but the live implementation ignores it and still returns one aggregate object.",
+        "documented": {
+          "type": "string",
+          "required": false,
+          "notes": "Shown only in the sample request body, not in the formal request attributes."
+        },
+        "observed": {
+          "notes": "Current-profile and source evidence indicate the view reads only award_id."
+        },
+        "constraints": [
+          "Documented example field only.",
+          "Ignored by the implementation.",
+          "The current raw MCP profile does not expose this field."
+        ],
+        "evidenceRefs": ["ev-doc-001", "ev-prof-001", "ev-src-001", "ev-der-001"]
+      },
+      {
+        "path": "order",
+        "direction": "request",
+        "location": "body",
+        "type": "string",
+        "required": false,
+        "status": "contradicted",
+        "description": "Legacy sort-direction field shown in the docs sample body, but the live implementation ignores it and still returns one aggregate object.",
+        "documented": {
+          "type": "string",
+          "required": false,
+          "notes": "Shown only in the sample request body, not in the formal request attributes."
+        },
+        "observed": {
+          "notes": "Current-profile and source evidence indicate the view reads only award_id."
+        },
+        "constraints": [
+          "Documented example field only.",
+          "Ignored by the implementation.",
+          "The current raw MCP profile does not expose this field."
+        ],
+        "evidenceRefs": ["ev-doc-001", "ev-prof-001", "ev-src-001", "ev-der-001"]
+      },
+      {
+        "path": "limit",
+        "direction": "request",
+        "location": "body",
+        "type": "integer",
+        "required": false,
+        "status": "contradicted",
+        "description": "Legacy limit field shown in the docs sample body, but the live implementation ignores it and still returns one aggregate object.",
+        "documented": {
+          "type": "number",
+          "required": false,
+          "notes": "Shown only in the sample request body, not in the formal request attributes."
+        },
+        "observed": {
+          "notes": "Current-profile and source evidence indicate the view reads only award_id."
+        },
+        "constraints": [
+          "Documented example field only.",
+          "Ignored by the implementation.",
+          "The current raw MCP profile does not expose this field."
+        ],
+        "evidenceRefs": ["ev-doc-001", "ev-prof-001", "ev-src-001", "ev-der-001"]
+      }
+    ],
+    "templates": [
+      {
+        "name": "basic-award-funding-rollup",
+        "description": "Primary safe request template for this aggregate endpoint: send only award_id.",
+        "request": {
+          "method": "POST",
+          "path": "/api/v2/awards/funding_rollup/",
+          "query": {},
+          "body": {
+            "award_id": "CONT_AWD_DEAC5206NA25396_8900_-NONE-_-NONE-"
+          }
+        },
+        "evidenceRefs": ["ev-live-001"]
+      }
+    ]
+  },
+  "response": {
+    "contentType": "application/json",
+    "shapeSummary": "Single aggregate JSON object with one monetary total and three distinct-count fields; there is no results array or page metadata.",
+    "fields": [
+      {
+        "path": "total_transaction_obligated_amount",
+        "direction": "response",
+        "location": "response",
+        "type": "number",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Sum of transaction_obligated_amount across revealed financial_accounts_by_awards rows associated with the requested award.",
+        "documented": {
+          "type": "number",
+          "required": true
+        },
+        "observed": {
+          "examples": [2729344672.23],
+          "notes": "The live sample returned a positive value; current-profile evidence indicates some awards can yield negative totals."
+        },
+        "constraints": [
+          "This is an aggregate total, not a list of transaction rows.",
+          "Source SQL limits the contributing rows to revealed submission windows."
+        ],
+        "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-prof-001", "ev-live-001"]
+      },
+      {
+        "path": "awarding_agency_count",
+        "direction": "response",
+        "location": "response",
+        "type": "integer",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Count of distinct top-tier awarding agencies represented in the revealed File C funding records for the award.",
+        "documented": {
+          "type": "number",
+          "required": true
+        },
+        "observed": {
+          "examples": [1]
+        },
+        "constraints": [
+          "This is a distinct-agency count, not a row count.",
+          "Source SQL counts distinct awarding top-tier agency ids."
+        ],
+        "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+      },
+      {
+        "path": "funding_agency_count",
+        "direction": "response",
+        "location": "response",
+        "type": "integer",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Count of distinct top-tier funding agencies represented in the revealed File C funding records for the award.",
+        "documented": {
+          "type": "number",
+          "required": true
+        },
+        "observed": {
+          "examples": [1]
+        },
+        "constraints": [
+          "This is a distinct-agency count, not a row count.",
+          "Source SQL counts distinct funding top-tier agency ids."
+        ],
+        "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+      },
+      {
+        "path": "federal_account_count",
+        "direction": "response",
+        "location": "response",
+        "type": "integer",
+        "required": true,
+        "status": "documented_and_observed",
+        "description": "Count of distinct federal accounts represented in the revealed File C funding records for the award.",
+        "documented": {
+          "type": "number",
+          "required": true
+        },
+        "observed": {
+          "examples": [17]
+        },
+        "constraints": [
+          "This is a distinct-account count, not a row count.",
+          "Source SQL counts distinct treasury appropriation agency_id-main_account_code combinations."
+        ],
+        "evidenceRefs": ["ev-doc-001", "ev-src-001", "ev-live-001"]
+      }
+    ],
+    "pagination": {
+      "strategy": "not_applicable_single_aggregate_object",
+      "fields": [],
+      "notes": "Despite the docs sample body showing page, sort, order, and limit, the endpoint returns one aggregate object and no pagination metadata.",
+      "evidenceRefs": ["ev-doc-001", "ev-prof-001", "ev-src-001"]
+    }
+  },
+  "mcpToolCoverage": {
+    "currentProfilePath": "profiles/v2__awards__funding_rollup/profile.json",
+    "exposedTopLevelRequestFields": ["award_id"],
+    "missingImportantRequestFields": ["page", "sort", "order", "limit"],
+    "notes": [
+      "The current raw MCP profile only exposes award_id.",
+      "The omitted fields come from the staged docs sample body and matter mainly because callers need to understand they are contradicted legacy fields rather than active controls."
+    ],
+    "evidenceRefs": ["ev-prof-001", "ev-der-001", "ev-src-001"]
+  },
+  "behavior": {
+    "contradictions": [
+      {
+        "statement": "Documentation shows page, sort, order, and limit in the sample request body, but source code and prior profile evidence indicate the view only reads award_id and always returns a single aggregate object.",
+        "impact": "Callers should not expect pagination or sorting behavior from those legacy fields.",
+        "status": "contradicted",
+        "evidenceRefs": ["ev-doc-001", "ev-prof-001", "ev-src-001", "ev-der-001"]
+      }
+    ],
+    "quirks": [
+      {
+        "statement": "If award_id is an integer, the view looks up the internal award_id column; otherwise it looks up generated_unique_award_id.",
+        "impact": "Generated award id strings are the common path, but integer surrogate ids remain part of the accepted validator contract.",
+        "status": "inferred",
+        "evidenceRefs": ["ev-src-001", "ev-prof-001"]
+      },
+      {
+        "statement": "Unknown or unmatched award identifiers are reported by the current raw profile as HTTP 200 responses with zero totals rather than errors.",
+        "impact": "A zeroed response is not sufficient proof that the supplied award_id was semantically correct.",
+        "status": "inferred",
+        "evidenceRefs": ["ev-prof-001"]
+      }
+    ],
+    "gaps": [
+      {
+        "statement": "This bundle has not freshly re-probed whitespace-only award_id handling or content-type enforcement; those behaviors are carried from source/profile evidence rather than a new live probe.",
+        "status": "unknown",
+        "evidenceRefs": ["ev-prof-001", "ev-src-001"]
+      }
+    ],
+    "risks": [
+      {
+        "statement": "An incorrect award_id can silently yield zero totals instead of an error.",
+        "impact": "Validate or source the award identifier from a trusted upstream step before interpreting a zero rollup as real data.",
+        "status": "inferred",
+        "evidenceRefs": ["ev-prof-001"]
+      },
+      {
+        "statement": "total_transaction_obligated_amount is a sum of underlying transaction obligations and may be negative for some awards.",
+        "impact": "Downstream analytics should not assume the rollup total is always positive.",
+        "status": "inferred",
+        "evidenceRefs": ["ev-prof-001", "ev-src-001"]
+      },
+      {
+        "statement": "The count fields are distinct counts over revealed File C funding records, not counts of funding rows or transactions.",
+        "impact": "Do not interpret awarding_agency_count, funding_agency_count, or federal_account_count as record counts.",
+        "status": "inferred",
+        "evidenceRefs": ["ev-src-001"]
+      }
+    ]
+  }
+}

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 import { AgentRunSummarySchema } from "../src/artifactContract.js";
-import { createSemanticEndpointAgent } from "../src/endpointAgent.js";
+import { createSemanticEndpointAgent, missingAgentRunArtifacts } from "../src/endpointAgent.js";
 import { DEFAULT_SEARCH_GLOBS, buildEndpointAgentInstructions, buildEndpointAgentTask } from "../src/instructions.js";
 import { SemanticRepairReportSchema } from "../src/repairContract.js";
 import { createSemanticRepairAgent, filterReviewReportToRepairTask } from "../src/repairAgent.js";
@@ -148,6 +151,35 @@ describe("Agents SDK semantic endpoint producer", () => {
     ]);
 
     expect(result.isFinalOutput).toBe(true);
+  });
+
+  it("detects completed producer summaries whose artifact files are not on disk", () => {
+    const root = join(tmpdir(), `gov-gpt-agent-artifacts-${Date.now()}`);
+    const artifactDir = join(root, "runs", "demo", "v2__recipient");
+    mkdirSync(artifactDir, { recursive: true });
+    for (const name of ["endpoint.json", "evidence.jsonl", "semantics.json"]) {
+      writeFileSync(join(artifactDir, name), "", "utf-8");
+    }
+
+    const summary = AgentRunSummarySchema.parse({
+      slug: "v2__recipient",
+      status: "completed",
+      outputRoot: "runs/demo",
+      promoted: false,
+      validationPassed: true,
+      summary: "Validated.",
+      keyFindings: [],
+      artifacts: [
+        "runs/demo/v2__recipient/endpoint.json",
+        "runs/demo/v2__recipient/evidence.jsonl",
+        "runs/demo/v2__recipient/semantics.json",
+        "runs/demo/v2__recipient/usage.md",
+      ],
+      nextSteps: [],
+    });
+
+    expect(existsSync(join(artifactDir, "usage.md"))).toBe(false);
+    expect(missingAgentRunArtifacts(summary, root)).toEqual(["runs/demo/v2__recipient/usage.md"]);
   });
 
   it("creates a model-owned reviewer agent without write or validation tools", () => {
