@@ -30,26 +30,56 @@ The durable product is the promoted semantic bundle. Agent frameworks,
 validation scripts, smoke clients, and raw-profile pipelines exist to produce,
 check, and serve that bundle.
 
-## Core Shape
+## Architecture Walkthrough
 
-```text
-USAspending docs + source + live probes
-        |
-        v
-Agents SDK semantic producer
-        |
-        v
-Semantic Profile V2 bundle
-        |
-        v
-generic validation + self-story + review/repair gates
-        |
-        v
-profiles/<slug>/semantic/
-        |
-        v
-MCP semantic tools for downstream agents
+```mermaid
+flowchart LR
+    D["USAspending docs"]
+    S["USAspending source"]
+    L["Live API probes"]
+    R["Existing raw profiles"]
+
+    P["Agents SDK producer<br/>scripts/agents"]
+    B["Semantic Profile V2 bundle<br/>endpoint.json<br/>semantics.json<br/>evidence.jsonl<br/>usage.md"]
+    G["Generic gates<br/>schema validation<br/>evidence links<br/>self-story MCP gate"]
+    V["Reviewer and repairer agents<br/>semantic depth<br/>MCP usability<br/>story gaps"]
+    M["Promoted semantic bundle<br/>profiles/&lt;slug&gt;/semantic"]
+
+    X["MCP runtime<br/>scripts/mcp"]
+    C["Downstream coding<br/>and analysis agents"]
+
+    D --> P
+    S --> P
+    L --> P
+    R --> P
+    P --> B
+    B --> G
+    G -->|ready| M
+    G -->|owned gaps| P
+    B --> V
+    V -->|repair tasks| P
+    M --> X
+    X --> C
 ```
+
+The flow is deliberately artifact-first.
+
+1. USAspending documentation, source, live behavior, and current profiles are
+   evidence inputs. None of them is trusted alone.
+2. The Agents SDK workflow in `scripts/agents` gives a producer agent broad
+   local tools, shell access, bounded live probes, artifact writes, validation,
+   and MCP story gates. The SDK orchestrates the work; it is not the source of
+   truth.
+3. The producer authors a Semantic Profile V2 bundle. That bundle is where
+   endpoint semantics, request facts, response facts, business meaning,
+   caveats, and evidence references live.
+4. Generic gates check the bundle without smuggling endpoint-specific answers
+   into code. Validation, evidence-link checks, self-story MCP gates, review,
+   and repair all operate against the artifact contract.
+5. A promoted bundle under `profiles/<slug>/semantic/` is loaded by the MCP
+   runtime in `scripts/mcp`, which exposes semantic discovery, understanding,
+   request construction, validation, evidence inspection, and bounded execution
+   for downstream agents.
 
 The important boundary is intentional: the model authors endpoint semantics, but
 the repository enforces artifact contracts. Deterministic code validates,
