@@ -1,220 +1,127 @@
 # gov-gpt
 
-`gov-gpt` is building an evidence-backed semantic MCP for the USAspending API.
+`gov-gpt` is an evidence-backed semantic MCP for the USAspending API.
 
-The project goal is not to expose a larger pile of HTTP tools. The goal is to
-give a coding or analysis agent enough grounded context to discover the right
-USAspending endpoint, understand what the endpoint means, construct a valid
-request, inspect the evidence behind important claims, and make bounded live API
-calls without guessing its way through government spending semantics.
+The project is not trying to make a bigger REST wrapper. It is trying to give a
+coding or analysis agent the context it needs to work with USAspending
+correctly: discover the right endpoint, understand the business meaning, build a
+valid request, inspect the evidence, and make bounded live calls.
 
-## What This Is
+## The Problem
 
-USAspending is rich, useful, and awkward. The public API has many endpoints,
-deeply nested filters, stale or partial documentation, live behavior that can
-contradict docs, async export workflows, opaque labels, and analytical concepts
-that are not obvious from request and response field names alone.
+USAspending is not hard because it lacks endpoints. It is hard because the API
+surface mixes transport details with federal spending concepts:
 
-`gov-gpt` turns that surface into a semantic layer:
+- similar endpoints answer different analytical questions
+- filters are nested, stateful, and easy to misuse
+- documentation can be incomplete, stale, or contradicted by live behavior
+- response fields often need business interpretation before they are useful
+- export, pagination, geography, time, award, and account concepts have hidden
+  workflow rules
 
-- one evidence-backed semantic bundle per endpoint
-- business meaning separated from raw transport details
-- documented, observed, contradicted, unavailable, and unknown facts preserved
-  explicitly
-- generic validation and story gates instead of endpoint-specific hard-coded
-  answers
-- an MCP runtime that exposes discovery, understanding, request construction,
-  evidence inspection, and bounded execution
+A thin MCP wrapper can expose the API, but it cannot tell an agent what the API
+means. `gov-gpt` is the semantic layer between those raw endpoints and the
+agent trying to reason about them.
 
-The durable product is the promoted semantic bundle. Agent frameworks,
-validation scripts, smoke clients, and raw-profile pipelines exist to produce,
-check, and serve that bundle.
-
-## Architecture Walkthrough
+## Functional Architecture
 
 ```mermaid
 flowchart LR
-    D["USAspending docs"]
-    S["USAspending source"]
-    L["Live API probes"]
-    R["Existing raw profiles"]
+    A["Evidence inputs<br/>docs, source, live probes,<br/>existing profiles"]
+    B["Agents SDK authoring loop<br/>producer, reviewer,<br/>repairer, story gate"]
+    C["Semantic profile<br/>callable shape, business meaning,<br/>evidence, usage guidance"]
+    D{"Quality gates<br/>schema checks, evidence checks,<br/>MCP story tests"}
+    E["Semantic MCP runtime<br/>discovery, understanding,<br/>request help, execution"]
+    F["Downstream agents<br/>answer spending questions<br/>with bounded calls and receipts"]
 
-    P["Agents SDK producer<br/>scripts/agents"]
-    B["Semantic Profile V2 bundle<br/>endpoint.json<br/>semantics.json<br/>evidence.jsonl<br/>usage.md"]
-    G["Generic gates<br/>schema validation<br/>evidence links<br/>self-story MCP gate"]
-    V["Reviewer and repairer agents<br/>semantic depth<br/>MCP usability<br/>story gaps"]
-    M["Promoted semantic bundle<br/>profiles/&lt;slug&gt;/semantic"]
-
-    X["MCP runtime<br/>scripts/mcp"]
-    C["Downstream coding<br/>and analysis agents"]
-
-    D --> P
-    S --> P
-    L --> P
-    R --> P
-    P --> B
-    B --> G
-    G -->|ready| M
-    G -->|owned gaps| P
-    B --> V
-    V -->|repair tasks| P
-    M --> X
-    X --> C
+    A --> B
+    B --> C
+    C --> D
+    D -->|repair needed| B
+    D -->|ready| E
+    E --> F
 ```
 
-The flow is deliberately artifact-first.
+## How It Works
 
-1. USAspending documentation, source, live behavior, and current profiles are
-   evidence inputs. None of them is trusted alone.
-2. The Agents SDK workflow in `scripts/agents` gives a producer agent broad
-   local tools, shell access, bounded live probes, artifact writes, validation,
-   and MCP story gates. The SDK orchestrates the work; it is not the source of
-   truth.
-3. The producer authors a Semantic Profile V2 bundle. That bundle is where
-   endpoint semantics, request facts, response facts, business meaning,
-   caveats, and evidence references live.
-4. Generic gates check the bundle without smuggling endpoint-specific answers
-   into code. Validation, evidence-link checks, self-story MCP gates, review,
-   and repair all operate against the artifact contract.
-5. A promoted bundle under `profiles/<slug>/semantic/` is loaded by the MCP
-   runtime in `scripts/mcp`, which exposes semantic discovery, understanding,
-   request construction, validation, evidence inspection, and bounded execution
-   for downstream agents.
+1. Evidence is gathered from documentation, source behavior, existing endpoint
+   profiles, and live USAspending probes. No single source is treated as
+   complete or automatically correct.
+2. The Agents SDK drives the authoring loop. A producer agent investigates an
+   endpoint, reconciles contradictions, probes live behavior, and writes the
+   semantic profile. Reviewer and repair agents challenge the result from the
+   perspective of evidence quality and downstream MCP usability.
+3. The semantic profile captures both the callable API shape and the analytical
+   meaning: what the endpoint is for, what question it can answer, what the
+   request fields mean, what the response measures represent, what caveats
+   matter, and what evidence backs those claims.
+4. Generic gates check the profile without hard-coding endpoint-specific
+   answers. The gates validate structure, evidence links, request behavior, and
+   whether another agent can use the MCP surface to complete a realistic story.
+5. Once the profile is ready, the MCP runtime exposes it as a semantic interface:
+   search for the right capability, inspect meaning and evidence, construct and
+   validate requests, and make bounded live calls.
 
-The important boundary is intentional: the model authors endpoint semantics, but
-the repository enforces artifact contracts. Deterministic code validates,
-loads, guards, smokes, and serves. It should not become a hidden extractor full
-of endpoint-specific semantic answers.
+The Agents SDK is the production loop, not the product. The product is the
+validated semantic knowledge that the MCP can serve to another agent.
 
-## Semantic Profile V2
+## What The MCP Gives An Agent
 
-Every promoted semantic endpoint is a four-file bundle:
+The final MCP experience should let a downstream agent move through a spending
+question in a grounded way:
 
-```text
-profiles/<slug>/semantic/
-  endpoint.json
-  semantics.json
-  evidence.jsonl
-  usage.md
-```
+- discover the endpoint or workflow that matches the user's intent
+- understand the endpoint's business purpose and analytical grain
+- see which request fields are required, optional, risky, or poorly supported
+- distinguish documented facts from observed facts and known contradictions
+- build a valid request before calling the live API
+- inspect evidence for material claims
+- execute bounded calls and interpret the response in context
 
-`endpoint.json` describes the callable surface: method, host, path,
-availability, request facts, response facts, templates, pagination, validation
-warnings, contradictions, quirks, gaps, risks, and MCP coverage gaps.
+That is the core difference from a generated client. A generated client says
+"this field exists." The semantic MCP should say "this field exists, here is
+what it means, here is when to use it, here is the evidence, and here is the
+caveat that will matter when you answer the question."
 
-`semantics.json` describes the analytical layer: business purpose, grain,
-entities, measures, dimensions, suitable questions, unsuitable questions, joins,
-workflows, caveats, and interpretation guidance.
+## What A Semantic Profile Captures
 
-`evidence.jsonl` is the audit trail. Material claims should point back to
-documentation, source observations, current profile observations, live probes,
-derived checks, or reviewer/story-gate findings. If evidence is missing, the
-bundle should say so through a status such as `documented_unverified`,
-`unknown`, or `inferred` instead of pretending certainty.
+Each endpoint profile is expected to preserve the information another agent
+would need to use the endpoint responsibly:
 
-`usage.md` is the caller-facing guide derived from the JSON artifacts. It should
-help another agent use the endpoint without introducing new unsupported claims.
+- the callable request and response shape
+- the business purpose of the endpoint
+- the grain of analysis, such as award, transaction, geography, agency, account,
+  time period, or export job
+- important measures, dimensions, filters, sort behavior, pagination, joins, and
+  workflow boundaries
+- live availability and known failure modes
+- contradictions between docs, source, existing profiles, and live behavior
+- evidence and confidence status for important claims
+- practical guidance for when the endpoint is suitable or unsuitable
 
-## How Facts Are Represented
+Uncertainty is part of the profile. The system should preserve facts as
+documented, observed, contradicted, unavailable, inferred, or unknown instead of
+dropping anything that was not fully proven in one run.
 
-The project preserves uncertainty because uncertainty changes how agents should
-act. A field is not dropped simply because a run did not prove it. It is kept
-with a status:
+## Boundaries
 
-- `documented_unverified`: docs say it exists, but probes did not confirm it
-- `documented_and_observed`: docs and live probes agree
-- `observed`: live behavior showed it, but docs did not establish it
-- `contradicted`: docs and live behavior disagree
-- `observed_unavailable`: the endpoint or behavior appears unavailable
-- `inferred`: derived from evidence, but not directly observed
-- `unknown`: deliberately unresolved
+The model owns endpoint understanding. It should investigate, reconcile, and
+explain what the endpoint means.
 
-That status model is central to the MCP. It lets a downstream agent distinguish
-between "do not use this," "use this but explain the caveat," and "valid request,
-but risky for this analytical question."
+Deterministic code owns the contract. It should validate structure, check
+evidence, enforce request safety, load the MCP surface, and fail loudly when the
+profile is not good enough.
 
-## Agentic Authoring
-
-The primary authoring path lives in `scripts/agents`. It uses the OpenAI Agents
-SDK to run semantic producers, reviewers, repairers, and MCP story gates.
-
-The producer is expected to behave like a capable coding agent with local repo
-access, shell access, source search, staged docs, current raw profiles, bounded
-live USAspending probes, artifact-write tools, validation tools, and MCP story
-gates. Default autonomy is deliberately broad. The point is to let a general
-agent investigate the endpoint and synthesize the semantic bundle, then force
-the result through generic gates.
-
-Producer completion happens inside that loop. A bundle is not complete merely
-because JSON validation passes. Before finalization, the producer should run a
-self-story gate through the MCP, inspect the output directory, and finalize only
-when the canonical four artifacts are present, valid, and usable by another
-agent.
-
-Review and repair are also agentic. A reviewer should look for missing
-semantics, weak evidence, contradictions, MCP usability failures, and story
-gaps. A repairer should fix a selected task, validate the bundle, and stop with
-a structured report rather than wander into optional investigation.
-
-## MCP Runtime
-
-The runtime lives in `scripts/mcp`. It loads promoted semantic bundles and raw
-profiles, then exposes an MCP surface oriented around agent workflows:
-
-- Discovery: find concepts, endpoints, and workflows by business intent.
-- Understanding: inspect schemas, semantics, usage guidance, health, and
-  evidence.
-- Request construction: get templates, list fields, validate requests, explain
-  validation failures, and surface evidence-backed warnings.
-- Execution: make bounded live calls through `usaspending.callEndpoint` or raw
-  endpoint aliases after the semantic layer has made the shape clear.
-
-The MCP should feel less like a generated REST client and more like a compact
-domain expert with receipts.
-
-## Raw Profiles
-
-The older `scripts/codex` pipeline still matters, but its role is narrower. It
-supports raw endpoint profile generation, legacy raw MCP coverage, and the
-shared semantic validator. It is not the source of semantic endpoint knowledge.
-
-Raw profiles are execution fixtures and useful prior art. Semantic bundles are
-the higher-level knowledge surface.
+Raw endpoint profiles remain useful as low-level execution context, but the
+semantic profile is the durable knowledge layer. The orchestration framework can
+change; the evidence-backed semantic contract is what needs to survive.
 
 ## Design Principles
 
-- The source of truth is the validated semantic bundle, not the orchestration
-  framework that produced it.
-- Evidence is part of the artifact, not an afterthought.
-- Business meaning belongs above field names and transport schemas.
-- Deterministic code should fail loudly when contracts are broken.
-- Endpoint-specific semantic answers should be authored and justified by the
-  agent, not smuggled into validators or runtime branches.
-- Documented-but-unprobed fields, contradictions, MCP coverage gaps, and
-  unavailable behavior should remain visible.
-- The MCP is successful only if another agent can use it to answer real
-  USAspending questions with bounded calls and inspectable evidence.
-
-## Repository Map
-
-```text
-scripts/agents/       Agents SDK producer, reviewer, repairer, and story gates
-scripts/mcp/          MCP runtime, semantic loading, request helpers, smoke tools
-scripts/codex/        Legacy raw-profile pipeline and shared semantic validation
-src/agent/core/       Shared schemas, especially Semantic Profile V2
-profiles/            Promoted raw profiles and semantic bundles
-docs/                Architecture, artifact contracts, and operating model
-usaspending-api/      Local USAspending docs/source submodule used as evidence
-```
-
-## Where To Go Next
-
-- `docs/architecture.md` explains the current system boundaries and dataflow.
-- `docs/mcp-target-shape.md` describes the target MCP product surface.
-- `docs/semantic-profile-v2.md` defines the durable semantic artifact contract.
-- `docs/semantic-agent-operating-model.md` describes the agentic producer model.
-- `scripts/agents/README.md` covers producer, review, repair, story, and
-  frontier-suite operations.
-- `scripts/mcp/README.md` covers the runtime MCP server and smoke clients.
-- `scripts/codex/README.md` covers the supporting raw-profile pipeline.
-- `OPERATIONS.md` is the operator runbook.
+- Build for agent use, not just API coverage.
+- Treat evidence as part of the product.
+- Preserve uncertainty instead of hiding it.
+- Keep endpoint-specific meaning out of validators and runtime shortcuts.
+- Make the MCP useful for real spending questions, not just successful test
+  calls.
+- Prefer explicit gaps and contradictions over false simplicity.
